@@ -1,0 +1,25 @@
+version: 1
+project:
+  name: SupportOS
+  primaryLanguage: typescript
+  projectRoots:
+    - .
+tracker:
+  type: jira
+  workspace: ziadhosny007.atlassian.net
+naming:
+  includeTrackerId: true
+  globalSequence: true
+agents:
+  - claude-code
+planner:
+  enabled: true
+  provider: anthropic
+  mode: auto
+  budget:
+    maxFileReads: 25
+    maxContextBytes: 50000
+    maxDurationSeconds: 180
+  cache:
+    enabled: true
+  maxOutputTokens: 16384

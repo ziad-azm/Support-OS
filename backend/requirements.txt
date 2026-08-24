@@ -1,0 +1,5 @@
+# Runtime dependencies. Version ranges, not exact pins: FND-4 (CONV) decides the
+# lockfile strategy. Docker is deliberately absent — see README § Docker.
+Django>=5.2,<5.3
+psycopg[binary]>=3.2,<4
+django-environ>=0.12,<1

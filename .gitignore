@@ -1,0 +1,35 @@
+# Managed by squad-kit — do not edit this block
+.squad/secrets.yaml
+.squad/stories/**/attachments/
+.squad/.trash/
+.squad/.last-run.json
+.squad/.last-copy-prompt.md
+.squad/runs/
+# End squad-kit block
+
+# --- Python / Django (backend) ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+backend/staticfiles/
+backend/media/
+*.sqlite3
+
+# --- Node / Vite (frontend) ---
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# --- Environment files: never commit real values ---
+.env
+.env.*
+!.env.example
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
