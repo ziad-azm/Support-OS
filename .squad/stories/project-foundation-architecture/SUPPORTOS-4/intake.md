@@ -184,6 +184,11 @@ Place files in `attachments/` next to this `intake.md`, then list them here so t
 ## Technical hints (optional)
 
 - APIs, screens, services already discussed. Repos/roots: `.`. Primary language: `typescript`.
+- Use Prettier for consistent code formatting across the frontend.
+- Configure Prettier as part of the frontend foundation and ensure it works consistently with ESLint.
+- Add the required configuration files and scripts so formatting can be run locally.
+- Add a format script and, if appropriate, a format-check script for CI.
+- Do not introduce per-feature formatting configurations; formatting rules must be centralized at the project level.
 
 ## Out of scope
 

@@ -1,8 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { RouterProvider } from 'react-router'
+
+import { AppProviders } from './app/providers'
+import { router } from './app/router'
 import { env } from './config/env'
+import './index.css'
 
 if (import.meta.env.DEV) {
   console.info('[SupportOS] API base URL:', env.apiBaseUrl)
@@ -10,6 +13,8 @@ if (import.meta.env.DEV) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>
   </StrictMode>,
 )

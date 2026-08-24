@@ -26,7 +26,7 @@
   1. **Inspect before modify:** read the relevant existing files and the referenced Shared Specs first; reuse existing code/abstractions; change only what's necessary.
   2. **Reference, don't repeat:** depend on the Shared Specs by ID instead of restating architectural rules.
   3. **No duplication:** if a shared component/util/hook exists, use it; do not recreate it.
-  4. **Minimal report on completion:** report only → _what changed · files changed · tests performed · blockers · next recommended task_. No long explanations unless asked.
+  4. **Minimal report on completion:** report only → _what changed · files changed · blockers · next recommended task_. No long explanations unless asked.
 
 ---
 
@@ -117,13 +117,13 @@
 **Dependencies:** FND-1, FND-2, FND-3.
 
 - **Task: Author the CONV spec** 🔑 (defines `CONV`)
-  - Implement: one doc covering — folder structure & file placement; naming conventions; TypeScript conventions; API communication conventions (reference `API`); error/loading/empty handling; validation approach (reference `FORM`); reusable-component rule (reference `UI`); shared utilities; env/config (reference `ENV`); logging strategy (frontend + backend); API response conventions; frontend/backend boundaries; auth conventions (reference `AUTHZ`); testing conventions; linting/formatting; import conventions; explicit "check for existing implementation before writing new code" rule.
+  - Implement: one doc covering — folder structure & file placement; naming conventions; TypeScript conventions; API communication conventions (reference `API`); error/loading/empty handling; validation approach (reference `FORM`); reusable-component rule (reference `UI`); shared utilities; env/config (reference `ENV`); logging strategy (frontend + backend); API response conventions; frontend/backend boundaries; auth conventions (reference `AUTHZ`); linting/formatting; import conventions; explicit "check for existing implementation before writing new code" rule.
   - Constraints: concise and reference-based; later tasks link to `CONV` rather than repeating rules.
   - Depends on: FND-1/2/3.
   - Outcome: a single source of truth every task cites.
 
 - **Task: Linting, formatting & CI checks** 🔑
-  - Implement: ESLint + Prettier (frontend), Black + Ruff/isort (backend), pre-commit hooks, and a CI job running lint + tests for both apps.
+  - Implement: ESLint + Prettier (frontend), Black + Ruff/isort (backend), pre-commit hooks, and a CI job running lint for both apps.
   - Constraints: enforce `CONV` import/naming rules automatically.
   - Depends on: CONV task.
   - Outcome: consistent style enforced on every commit.

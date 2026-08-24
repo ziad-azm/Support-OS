@@ -26,6 +26,9 @@ repository is a monorepo holding the Django API and the React web client side by
 │   ├── manage.py           Django CLI entry point
 │   └── requirements.txt    Python runtime dependencies
 ├── frontend/               React + Vite + TypeScript web client
+│   ├── src/app/            Router, providers, root shell
+│   ├── src/features/       One folder per feature — see src/README.md for the rule
+│   ├── src/shared/         Cross-feature ui/, lib/api/ (the one Axios instance), hooks/
 │   ├── src/config/env.ts   The only module that reads import.meta.env
 │   └── .env.example        Frontend environment contract — copy to frontend/.env
 ├── .squad/                 squad-kit: story intakes, implementation plans, project config
@@ -328,6 +331,39 @@ Two more notes:
   because DRF's exception handler is never consulted there. Unmatched paths *under* `/api/` are
   handled: `config/api_urls.py` routes them through `ApiNotFoundView` so a typo'd endpoint still
   answers with an enveloped 404 rather than HTML.
+
+### Consuming the API from the frontend
+
+**The rule:** features call `api.get` / `api.post` / `api.put` / `api.patch` / `api.delete` /
+`api.getPage` from `@/shared/lib/api/client`. Never `httpClient` directly, never `fetch`, never a
+second `axios.create` anywhere in `src/`. That module is the only place the frontend talks to the
+network — see `frontend/src/README.md` for the full placement rule.
+
+**Errors.** Every failure — an envelope error, an HTTP error whose body is not an envelope, a
+network failure, a timeout, or a malformed 200 — reaches the caller as one `ApiRequestError`
+(`code`, `status`, `fields`, `message`). Four codes are client-only and never sent by the backend:
+
+| Code | Meaning |
+|---|---|
+| `network_error` | No response reached the client at all. |
+| `timeout` | The request exceeded its timeout. |
+| `invalid_envelope` | A `200` whose body is not `{success, data, error, meta}` — most often a misconfigured `VITE_API_BASE_URL` pointing at something that isn't this API. |
+| `unknown_error` | An HTTP error whose body is not an envelope (e.g. a proxy's HTML page). |
+
+**Rendering.** Wrap query results in `<QueryBoundary query={...}>{data => ...}</QueryBoundary>`
+(`@/shared/ui/QueryBoundary`). It renders `Loading`, `ErrorState`, or `Empty` consistently — do not
+hand-roll `isPending`/`isError` branches in a feature.
+
+**Toasts.** Mutations toast on error automatically. Queries render inline via `QueryBoundary` and
+only toast when they opt in with `meta: { toastOnError: true }` on the `useQuery` call. A
+user-initiated mutation that fails silently reads as success, which is why mutations always toast;
+a toast per query error would be noise for anything already rendering inline.
+
+**Retries.** Transport failures (`network_error`, `timeout`) and `5xx` responses retry up to twice.
+A `4xx` never retries — a `404` or a validation error will not become true by asking again.
+
+**Query keys.** `[feature, resource, ...discriminators]`, built with `featureKey('feature')` from
+`@/shared/lib/api/queryKeys`, so a feature's whole cache can be invalidated as a unit.
 
 ---
 
