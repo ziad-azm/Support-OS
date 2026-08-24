@@ -11,6 +11,10 @@ repository is a monorepo holding the Django API and the React web client side by
 > monorepo layout, the environment/config strategy, a runnable Django project, and a runnable
 > Vite app. See `SupportOs backlog.MD` for the full roadmap.
 
+Before writing new code, read [`CONVENTIONS.md`](CONVENTIONS.md) — the single source of truth
+for folder structure, naming, API conventions, logging, linting, and more. Cite it instead of
+re-deriving a standard.
+
 ---
 
 ## Repository layout
@@ -33,6 +37,7 @@ repository is a monorepo holding the Django API and the React web client side by
 │   └── .env.example        Frontend environment contract — copy to frontend/.env
 ├── .squad/                 squad-kit: story intakes, implementation plans, project config
 ├── SupportOs backlog.MD    Full product backlog (epics → stories → tasks) and shared specs
+├── CONVENTIONS.md          The CONV spec — single source of truth, reference-based
 └── README.md               This file — the only document needed to run the project locally
 ```
 
@@ -208,6 +213,27 @@ URL at boot:
 terminal prints `.env changed, restarting server...`). The restart is a full server restart, not
 HMR, so reload the browser tab to pick up the new value. If your Vite version does not restart
 automatically, stop the server (Ctrl+C) and start it again.
+
+---
+
+## Enable the pre-commit hook
+
+Run once per clone:
+
+```powershell
+git config core.hooksPath .githooks
+```
+
+This runs `ruff format --check` / `ruff check` (backend) and `oxlint` / `prettier --check`
+(frontend) before every commit, whole-tree, using only `--check` variants — it never rewrites
+files for you. It skips a language's checks gracefully if that app hasn't been set up yet
+(`backend/.venv` or `frontend/node_modules` missing), so a fresh clone's first commit is never
+blocked before setup.
+
+**The hook is per-clone, not committed** — git does not let a repository configure its own hooks
+path, so a new clone has no hook until this command is run. The real gate is CI
+(`.github/workflows/lint.yml`), which runs on every push regardless. `git commit --no-verify`
+skips the hook once; that should be rare.
 
 ---
 
@@ -395,6 +421,7 @@ developer discovers it.
 | `CORS_ALLOW_CREDENTIALS` | no | `True` | Allow cookies/auth headers on cross-origin requests. |
 | `DRF_PAGE_SIZE` | no | `25` | Default page size for list endpoints. |
 | `DRF_MAX_PAGE_SIZE` | no | `100` | Ceiling for the `?page_size=` query parameter. |
+| `DJANGO_LOG_LEVEL` | no | `INFO` | Level for the `apps.*` logger tree. See `CONVENTIONS.md` § Logging. |
 | `DJANGO_SECURE_SSL_REDIRECT` | no | `True` | **Prod only.** Redirect HTTP to HTTPS. |
 | `DJANGO_SECURE_HSTS_SECONDS` | no | `31536000` | **Prod only.** HSTS max-age. |
 

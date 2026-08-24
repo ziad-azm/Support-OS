@@ -43,7 +43,8 @@ class ExceptionHandlerTests(SimpleTestCase):
         self.assertEnvelope(self.handle(DjangoPermissionDenied()), 403, "permission_denied")
 
     def test_not_authenticated_maps_to_401(self):
-        self.assertEnvelope(self.handle(drf_exceptions.NotAuthenticated()), 401, "not_authenticated")
+        exc = drf_exceptions.NotAuthenticated()
+        self.assertEnvelope(self.handle(exc), 401, "not_authenticated")
 
     def test_method_not_allowed_maps_to_405(self):
         exc = drf_exceptions.MethodNotAllowed("POST")

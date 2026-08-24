@@ -128,12 +128,6 @@
   - Depends on: CONV task.
   - Outcome: consistent style enforced on every commit.
 
-- **Task: Testing conventions & harness** 🔑
-  - Implement: backend test setup (pytest/DRF test client) and frontend test setup (Vitest + React Testing Library), with example tests and the documented testing pattern in `CONV`.
-  - Constraints: features write tests following this pattern; no bespoke harnesses.
-  - Depends on: CONV task.
-  - Outcome: both apps have a ready, documented test approach.
-
 ---
 
 ---

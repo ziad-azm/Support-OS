@@ -1,6 +1,8 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 
+import { logger } from '@/shared/lib/logger'
+
 type Props = { children: ReactNode }
 type State = { hasError: boolean }
 
@@ -17,7 +19,7 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error('[SupportOS] Unhandled render error:', error, info.componentStack)
+    logger.error('Unhandled render error:', error, info.componentStack)
   }
 
   render() {

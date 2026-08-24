@@ -62,9 +62,7 @@ class HealthEnvelopeTests(SimpleTestCase):
 
     @mock.patch("apps.core.views.connection.ensure_connection", return_value=None)
     def test_malformed_json_body_is_enveloped(self, _ensure):
-        response = self.client.post(
-            "/api/health/", data="{", content_type="application/json"
-        )
+        response = self.client.post("/api/health/", data="{", content_type="application/json")
         body = response.json()
         self.assertIs(body["success"], False)
         # Either the parser or the method check fires first; both are uniform.
@@ -79,9 +77,7 @@ class HealthEnvelopeTests(SimpleTestCase):
                 "access-control-request-method": "GET",
             },
         )
-        self.assertEqual(
-            response["Access-Control-Allow-Origin"], "http://localhost:5173"
-        )
+        self.assertEqual(response["Access-Control-Allow-Origin"], "http://localhost:5173")
         self.assertEqual(response.content, b"")
 
 
@@ -91,9 +87,7 @@ class HealthDatabaseIntegrationTests(TestCase):
     def test_health_reports_ok_against_the_real_database(self):
         response = self.client.get("/api/health/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json()["data"], {"status": "ok", "database": "ok"}
-        )
+        self.assertEqual(response.json()["data"], {"status": "ok", "database": "ok"})
 
 
 class ApiCatchAllTests(SimpleTestCase):

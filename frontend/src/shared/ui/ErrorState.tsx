@@ -7,13 +7,7 @@ import type { ApiRequestError } from '@/shared/lib/api/errors'
  * `error.debug` (traceback) renders only when present — the backend sends it
  * only under DEBUG=True. Never render it unconditionally.
  */
-export function ErrorState({
-  error,
-  onRetry,
-}: {
-  error: ApiRequestError
-  onRetry?: () => void
-}) {
+export function ErrorState({ error, onRetry }: { error: ApiRequestError; onRetry?: () => void }) {
   return (
     <div role="alert">
       <p>{error.message}</p>

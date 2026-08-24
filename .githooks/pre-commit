@@ -1,0 +1,70 @@
+#!/bin/sh
+# Pre-commit style gate. Runs whole-tree, --check-only (never rewrites files
+# mid-commit). Skips a language's checks gracefully if that app hasn't been
+# set up yet — this must never block a fresh clone's first commit.
+#
+# Enable with:  git config core.hooksPath .githooks
+# Skip once with: git commit --no-verify
+
+set -eu
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+FAILED=0
+
+# --- Backend: ruff format --check + ruff check --------------------------
+if [ -d backend/.venv ]; then
+  if [ -x backend/.venv/Scripts/ruff.exe ]; then
+    RUFF="backend/.venv/Scripts/ruff.exe"
+  elif [ -x backend/.venv/bin/ruff ]; then
+    RUFF="backend/.venv/bin/ruff"
+  else
+    RUFF=""
+  fi
+
+  if [ -n "$RUFF" ]; then
+    if ! "$RUFF" format --check backend; then
+      echo ""
+      echo "Backend formatting check failed. Fix with:"
+      echo "  cd backend && ruff format ."
+      FAILED=1
+    fi
+    if ! "$RUFF" check backend; then
+      echo ""
+      echo "Backend lint check failed. Fix with:"
+      echo "  cd backend && ruff check --fix ."
+      FAILED=1
+    fi
+  else
+    echo "backend/.venv exists but ruff was not found in it — skipping backend checks."
+    echo "Run: cd backend && pip install -r requirements-dev.txt"
+  fi
+else
+  echo "backend/.venv not found — skipping backend checks (run backend setup first)."
+fi
+
+# --- Frontend: oxlint + prettier --check ---------------------------------
+if [ -d frontend/node_modules ]; then
+  if ! npm --prefix frontend run lint; then
+    echo ""
+    echo "Frontend lint check failed. Fix the reported issues, then re-commit."
+    FAILED=1
+  fi
+  if ! npm --prefix frontend run format:check; then
+    echo ""
+    echo "Frontend formatting check failed. Fix with:"
+    echo "  cd frontend && npm run format"
+    FAILED=1
+  fi
+else
+  echo "frontend/node_modules not found — skipping frontend checks (run npm install first)."
+fi
+
+if [ "$FAILED" -ne 0 ]; then
+  echo ""
+  echo "Pre-commit checks failed. Fix the issues above, or skip once with --no-verify."
+  exit 1
+fi
+
+exit 0

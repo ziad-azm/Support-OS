@@ -1,0 +1,50 @@
+name: Lint
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+      - name: ruff format --check
+        run: ruff format --check .
+      - name: ruff check
+        run: ruff check .
+      # `manage.py check` and `manage.py test` are intentionally not run here:
+      # both import settings, which require DJANGO_SECRET_KEY and the
+      # POSTGRES_* variables, and the test run additionally needs a live
+      # PostgreSQL service. Wiring CI secrets and a service container is not
+      # in scope for this story. Ruff is a static check and needs neither.
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: oxlint
+        run: npm run lint
+      - name: prettier --check
+        run: npm run format:check
+      - name: build (typechecks via tsc -b)
+        run: npm run build

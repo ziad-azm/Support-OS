@@ -88,6 +88,6 @@ with `ModuleNotFoundError: No module named 'customers'`.
 
 ## Related specs
 
-The full conventions document is `CONV` (FND-4) and references this file rather
-than restating it. The response envelope this layout serves is documented in the
-root `README.md` under **API conventions**.
+The full conventions document is [`CONVENTIONS.md`](../../CONVENTIONS.md) (`CONV`)
+and references this file rather than restating it. The response envelope this
+layout serves is documented in the root `README.md` under **API conventions**.

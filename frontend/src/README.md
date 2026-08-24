@@ -45,29 +45,30 @@ folder when it has a component. Do not pre-create empty modules.
   with shadcn primitives **without changing their props**, so features written
   against them today keep working after that story lands.
 
-## `src/test/`
-
-Holds test infrastructure (Vitest setup), not tests. Tests live beside the
-code they cover as `*.test.ts` / `*.test.tsx`.
-
 ## The API layer
 
-`src/shared/lib/api/` is the **only** place that talks to the network:
+`src/shared/lib/` is the **only** place that talks to the network or the console:
 
-- `client.ts` — the one Axios instance (`httpClient`) and the typed `api.*`
-  request helpers. Never create a second `axios.create()`.
-- `types.ts` — the TypeScript mirror of the backend envelope
+- `lib/api/client.ts` — the one Axios instance (`httpClient`) and the typed
+  `api.*` request helpers. Never create a second `axios.create()`.
+- `lib/api/types.ts` — the TypeScript mirror of the backend envelope
   (`backend/apps/core/envelope.py`).
-- `errors.ts` — `ApiRequestError`, the one error type every failure normalises
-  to.
-- `queryClient.ts` — the app's single `QueryClient` factory and retry policy.
-- `queryKeys.ts` — the `[feature, resource, ...]` key convention.
+- `lib/api/errors.ts` — `ApiRequestError`, the one error type every failure
+  normalises to.
+- `lib/api/queryClient.ts` — the app's single `QueryClient` factory and retry
+  policy.
+- `lib/api/queryKeys.ts` — the `[feature, resource, ...]` key convention.
+- `lib/logger.ts` — the only sanctioned `console.*` access. Never call
+  `console.*` directly outside this file.
 
 Features call `api.get/post/put/patch/delete/getPage` and TanStack Query hooks
 built on top of them. No `fetch`, no ad-hoc Axios, ever, in a feature.
 
+`import.meta.env` is read in exactly four files, nowhere else: `config/env.ts`,
+`main.tsx`, `app/providers.tsx`, and `shared/lib/logger.ts`.
+
 ## Related specs
 
-The full conventions document is `CONV` (FND-4) and will reference this file
-rather than restate it. The response envelope this layout serves is
-documented in the root `README.md` under **API conventions**.
+The full conventions document is [`CONVENTIONS.md`](../../CONVENTIONS.md) (`CONV`)
+and references this file rather than restating it. The response envelope this
+layout serves is documented in the root `README.md` under **API conventions**.

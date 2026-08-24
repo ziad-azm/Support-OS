@@ -37,11 +37,7 @@ class HealthView(APIView):
             "status": "ok" if database == "ok" else "degraded",
             "database": database,
         }
-        code = (
-            status.HTTP_200_OK
-            if database == "ok"
-            else status.HTTP_503_SERVICE_UNAVAILABLE
-        )
+        code = status.HTTP_200_OK if database == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE
         return Response(payload, status=code)
 
 

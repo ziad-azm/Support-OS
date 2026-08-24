@@ -96,9 +96,7 @@ class DrfSettingsTests(SimpleTestCase):
     def test_cors_middleware_is_first(self):
         # Below CommonMiddleware it still boots and still passes every backend
         # test, then fails only in a real browser. Pin the position.
-        self.assertEqual(
-            settings.MIDDLEWARE[0], "corsheaders.middleware.CorsMiddleware"
-        )
+        self.assertEqual(settings.MIDDLEWARE[0], "corsheaders.middleware.CorsMiddleware")
 
     def test_cors_allows_the_vite_dev_origin(self):
         self.assertIn("http://localhost:5173", settings.CORS_ALLOWED_ORIGINS)
@@ -123,6 +121,4 @@ class MigrationStateTests(SimpleTestCase):
             loader.project_state(), ProjectState.from_apps(django_apps)
         )
         changes = autodetector.changes(graph=loader.graph)
-        self.assertEqual(
-            changes, {}, f"Model changes without a migration: {sorted(changes)}"
-        )
+        self.assertEqual(changes, {}, f"Model changes without a migration: {sorted(changes)}")

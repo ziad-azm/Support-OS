@@ -5,11 +5,10 @@ import { RouterProvider } from 'react-router'
 import { AppProviders } from './app/providers'
 import { router } from './app/router'
 import { env } from './config/env'
+import { logger } from './shared/lib/logger'
 import './index.css'
 
-if (import.meta.env.DEV) {
-  console.info('[SupportOS] API base URL:', env.apiBaseUrl)
-}
+logger.info('API base URL:', env.apiBaseUrl)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

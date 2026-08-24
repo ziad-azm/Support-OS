@@ -1,12 +1,12 @@
 > **Fetched from jira:** [SUPPORTOS-5](https://ziadhosny007.atlassian.net/browse/SUPPORTOS-5)  
-> *Fetched 2026-08-24T17:15:04.033Z. Edit the sections below as needed; the planner reads this file verbatim.*
+> *Fetched 2026-08-24T18:25:54.839Z. Edit the sections below as needed; the planner reads this file verbatim.*
 
 
 ## Source — work item (from tracker)
 
 **Title:** (FND-4) — Codebase Conventions & Foundation Spec  
 **Type:** Story  
-**Status:** In Progress  
+**Status:** Done  
 **Assignee:** Ziad Hosny
 
 ### Description
@@ -15,7 +15,7 @@ As a team, we want one written conventions spec, so that every developer (and th
 
 	Task: Author the CONV spec 🔑 (defines CONV)
 	
-		Implement: one doc covering — folder structure & file placement; naming conventions; TypeScript conventions; API communication conventions (reference API); error/loading/empty handling; validation approach (reference FORM); reusable-component rule (reference UI); shared utilities; env/config (reference ENV); logging strategy (frontend + backend); API response conventions; frontend/backend boundaries; auth conventions (reference AUTHZ); testing conventions; linting/formatting; import conventions; explicit "check for existing implementation before writing new code" rule.
+		Implement: one doc covering — folder structure & file placement; naming conventions; TypeScript conventions; API communication conventions (reference API); error/loading/empty handling; validation approach (reference FORM); reusable-component rule (reference UI); shared utilities; env/config (reference ENV); logging strategy (frontend + backend); API response conventions; frontend/backend boundaries; auth conventions (reference AUTHZ); linting/formatting; import conventions; explicit "check for existing implementation before writing new code" rule.
 
 		Constraints: concise and reference-based; later tasks link to CONV rather than repeating rules.
 
@@ -28,26 +28,13 @@ As a team, we want one written conventions spec, so that every developer (and th
 
 	Task: Linting, formatting & CI checks 🔑
 	
-		Implement: ESLint + Prettier (frontend), Black + Ruff/isort (backend), pre-commit hooks, and a CI job running lint + tests for both apps.
+		Implement: ESLint + Prettier (frontend), Black + Ruff/isort (backend), pre-commit hooks, and a CI job running lint for both apps.
 
 		Constraints: enforce CONV import/naming rules automatically.
 
 		Depends on: CONV task.
 
 		Outcome: consistent style enforced on every commit.
-
-	
-	
-
-	Task: Testing conventions & harness 🔑
-	
-		Implement: backend test setup (pytest/DRF test client) and frontend test setup (Vitest + React Testing Library), with example tests and the documented testing pattern in CONV.
-
-		Constraints: features write tests following this pattern; no bespoke harnesses.
-
-		Depends on: CONV task.
-
-		Outcome: both apps have a ready, documented test approach.
 
 ### Attachments
 
@@ -76,7 +63,7 @@ This is **not** an implementation prompt. It is the input to the plan-generation
 - **Tracker type:** `jira`
 - **Work item id:** `SUPPORTOS-5` *(used in filenames and plan tables; fill manually if empty)*
 - **Work item type:** `Story`
-- **Status:** `In Progress`
+- **Status:** `Done`
 - **Assignee:** `Ziad Hosny`
 - **Labels:** ``
 
@@ -103,7 +90,7 @@ As a team, we want one written conventions spec, so that every developer (and th
 
 	Task: Author the CONV spec 🔑 (defines CONV)
 	
-		Implement: one doc covering — folder structure & file placement; naming conventions; TypeScript conventions; API communication conventions (reference API); error/loading/empty handling; validation approach (reference FORM); reusable-component rule (reference UI); shared utilities; env/config (reference ENV); logging strategy (frontend + backend); API response conventions; frontend/backend boundaries; auth conventions (reference AUTHZ); testing conventions; linting/formatting; import conventions; explicit "check for existing implementation before writing new code" rule.
+		Implement: one doc covering — folder structure & file placement; naming conventions; TypeScript conventions; API communication conventions (reference API); error/loading/empty handling; validation approach (reference FORM); reusable-component rule (reference UI); shared utilities; env/config (reference ENV); logging strategy (frontend + backend); API response conventions; frontend/backend boundaries; auth conventions (reference AUTHZ); linting/formatting; import conventions; explicit "check for existing implementation before writing new code" rule.
 
 		Constraints: concise and reference-based; later tasks link to CONV rather than repeating rules.
 
@@ -116,26 +103,13 @@ As a team, we want one written conventions spec, so that every developer (and th
 
 	Task: Linting, formatting & CI checks 🔑
 	
-		Implement: ESLint + Prettier (frontend), Black + Ruff/isort (backend), pre-commit hooks, and a CI job running lint + tests for both apps.
+		Implement: ESLint + Prettier (frontend), Black + Ruff/isort (backend), pre-commit hooks, and a CI job running lint for both apps.
 
 		Constraints: enforce CONV import/naming rules automatically.
 
 		Depends on: CONV task.
 
 		Outcome: consistent style enforced on every commit.
-
-	
-	
-
-	Task: Testing conventions & harness 🔑
-	
-		Implement: backend test setup (pytest/DRF test client) and frontend test setup (Vitest + React Testing Library), with example tests and the documented testing pattern in CONV.
-
-		Constraints: features write tests following this pattern; no bespoke harnesses.
-
-		Depends on: CONV task.
-
-		Outcome: both apps have a ready, documented test approach.
 ```
 
 ---

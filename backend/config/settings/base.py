@@ -194,3 +194,46 @@ REST_FRAMEWORK = {
     ],
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
+
+
+# --- Logging -------------------------------------------------------------
+# Without this, `apps.*` loggers have no handler and fall through to Python's
+# lastResort handler: WARNING+ only, no timestamp, no level, no logger name.
+DJANGO_LOG_LEVEL = env("DJANGO_LOG_LEVEL", default="INFO")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        # Our own code. `apps.core.exceptions` logs every unhandled 500 here.
+        "apps": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # 4xx/5xx raised by Django itself; ERROR keeps normal 404 noise out.
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}

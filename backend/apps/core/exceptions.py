@@ -70,11 +70,7 @@ def _as_message_list(value) -> list[str]:
         return [str(item) for item in value]
     if isinstance(value, dict):
         # Nested serializer: flatten one level so the client gets flat strings.
-        return [
-            f"{key}: {msg}"
-            for key, msgs in value.items()
-            for msg in _as_message_list(msgs)
-        ]
+        return [f"{key}: {msg}" for key, msgs in value.items() for msg in _as_message_list(msgs)]
     return [str(value)]
 
 
