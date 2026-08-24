@@ -18,7 +18,10 @@ repository is a monorepo holding the Django API and the React web client side by
 ```text
 .
 ├── backend/                Django project (API). Settings split base/dev/prod, all config from env.
-│   ├── config/             Django project package: settings/, urls.py, wsgi.py, asgi.py, tests/
+│   ├── apps/               Domain apps, one per business area — see apps/README.md for the rule.
+│   │   ├── core/           Cross-cutting: response envelope, exception handler, pagination, health.
+│   │   └── …               customers, tickets, communications, agents, sla, knowledge_base, …
+│   ├── config/             Django project package: settings/, urls.py, api_urls.py, wsgi.py, tests/
 │   ├── .env.example        Backend environment contract — copy to backend/.env
 │   ├── manage.py           Django CLI entry point
 │   └── requirements.txt    Python runtime dependencies
@@ -160,6 +163,26 @@ Create an admin user if you want to log in:
 python manage.py createsuperuser
 ```
 
+### Migrations
+
+```powershell
+python manage.py makemigrations                     # after changing any models.py
+python manage.py migrate                            # apply to local PostgreSQL
+python manage.py makemigrations --check --dry-run    # CI guard: fails if a model change has no migration
+python manage.py showmigrations                      # what is applied
+python manage.py migrate <app> <number>              # roll one app back
+```
+
+**Commit a migration in the same commit as the model change that caused it.** A model change
+without its migration is a broken tree for everyone else; `makemigrations --check --dry-run` is the
+guard, and there is a test enforcing it (`config/tests/test_settings.py`,
+`MigrationStateTests`).
+
+The domain apps have no models yet, so `makemigrations` correctly reports **`No changes
+detected`**. `apps.core.models.TimeStampedModel` is abstract and produces no migration either. Do
+**not** hand-write an empty initial migration to make the tree look complete — the first real
+migration arrives with the first domain model.
+
 ---
 
 ## 4. Frontend setup
@@ -207,6 +230,107 @@ restarting the Vite dev server.
 
 ---
 
+## API conventions
+
+Every response from the `/api/` tree — success or failure — has the same four top-level keys.
+All four are always present, so a client discriminates on `success` without probing for optional
+keys.
+
+### Success
+
+`GET /api/health/`:
+
+```json
+{
+  "success": true,
+  "data": { "status": "ok", "database": "ok" },
+  "error": null,
+  "meta": null
+}
+```
+
+### Error
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "validation_error",
+    "message": "The submitted data is invalid.",
+    "fields": { "email": ["Enter a valid email address."] }
+  },
+  "meta": null
+}
+```
+
+`error.fields` is **always an object** — empty for errors that are not field-scoped, and
+`{"non_field_errors": [...]}` when a validation error has no field to attach to. Client code never
+needs a null check on it.
+
+### Paginated
+
+```json
+{
+  "success": true,
+  "data": [ { "id": 1 }, { "id": 2 } ],
+  "error": null,
+  "meta": {
+    "pagination": {
+      "count": 137,
+      "page": 2,
+      "page_size": 25,
+      "num_pages": 6,
+      "next": "http://localhost:8000/api/tickets/?page=3",
+      "previous": "http://localhost:8000/api/tickets/?page=1"
+    }
+  }
+}
+```
+
+The pagination block lives under `meta`, **not** at the top level — DRF's default flat
+`{count, next, previous, results}` shape is deliberately replaced. `?page_size=` is accepted up to
+`DRF_MAX_PAGE_SIZE`; larger values are clamped, not rejected.
+
+### Error codes
+
+| `error.code` | HTTP |
+|---|---|
+| `validation_error` | 400 |
+| `parse_error` | 400 |
+| `not_authenticated` | 401 |
+| `authentication_failed` | 401 |
+| `permission_denied` | 403 |
+| `not_found` | 404 |
+| `method_not_allowed` | 405 |
+| `not_acceptable` | 406 |
+| `unsupported_media_type` | 415 |
+| `throttled` | 429 |
+| `internal_error` | 500 |
+
+### The rule for view authors
+
+**Return plain payloads. Never build an envelope in a view.**
+
+`apps.core.renderers.EnvelopeJSONRenderer` wraps every success and
+`apps.core.exceptions.envelope_exception_handler` wraps every error, so a hand-built envelope is
+passed straight through and the shape drifts. Raise DRF exceptions
+(`NotFound`, `ValidationError`, `PermissionDenied`) rather than returning hand-made error bodies.
+`apps/core/views.py::HealthView` is the reference implementation.
+
+Two more notes:
+
+- **`error.debug` appears only when `DEBUG` is true.** It carries the exception repr and traceback
+  for unhandled server errors so a developer is not left guessing. Client code must never depend on
+  it — it is absent in production by design.
+- **The envelope covers the `/api/` tree, not the whole app.** Failures raised outside a DRF view —
+  in middleware, in `/admin/`, or in a plain Django view — return Django's normal HTML error page,
+  because DRF's exception handler is never consulted there. Unmatched paths *under* `/api/` are
+  handled: `config/api_urls.py` routes them through `ApiNotFoundView` so a typo'd endpoint still
+  answers with an enveloped 404 rather than HTML.
+
+---
+
 ## Environment variables
 
 `.env` files are git-ignored. **`.env.example` is the contract:** when you add a variable, add it
@@ -231,6 +355,10 @@ developer discovers it.
 | `JWT_SIGNING_KEY` | no | `DJANGO_SECRET_KEY` | JWT signing key. Read now, consumed once JWT auth lands. |
 | `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` | no | `15` | Access-token lifetime. |
 | `JWT_REFRESH_TOKEN_LIFETIME_DAYS` | no | `7` | Refresh-token lifetime. |
+| `CORS_ALLOWED_ORIGINS` | no | `http://localhost:5173,http://127.0.0.1:5173` | Origins allowed to call the API from a browser. |
+| `CORS_ALLOW_CREDENTIALS` | no | `True` | Allow cookies/auth headers on cross-origin requests. |
+| `DRF_PAGE_SIZE` | no | `25` | Default page size for list endpoints. |
+| `DRF_MAX_PAGE_SIZE` | no | `100` | Ceiling for the `?page_size=` query parameter. |
 | `DJANGO_SECURE_SSL_REDIRECT` | no | `True` | **Prod only.** Redirect HTTP to HTTPS. |
 | `DJANGO_SECURE_HSTS_SECONDS` | no | `31536000` | **Prod only.** HSTS max-age. |
 
@@ -308,6 +436,20 @@ dev server manually.
 
 **`Error: That port is already in use.` / Vite quietly starts on 5174**
 Another process holds `8000` or `5173`. See [step 5](#5-run-both-apps-together).
+
+**`ModuleNotFoundError: No module named 'customers'` (or any other app name) at startup**
+That app's `apps.py` still has `startapp`'s generated `name = "customers"`. Because the apps live
+under the `apps` package it must be `name = "apps.customers"`. See `backend/apps/README.md`.
+
+**A request from the browser fails with a CORS error but `curl` works fine**
+`corsheaders.middleware.CorsMiddleware` must be the **first** entry in `MIDDLEWARE`. Below
+`CommonMiddleware` it still boots and still passes the backend tests, then fails only in a real
+browser. Add the calling origin to `CORS_ALLOWED_ORIGINS` if it is not `localhost:5173`.
+
+**An `/api/` request returns HTML instead of JSON**
+Unmatched paths under `/api/` are routed through `ApiNotFoundView` and answer with an enveloped
+404, so HTML means the failure happened outside a DRF view — middleware, `/admin/`, or a plain
+Django view. That is expected; see § API conventions.
 
 **`.squad/` files appear to be missing from git**
 Intentional. `.squad/secrets.yaml`, `.squad/runs/`, `.squad/.trash/`, and story `attachments/`

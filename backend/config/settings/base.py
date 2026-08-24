@@ -29,17 +29,43 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 
 # Application definition
 
-INSTALLED_APPS = [
+DJANGO_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Domain apps are added by FND-2. Do not add them here.
 ]
 
+THIRD_PARTY_APPS = [
+    "rest_framework",
+    "corsheaders",
+]
+
+# Domain apps: one per business area. See backend/apps/README.md for the rule
+# that decides where new code goes.
+LOCAL_APPS = [
+    "apps.core",
+    "apps.accounts",
+    "apps.organization",
+    "apps.customers",
+    "apps.tickets",
+    "apps.communications",
+    "apps.agents",
+    "apps.sla",
+    "apps.knowledge_base",
+    "apps.portal",
+    "apps.reports",
+    "apps.ai",
+    "apps.integrations",
+]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
 MIDDLEWARE = [
+    # Must sit above CommonMiddleware so preflight responses are not rewritten.
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -129,3 +155,42 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 JWT_SIGNING_KEY = env("JWT_SIGNING_KEY", default="").strip() or SECRET_KEY
 JWT_ACCESS_TOKEN_LIFETIME_MINUTES = env.int("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=15)
 JWT_REFRESH_TOKEN_LIFETIME_DAYS = env.int("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=7)
+
+
+# --- CORS ---------------------------------------------------------------
+# The Vite dev server runs on a different origin from Django, so the browser
+# needs these headers to let the frontend call the API at all.
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173", "http://127.0.0.1:5173"]
+)
+CORS_ALLOW_CREDENTIALS = env.bool("CORS_ALLOW_CREDENTIALS", default=True)
+
+
+# --- DRF ----------------------------------------------------------------
+# The renderer and the exception handler together are the `API` contract: every
+# response body — success or failure — leaves this app in envelope form.
+# BrowsableAPIRenderer is deliberately absent: a browser hitting an API URL gets
+# a 406 in envelope form rather than an HTML page that bypasses the contract.
+DRF_PAGE_SIZE = env.int("DRF_PAGE_SIZE", default=25)
+DRF_MAX_PAGE_SIZE = env.int("DRF_MAX_PAGE_SIZE", default=100)
+
+REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": [
+        "apps.core.renderers.EnvelopeJSONRenderer",
+    ],
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+    ],
+    "EXCEPTION_HANDLER": "apps.core.exceptions.envelope_exception_handler",
+    "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPageNumberPagination",
+    "PAGE_SIZE": DRF_PAGE_SIZE,
+    # AUTH-1 fills in authentication; AUTH-2 tightens permissions to
+    # IsAuthenticated and audits every view. Until then the API is
+    # deliberately open — any endpoint added before AUTH-2 must set
+    # permission_classes explicitly on its own view.
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+    "TEST_REQUEST_DEFAULT_FORMAT": "json",
+}
