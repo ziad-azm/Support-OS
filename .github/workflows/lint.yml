@@ -46,5 +46,7 @@ jobs:
         run: npm run lint
       - name: prettier --check
         run: npm run format:check
+      - name: check:rtl (logical CSS properties)
+        run: npm run check:rtl
       - name: build (typechecks via tsc -b)
         run: npm run build

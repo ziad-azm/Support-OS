@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next'
 
 import type { ApiRequestError } from '@/shared/lib/api/errors'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/primitives/alert'
+import { Button } from '@/shared/ui/primitives/button'
 
 /**
- * Minimal, near-unstyled error state. UI-1 replaces the internals with a
- * shadcn/Tailwind treatment without changing this component's props.
+ * Restyled by Story 06 with the shadcn/Tailwind treatment. Props unchanged
+ * from Story 03.
  *
  * `error.debug` (traceback) renders only when present — the backend sends it
  * only under DEBUG=True. Never render it unconditionally.
@@ -19,20 +21,28 @@ export function ErrorState({ error, onRetry }: { error: ApiRequestError; onRetry
   const message = t(`errors:${error.code}`, { defaultValue: error.message })
 
   return (
-    <div role="alert">
-      <p>{message}</p>
-      {onRetry ? (
-        <button type="button" onClick={onRetry}>
-          {t('actions.retry')}
-        </button>
-      ) : null}
-      {error.debug ? (
-        <details>
-          <summary>{t('debug.details')}</summary>
-          <pre>{error.debug.exception}</pre>
-          <pre>{error.debug.traceback.join('\n')}</pre>
-        </details>
-      ) : null}
-    </div>
+    <Alert variant="destructive">
+      <AlertTitle>{message}</AlertTitle>
+      <AlertDescription>
+        {onRetry ? (
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+            {t('actions.retry')}
+          </Button>
+        ) : null}
+        {error.debug ? (
+          <details>
+            <summary>{t('debug.details')}</summary>
+            {/* A stack trace is code — bidi reordering of an RTL document
+                makes it unreadable without an explicit dir. See CONVENTIONS.md §18. */}
+            <pre dir="ltr" className="overflow-x-auto text-xs">
+              {error.debug.exception}
+            </pre>
+            <pre dir="ltr" className="overflow-x-auto text-xs">
+              {error.debug.traceback.join('\n')}
+            </pre>
+          </details>
+        ) : null}
+      </AlertDescription>
+    </Alert>
   )
 }

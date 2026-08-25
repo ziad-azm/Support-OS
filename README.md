@@ -271,6 +271,21 @@ to add a translation namespace for a new feature.
 
 ---
 
+## Design system
+
+SupportOS uses Tailwind CSS v4 and shadcn/ui. Add a new primitive with `npx shadcn@latest add
+<name>` from `frontend/` — the CLI writes into `frontend/src/shared/ui/primitives/` per
+`frontend/components.json`. After every `shadcn add`, run `npm run check:rtl`: shadcn's generated
+components are not RTL-clean, and this script is the CI gate that catches a physical (left/right)
+CSS property before it ships.
+
+A light/dark/system theme toggle sits next to the language switcher; the choice persists across
+reloads with no flash, the same way the language choice does. See `CONVENTIONS.md` § 19 for the
+full design-system rules, including why `@tanstack/react-table` and `sonner` are deliberately not
+installed.
+
+---
+
 ## API conventions
 
 Every response from the `/api/` tree — success or failure — has the same four top-level keys.

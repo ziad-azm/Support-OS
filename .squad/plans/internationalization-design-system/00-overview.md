@@ -7,6 +7,7 @@ Entry point for the **internationalization-design-system** feature. Stories exec
 | NN | File | Title | Tracker id | Depends on |
 |----|------|-------|------------|------------|
 | 05 | [05-story-i18n-rtl-foundation-SUPPORTOS-9.md](05-story-i18n-rtl-foundation-SUPPORTOS-9.md) | Internationalization & RTL Foundation | SUPPORTOS-9 | Stories 03, 04 |
+| 06 | [06-story-design-system-shared-components-SUPPORTOS-11.md](06-story-design-system-shared-components-SUPPORTOS-11.md) | Design System & Shared Components | SUPPORTOS-11 | Stories 03, 04, 05 |
 
 ## Dependency notes
 
@@ -16,17 +17,19 @@ The whole epic depends on EPIC 0 being complete — see [`../project-foundation-
 
 Sequencing inside the epic is fixed by the backlog's own dependency lines:
 
-`I18N-1` (story 05) → `UI-1` → `FORM-1`
+`I18N-1` (story 05) → `UI-1` (story 06) → `FORM-1`
 
 **I18N-1 must come first.** UI-1 depends on FND-3 *and* I18N-1, and FORM-1 depends on UI-1 *and* I18N-1. That ordering is why story 05 cannot install Tailwind even though its intake mentions "Tailwind logical properties usage" — Tailwind belongs to UI-1, which comes after. Story 05 instead writes the logical-property rule into `CONVENTIONS.md` § 18 as the binding constraint UI-1 must follow.
+
+**That constraint paid off, and it is why story 06 is shaped the way it is.** Story 06 verified that shadcn's own generated components break § 18 in nine of twelve files. Because the rule was already written down — and because story 06 turns it into a CI gate (`npm run check:rtl`) rather than another convention — the violations are a fifteen-row sweep with a machine check behind it, not something discovered later by an Arabic-speaking user.
 
 **Shared specs produced here:**
 
 | Spec | Established by | What it fixes |
 |---|---|---|
 | `I18N` | Story 05 | i18next with per-feature namespaces, a compile-time-typed `t()`, `<html dir>`/`lang` driven by the active language, a persisted language switcher, and locale-bound date/number/currency helpers. |
-| `UI` | UI-1 | Not yet planned. Tailwind + shadcn/ui, theme tokens, shared primitives, and the standard loading/empty/error/confirm states. |
-| `FORM` | FORM-1 | Not yet planned. React Hook Form + Zod as the single forms/validation approach, with localised messages via `I18N`. |
+| `UI` | Story 06 | Tailwind CSS v4 (CSS-first tokens, no JS config) + shadcn/ui under `shared/ui/primitives/`, a light/dark/system theme, the Radix `DirectionProvider` bridge, restyled story-03 state components with unchanged props, a `useConfirm()` pattern, and one server-driven `DataTable`. |
+| `FORM` | FORM-1 | Not yet planned. React Hook Form + Zod as the single forms/validation approach, with localised messages via `I18N`. Story 06 hands it `Input`, `Label`, and `Select` — and the warning that `Select` is not a native form control and integrates through RHF's `Controller`, not `register()`. |
 
 **Cross-story contracts set by story 05:**
 
@@ -46,4 +49,26 @@ Sequencing inside the epic is fixed by the backlog's own dependency lines:
 - **`react/jsx-no-literals` is a partial net.** Isolated in a scratch file, it flags direct JSX children only — 1 of 4 patterns. It misses `{cond ? <p>text</p> : null}`, `{cond && <p>text</p>}`, and `{'text'}`. Story 05 therefore enumerates the hardcoded-string inventory by hand rather than trusting the linter.
 - **Arabic numerals depend on the locale tag.** Bare `'ar'` resolves to Western digits and the Gregorian calendar; `'ar-EG'` and `'ar-SA'` resolve to Arabic-Indic digits. Story 05 pins `numberingSystem: 'latn'` and `calendar: 'gregory'` on every `Intl` call so output cannot drift with the browser's ICU build. **This is a product decision** — reversing it is a one-line change documented in the plan.
 
-**Note on testing:** per standing project policy this project authors no automated tests. Story 05 adds none; its checks are `npm run build` (which typechecks every `t()` key), `npm run lint`, and the greps in its Verification Steps.
+**Cross-story contracts set by story 06:**
+
+- **`shared/ui/primitives/` is CLI-managed; everything else in `shared/ui/` is ours.** The directory split is what lets shadcn's lowercase-kebab file names coexist with `CONVENTIONS.md` § 2's `PascalCase.tsx` rule without breaking `shadcn add`/`shadcn diff`.
+- **Tokens are the single styling source.** Tailwind v4 is CSS-first — `@theme inline` in `src/index.css`, no `tailwind.config.js`. No colour literal outside the `:root`/`.dark` blocks.
+- **Two document-level writers, one attribute each.** `shared/i18n/direction.ts` owns `<html dir>`/`<html lang>`; `shared/theme/theme.ts` owns `<html class="dark">`. Both are mirrored by the inline anti-FOUC script in `index.html`.
+- **Radix direction comes from a React context, not the DOM.** `Direction.DirectionProvider` in `app/providers.tsx` is mandatory and its absence is invisible in English.
+- **The story-03 state components' props are frozen.** `Loading`, `Empty`, `ErrorState`, and `QueryBoundary` were restyled without a prop change, so anything written against them still works.
+- **One table pattern, server-driven.** `?page=` / `?page_size=` / `?ordering=field|-field`. A `ColumnDef<T>`'s `id` doubles as the ordering field name and must match the serializer field.
+- **`npm run check:rtl` is a CI gate**, not a convention — the first machine check of § 18's logical-property rule.
+
+**Verified findings that shaped story 06:**
+
+- **Radix is LTR-blind without a `DirectionProvider`.** Read from the installed `@radix-ui/react-direction`: `useDirection()` returns `localDir || globalDir || 'ltr'` and never inspects the DOM. `<html dir="rtl">` alone buys Radix nothing — Select, DropdownMenu, and Tabs keep LTR keyboard and placement behaviour in Arabic, silently.
+- **shadcn's registry output is not RTL-clean.** All twelve planned entries were fetched from `ui.shadcn.com/r/styles/new-york-v4/` and grepped: **9 of 12** ship physical direction classes (`text-left`, `pl-8`, `right-2`, `ml-auto`, `-right-1`), 7 ship a pointless `"use client"`, and `dialog.tsx` ships two hardcoded `Close` literals that fail `react/jsx-no-literals`. Story 06 enumerates all fifteen fixes by file and site.
+- **One physical idiom must stay physical.** `left-[50%]` + `translate-x-[-50%]` overlay centring is symmetric; `start-[50%]` would push every dialog off-screen in Arabic, because `start` flips with direction and `translate-x` does not.
+- **`radix-ui` is one package with one export path.** The registry imports `{ Slot }` / `{ Dialog as DialogPrimitive }` from `radix-ui`, not from `@radix-ui/react-*`. Mixing the two ships two `DirectionContext` instances, so a provider from one is invisible to a consumer from the other.
+- **TanStack Table was rejected, with reasons.** Pagination and sorting are server-side (`apps/core/pagination.py`, `api.getPage`), so its client-side row models are the part we must not use — and `@tanstack/react-table@9.1.2` is a rewrite (`useTable` + `tableFeatures()`, plus a `@tanstack/react-store` runtime dependency). The intake asked for "the primitives + **TanStack Query** conventions" and never named TanStack Table.
+- **`sonner` was rejected too.** `shared/ui/toast/toastSink.ts` is how `createQueryClient`'s `onError` reaches a toast from outside React; sonner has no equivalent seam. The existing provider is restyled instead, and dark mode gets a 60-line `shared/theme/` module rather than `next-themes`.
+- **`?ordering=` was a fiction.** `REST_FRAMEWORK` had no `DEFAULT_FILTER_BACKENDS`, so the param would have been silently ignored. Story 06 adds `rest_framework.filters.OrderingFilter` — one key, no new dependency, inert until a list view exists.
+
+**Note on testing:** per standing project policy this project authors no automated tests. Stories 05 and 06 add none. Story 05's checks are `npm run build` (which typechecks every `t()` key), `npm run lint`, and the greps in its Verification Steps; story 06 adds `npm run check:rtl` as a real CI gate and leans on bilingual, bi-directional, bi-theme manual walkthroughs for everything a static check cannot see.
+
+**Known gap carried out of story 06:** `DataTable` ships with **no production consumer**, because no paginated endpoint exists yet. `npm run build` proves the generic contract typechecks and a throwaway harness proves it renders, but the first list feature is where it earns its keep — and where it will likely need adjustment.

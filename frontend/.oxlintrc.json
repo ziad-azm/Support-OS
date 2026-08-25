@@ -39,6 +39,12 @@
       "rules": {
         "no-restricted-imports": "off"
       }
+    },
+    {
+      "files": ["**/shared/ui/primitives/**"],
+      "rules": {
+        "react/only-export-components": "off"
+      }
     }
   ]
 }

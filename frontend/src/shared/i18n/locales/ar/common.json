@@ -4,7 +4,10 @@
     "retry": "إعادة المحاولة",
     "reload": "إعادة التحميل",
     "dismiss": "إغلاق",
-    "goHome": "الذهاب إلى الصفحة الرئيسية"
+    "goHome": "الذهاب إلى الصفحة الرئيسية",
+    "close": "إغلاق",
+    "confirm": "تأكيد",
+    "cancel": "إلغاء"
   },
   "states": {
     "loading": "جارٍ التحميل…",
@@ -17,5 +20,26 @@
     "notFound": "الصفحة غير موجودة."
   },
   "debug": { "details": "تفاصيل التصحيح" },
-  "language": { "label": "اللغة", "en": "English", "ar": "العربية" }
+  "language": { "label": "اللغة", "en": "English", "ar": "العربية" },
+  "theme": {
+    "label": "المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "النظام"
+  },
+  "table": {
+    "sortAscending": "الترتيب تصاعديًا",
+    "sortDescending": "الترتيب تنازليًا",
+    "clearSort": "إلغاء الترتيب",
+    "noResults": "لا توجد نتائج.",
+    "previousPage": "الصفحة السابقة",
+    "nextPage": "الصفحة التالية",
+    "pageOf": "صفحة {{page}} من {{total}}",
+    "rowCount_zero": "لا توجد نتائج",
+    "rowCount_one": "نتيجة واحدة",
+    "rowCount_two": "نتيجتان",
+    "rowCount_few": "{{displayCount}} نتائج",
+    "rowCount_many": "{{displayCount}} نتيجة",
+    "rowCount_other": "{{displayCount}} نتيجة"
+  }
 }

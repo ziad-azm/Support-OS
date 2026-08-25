@@ -201,6 +201,14 @@ REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
     ],
+    # OrderingFilter is what makes the frontend's `?ordering=field` /
+    # `?ordering=-field` contract real — see CONVENTIONS.md §19 and
+    # frontend/src/shared/ui/data-table/useServerTable.ts. Inert until a list
+    # view exists: a view must declare `ordering_fields` (or the filter falls
+    # back to its serializer's fields) before any column becomes sortable.
+    "DEFAULT_FILTER_BACKENDS": [
+        "rest_framework.filters.OrderingFilter",
+    ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.envelope_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPageNumberPagination",
     "PAGE_SIZE": DRF_PAGE_SIZE,

@@ -17,6 +17,16 @@
           document.documentElement.lang = 'ar'
           document.documentElement.dir = 'rtl'
         }
+        // Same idea, for theme: set .dark before first paint. The bundle
+        // re-applies this authoritatively at boot (shared/theme/theme.ts).
+        // Key must match THEME_STORAGE_KEY in src/shared/theme/config.ts.
+        var theme = window.localStorage.getItem('supportos.theme')
+        if (
+          theme === 'dark' ||
+          (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        ) {
+          document.documentElement.classList.add('dark')
+        }
       } catch (e) {}
     </script>
   </head>

@@ -41,7 +41,11 @@ not tutorials — read them for the actual placement rule.
 - **TypeScript:** `PascalCase` for components and types, `camelCase` for
   functions/variables, `UPPER_SNAKE` for module-level constants.
 - **Files:** React components `PascalCase.tsx`; everything else `camelCase.ts`.
-  Hooks start with `use`. Backend modules `snake_case.py`.
+  Hooks start with `use`. Backend modules `snake_case.py`. **One scoped
+  exception:** files under `frontend/src/shared/ui/primitives/` keep the
+  shadcn registry's own lowercase-kebab names (`dropdown-menu.tsx`), because
+  renaming them breaks `shadcn add` and `shadcn diff`. Everything we author —
+  including everything else in `shared/ui/` — is `PascalCase.tsx`.
 - **No abbreviations** that are not already in the domain vocabulary — `sla` is
   fine (it is a domain term), `cust` is not.
 
@@ -81,8 +85,12 @@ Consuming the API from the frontend. Two rules that are easy to break:
 
 ## 5. Error, loading & empty states
 
-Use `frontend/src/shared/ui/QueryBoundary.tsx` for every query result. Never
-hand-roll an `isPending`/`isError` branch in a feature.
+`QueryBoundary` for a single-resource query; `DataTable`
+(`shared/ui/data-table/`) for a paginated list. `DataTable` does not wrap
+`QueryBoundary` because `QueryBoundary`'s branches return a `<div>`, which is
+not a valid child of `<tbody>` — it renders the same `Loading`/`Empty`/
+`ErrorState` inside a `<TableCell colSpan>` instead. Either way, **never
+hand-roll an `isPending`/`isError` branch in a feature.**
 
 ---
 
@@ -97,12 +105,12 @@ validation approach ahead of FORM-1.
 
 ## 7. Reusable components
 
-`UI` (Tailwind + shadcn/ui) is defined by **UI-1**, not yet planned.
-
-Until then: `frontend/src/shared/ui/` holds minimal, near-unstyled
-components. UI-1 will replace their internals with shadcn primitives
-**without changing their props**, so build against them now — the props are
-the stable contract.
+`UI` is Tailwind CSS v4 + shadcn/ui, established by story 06 and specified in
+§ 19. `frontend/src/shared/ui/` is the reuse-first home: `primitives/` is the
+CLI-managed shadcn set, everything above it is ours. Features compose these;
+they never restyle a primitive or hand-build a button, dialog, or table. The
+props of `Loading`, `Empty`, `ErrorState`, and `QueryBoundary` are a **stable
+contract** — story 06 restyled all four without changing one.
 
 ---
 
@@ -354,3 +362,112 @@ is the source of record until then.
 The moment an API response carries user-facing prose (not just machine
 codes like `health.status`), `language` must join that query's key, or a
 cached response keeps showing stale-language text after a switch.
+
+---
+
+## 19. Design system, theming & data tables
+
+**Tailwind v4 is CSS-first.** Tokens live in `@theme inline` in
+`frontend/src/index.css`; there is no `tailwind.config.js` and adding one
+creates a second source of truth. Every colour, radius, and font stack comes
+from a token — no hex, `rgb()`, `oklch()`, or bare `px` in a component.
+
+**Where a component goes:** `shared/ui/primitives/` is CLI-managed
+(`npx shadcn@latest add <name>`), lowercase-kebab, and locally patched — see
+below. `shared/ui/` is ours, `PascalCase.tsx`. `components.json` redirects the
+CLI's `@/components/ui` and `@/lib/utils` defaults; **do not** let a
+`shadcn add` recreate a top-level `components/` or `lib/`.
+
+**Registry output is not RTL-clean, and every patched file says so in a
+header comment.** Verified against the live registry: 9 of 12 components
+shipped physical direction classes, 3 shipped `"use client"`, and
+`dialog.tsx` shipped two hardcoded English strings. **After every
+`shadcn add`, run `npm run check:rtl` and re-read the new file for JSX
+literals.** `shadcn diff` will always report the patched files as changed.
+
+**The one sanctioned physical idiom:** `left-[50%]` + `translate-x-[-50%]`
+overlay centring, because it is symmetric. `start-[50%]` would break it —
+`start` flips with direction, `translate-x` does not.
+`scripts/check-rtl.mjs` allowlists exactly this, and nothing else.
+
+**Radix reads direction from a React context, never from `<html dir>`.**
+Verified: `useDirection()` in `@radix-ui/react-direction` falls back to the
+literal `'ltr'`. `Direction.DirectionProvider` in `app/providers.tsx`, fed by
+`shared/i18n/useDirection.ts`, is what makes Select/DropdownMenu/Tabs behave
+in Arabic. **Remove it and every primitive silently reverts to LTR keyboard
+and placement behaviour with no error and no visual clue in English.**
+
+**Directional icons mirror; non-directional icons do not.** Chevrons and
+arrows flip (`rtl:rotate-180`, or swap the icon). Checkmarks, spinners, and
+X's do not. There is no blanket `[dir=rtl] svg { transform: scaleX(-1) }` and
+there must not be.
+
+**Two document-level writers, one attribute each.**
+`shared/i18n/direction.ts` owns `<html dir>` and `<html lang>`.
+`shared/theme/theme.ts` owns `<html class="dark">`. No component writes
+either. Both are mirrored by the inline anti-FOUC script in `index.html`, and
+**all four copies of the two storage keys are commented as needing to stay in
+sync**.
+
+**Toast stays ours, and why.** `sonner` is not installed:
+`shared/ui/toast/toastSink.ts` is how `createQueryClient`'s `onError` reaches
+a toast from outside React, and it has no sonner equivalent. `useToast()` and
+`pushToast()` are the API; the renderer behind them may change.
+
+**`useConfirm()`** returns `Promise<boolean>` and resolves `false` on cancel,
+`Escape`, and overlay dismiss. Copy is passed in already translated — the
+module never guesses. Same Context/Provider/hook/types shape as
+`shared/ui/toast/`.
+
+**`DataTable` is the only table pattern.** Sorting and pagination are
+**server-side**: `?page=`, `?page_size=`, and `?ordering=field` / `-field`
+(DRF's `OrderingFilter`, enabled in `REST_FRAMEWORK.DEFAULT_FILTER_BACKENDS`).
+A `ColumnDef<T>`'s `id` doubles as the ordering field name and must match the
+serializer field. `@tanstack/react-table` is **not** installed and must not
+be added to get client-side models we would bypass — pagination and sorting
+here are server-side, and `@tanstack/react-table@9.1.2` is a rewrite
+(`useTable` + `tableFeatures()`, plus a `@tanstack/react-store` runtime
+dependency).
+
+Worked example:
+
+```tsx
+const { page, sort, params, setPage, setSort } = useServerTable({ pageSize: 25 })
+const query = useQuery({
+  queryKey: ticketKeys.resource('list', params),
+  queryFn: () => api.getPage<Ticket>('/tickets/', { params }),
+})
+
+const columns: ColumnDef<Ticket>[] = [
+  { id: 'subject', header: t('tickets:subject'), cell: (row) => row.subject, sortable: true },
+  {
+    id: 'created_at',
+    header: t('tickets:createdAt'),
+    cell: (row) => date(row.created_at),
+    sortable: true,
+    align: 'end',
+  },
+]
+
+<DataTable
+  columns={columns}
+  query={query}
+  rowKey={(row) => String(row.id)}
+  sort={sort}
+  onSortChange={setSort}
+  onPageChange={setPage}
+  caption={t('tickets:listCaption')}
+/>
+```
+
+**Changing the sort resets to page 1.** Page 2 of a re-ordered result set is
+a different set of rows — `useServerTable.setSort` does this automatically.
+
+**A stack trace or any Latin-only code run inside an RTL document needs
+`dir="ltr"`** on its element. `ErrorState`'s `<pre>` is the worked example,
+and it is the first real instance of § 18's bidi rule.
+
+**Cross-reference forward:** `Select`, `Input`, and `Label` ship as
+primitives here. FORM-1 binds them to React Hook Form + Zod; **`Select` is
+not a native form control** and integrates through `Controller`, not
+`register()`.

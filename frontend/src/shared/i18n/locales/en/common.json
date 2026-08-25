@@ -1,6 +1,14 @@
 {
   "app": { "name": "SupportOS" },
-  "actions": { "retry": "Retry", "reload": "Reload", "dismiss": "Dismiss", "goHome": "Go home" },
+  "actions": {
+    "retry": "Retry",
+    "reload": "Reload",
+    "dismiss": "Dismiss",
+    "goHome": "Go home",
+    "close": "Close",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
   "states": {
     "loading": "Loading…",
     "empty": { "title": "Nothing here yet" },
@@ -12,5 +20,22 @@
     "notFound": "Page not found."
   },
   "debug": { "details": "Debug details" },
-  "language": { "label": "Language", "en": "English", "ar": "العربية" }
+  "language": { "label": "Language", "en": "English", "ar": "العربية" },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "table": {
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending",
+    "clearSort": "Clear sorting",
+    "noResults": "No results.",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pageOf": "Page {{page}} of {{total}}",
+    "rowCount": "{{displayCount}} result",
+    "rowCount_other": "{{displayCount}} results"
+  }
 }

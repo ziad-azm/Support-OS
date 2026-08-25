@@ -2,33 +2,42 @@ import { useTranslation } from 'react-i18next'
 
 import { SUPPORTED_LANGUAGES } from '@/shared/i18n/config'
 import type { Language } from '@/shared/i18n/config'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/primitives/select'
 
 /**
- * Minimal, near-unstyled language switcher. UI-1 replaces the internals with a
- * shadcn/Tailwind treatment without changing this component's props.
+ * Restyled by Story 06 with the shadcn `Select` primitive. Props unchanged
+ * from Story 03 (zero props).
  *
- * A native <select> is keyboard- and screen-reader-correct with no extra
- * work. This component never touches localStorage or document.documentElement
- * itself — i18next's detector persists the choice and
- * `shared/i18n/direction.ts` flips `dir`. Two writers of the same state is
- * how they drift.
+ * `Select` is not a native form control — FORM-1 integrates it through React
+ * Hook Form's `Controller`, not `register()`. This component never touches
+ * localStorage or document.documentElement itself — i18next's detector
+ * persists the choice and `shared/i18n/direction.ts` flips `dir`. Two writers
+ * of the same state is how they drift.
  */
 export function LanguageSwitcher() {
   const { t, i18n } = useTranslation()
 
   return (
-    <label>
-      {t('language.label')}
-      <select
-        value={i18n.resolvedLanguage ?? i18n.language}
-        onChange={(event) => void i18n.changeLanguage(event.target.value as Language)}
-      >
+    <Select
+      value={i18n.resolvedLanguage ?? i18n.language}
+      onValueChange={(next) => void i18n.changeLanguage(next as Language)}
+    >
+      <SelectTrigger aria-label={t('language.label')} size="sm">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
         {SUPPORTED_LANGUAGES.map((code) => (
-          <option key={code} value={code}>
+          <SelectItem key={code} value={code}>
             {t(`language.${code}`)}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-    </label>
+      </SelectContent>
+    </Select>
   )
 }

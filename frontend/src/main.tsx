@@ -2,9 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
 
-// Side-effect import: must run before any component calling useTranslation()
-// is imported, or the first render sees an uninitialised i18next instance.
+// Side-effect imports: must run before any component calling useTranslation()
+// or useTheme() is imported, or the first render sees an uninitialised
+// i18next instance / stale theme class.
 import './shared/i18n'
+import './shared/theme'
 
 import { AppProviders } from './app/providers'
 import { router } from './app/router'

@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { Card, CardContent } from '@/shared/ui/primitives/card'
+
 /**
- * Minimal, near-unstyled empty state. UI-1 replaces the internals with a
- * shadcn/Tailwind treatment without changing this component's props.
+ * Restyled by Story 06 with the shadcn/Tailwind treatment. Props unchanged
+ * from Story 03. Centred text is symmetric and therefore direction-neutral —
+ * never a physical (left/right) text-alignment utility. See CONVENTIONS.md §19.
  */
 export function Empty({
   title,
@@ -16,10 +19,12 @@ export function Empty({
 }) {
   const { t } = useTranslation()
   return (
-    <div role="status">
-      <p>{title ?? t('states.empty.title')}</p>
-      {description ? <p>{description}</p> : null}
-      {action}
-    </div>
+    <Card role="status">
+      <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
+        <p className="font-medium">{title ?? t('states.empty.title')}</p>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        {action}
+      </CardContent>
+    </Card>
   )
 }
