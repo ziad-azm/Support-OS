@@ -68,6 +68,9 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Must sit after SessionMiddleware and before CommonMiddleware.
+    # Resolves the active language from the Accept-Language header.
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -133,6 +136,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 
 LANGUAGE_CODE = "en-us"
+LANGUAGES = [
+    ("en", "English"),
+    ("ar", "Arabic"),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = env("DJANGO_TIME_ZONE", default="UTC")
 USE_I18N = True
 USE_TZ = True
@@ -164,6 +172,18 @@ CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173", "http://127.0.0.1:5173"]
 )
 CORS_ALLOW_CREDENTIALS = env.bool("CORS_ALLOW_CREDENTIALS", default=True)
+# django-cors-headers' own default list, plus accept-language: the frontend
+# sends it so the backend can localise via LocaleMiddleware (CONVENTIONS.md
+# §18). Verified the default list omits it.
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-language",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 
 # --- DRF ----------------------------------------------------------------

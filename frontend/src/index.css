@@ -21,3 +21,16 @@ body {
     Arial,
     sans-serif;
 }
+
+/* Logical properties only — never `left`/`right`/`margin-left`. A direction
+   flip must need no per-component work. See CONVENTIONS.md §18. */
+
+body {
+  /* `dir` on <html> drives this; do not set direction per component. */
+  text-align: start;
+}
+
+/* Arabic glyphs need a font stack that actually has them. */
+html[lang='ar'] body {
+  font-family: 'Segoe UI', Tahoma, 'Noto Naskh Arabic', system-ui, sans-serif;
+}

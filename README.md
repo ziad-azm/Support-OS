@@ -259,6 +259,18 @@ restarting the Vite dev server.
 
 ---
 
+## Languages
+
+SupportOS supports **English** and **Arabic**. Switch languages with the selector rendered at
+the top of the app; the choice persists across reloads, and layout direction (`ltr`/`rtl`)
+follows the active language automatically — no per-page or per-component work is needed.
+
+Backend error messages localise through the `Accept-Language` header, which the frontend sends
+automatically. See `CONVENTIONS.md` § 18 for the full internationalization rules, including how
+to add a translation namespace for a new feature.
+
+---
+
 ## API conventions
 
 Every response from the `/api/` tree — success or failure — has the same four top-level keys.

@@ -245,3 +245,112 @@ extended and no new test file is added anywhere in the repo.
 - **Frontend:** `frontend/package-lock.json` is committed.
 - Before adding a dependency, check whether an existing one already does the
   job (§0).
+
+---
+
+## 18. Internationalization & RTL
+
+**No hardcoded user-facing strings.** Every one goes in an i18next namespace.
+`react/jsx-no-literals` in `frontend/.oxlintrc.json` only catches **direct
+JSX text children** — verified against the real tree, it flagged 1 of 4
+patterns:
+
+| Pattern | Flagged? |
+|---|---|
+| `<p>text</p>` | **yes** |
+| `{cond ? <p>text</p> : null}` | no |
+| `{cond && <p>text</p>}` | no |
+| `<span>{'text'}</span>` | no |
+
+Do not assume lint catches everything — conditional rendering is ubiquitous
+and this rule misses all of it. Grep by hand when in doubt.
+
+**Namespaces.** `common` and `errors` are shared, at
+`frontend/src/shared/i18n/locales/{en,ar}/`. Each feature owns
+`src/features/<feature>/locales/{en,ar}.json` and registers them in
+`src/shared/i18n/resources.ts`. Adding a feature = adding its namespace
+files plus one line per language in `resources.ts`.
+
+**Every key in `en` must exist in `ar`.** `en` is the typed source of
+truth — `CustomTypeOptions.resources` in `i18next.d.ts` is derived from the
+`en` map, so a key that exists only in `ar` typechecks fine and is simply
+unreachable. A missing `ar` key falls back silently to English with no
+warning; compare key sets by hand (see the plan's Verification Step 3) when
+adding a namespace.
+
+**What stays in English:** logs (`shared/lib/logger.ts`), programmer errors
+thrown at development time (e.g. `useToast()` used outside its provider),
+and pre-i18n setup failures (`config/env.ts` — thrown before i18next can
+even initialise). Nobody but a developer reads these.
+
+**Errors translate by `code`, never by message.** The API layer
+(`shared/lib/api/{errors,client,queryClient}.ts`) is not React and its
+modules are evaluated once, so translating a message at module scope would
+freeze it at import time and never update on a language switch.
+`ApiRequestError` keeps an English `message` as a fallback; the UI looks up
+copy against the `errors` namespace by `code`:
+
+```ts
+const message = t(`errors:${error.code}`, { defaultValue: error.message })
+```
+
+Apply this in a component with `useTranslation()` — never inside the API
+layer itself.
+
+**Direction:** `dir` and `lang` on `<html>` are written by exactly one
+module, `frontend/src/shared/i18n/direction.ts`. No component sets
+`direction` or writes `document.documentElement` itself — including
+`LanguageSwitcher`, which only calls `i18n.changeLanguage()` and lets the
+detector persist the choice and `direction.ts` react to it.
+
+**Logical properties only.** No `left`, `right`, `margin-left`,
+`padding-right`, `text-align: left`, or `text-align: right` anywhere in
+CSS. **The class mapping UI-1 must follow once Tailwind lands:**
+
+| Use | Never use |
+|---|---|
+| `ms-*` / `me-*` | `ml-*` / `mr-*` |
+| `ps-*` / `pe-*` | `pl-*` / `pr-*` |
+| `start-*` / `end-*` | `left-*` / `right-*` |
+| `text-start` / `text-end` | `text-left` / `text-right` |
+| `border-s-*` / `border-e-*` | `border-l-*` / `border-r-*` |
+
+This rule predates Tailwind deliberately — I18N-1 had to land before UI-1
+could, so the constraint is written down here rather than in a Tailwind
+config that does not exist yet.
+
+**Bidirectional text.** An Arabic string containing a Latin run (a product
+name, an email, a ticket ID) can render with confusing punctuation
+placement — this is the Unicode bidi algorithm, not a bug to fix in CSS.
+Where it matters, wrap the Latin run in an element with `dir="ltr"`.
+
+**Formatting:** use `useFormatters()` (`shared/hooks/useFormatters.ts`) in
+components, or the pure functions in `shared/lib/format.ts` elsewhere. Never
+call `Intl` or `toLocaleString` directly in a feature.
+
+Both `numberingSystem` (`latn`) and `calendar` (`gregory`) are pinned
+explicitly on every call for Arabic. Verified: bare `ar` resolves to Western
+digits and the Gregorian calendar, but `ar-EG` and `ar-SA` resolve to
+Arabic-Indic digits — relying on resolution makes output depend on the tag
+and on the browser's ICU build. **This is a product decision, not a
+technical one**, made for a support CRM where Arabic screens mix ticket
+IDs, timestamps, and amounts with Latin-script data. To reverse it: change
+`INTL_LOCALE.ar` in `shared/i18n/config.ts` to `'ar-EG'` and drop
+`numberingSystem` from `format.ts`.
+
+**Backend.** User-facing strings in `apps/core/exceptions.py` use
+`gettext_lazy` (`from django.utils.translation import gettext_lazy as _`),
+never plain `gettext` — a non-lazy call at module scope binds at import
+time and freezes the language. The frontend sends `Accept-Language` from
+the active language on every request (`shared/lib/api/client.ts`).
+
+DRF's and Django's own messages (`NotFound`, `PermissionDenied`, etc.)
+ship pre-compiled Arabic `.mo` files already — verified working. Our own
+custom messages need `python manage.py compilemessages`, which needs GNU
+gettext installed; the committed `.po` at `backend/locale/ar/LC_MESSAGES/`
+is the source of record until then.
+
+**Forward constraint:** TanStack Query keys do not include the language.
+The moment an API response carries user-facing prose (not just machine
+codes like `health.status`), `language` must join that query's key, or a
+cached response keeps showing stale-language text after a switch.

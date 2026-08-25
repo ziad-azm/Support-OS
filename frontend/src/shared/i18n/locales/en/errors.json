@@ -1,0 +1,17 @@
+{
+  "network_error": "Cannot reach the server. Check your connection and try again.",
+  "timeout": "The request timed out. Please try again.",
+  "invalid_envelope": "The server returned an unexpected response.",
+  "unknown_error": "Something went wrong. Please try again.",
+  "validation_error": "The submitted data is invalid.",
+  "parse_error": "The request could not be read.",
+  "not_authenticated": "Please sign in to continue.",
+  "authentication_failed": "Sign-in failed. Check your details and try again.",
+  "permission_denied": "You do not have permission to do that.",
+  "not_found": "That could not be found.",
+  "method_not_allowed": "That action is not allowed here.",
+  "not_acceptable": "The requested format is not available.",
+  "unsupported_media_type": "That file type is not supported.",
+  "throttled": "Too many requests. Please wait and try again.",
+  "internal_error": "Something went wrong on our end. Please try again."
+}

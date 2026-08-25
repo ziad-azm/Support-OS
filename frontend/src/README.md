@@ -39,11 +39,20 @@ folder when it has a component. Do not pre-create empty modules.
 
 ## Reserved directories
 
-- **`src/shared/i18n/`** — reserved for **I18N-1**. Not created by this story;
-  no i18n code exists yet.
 - **`src/shared/ui/`** — UI-1 will replace the internals of these components
   with shadcn primitives **without changing their props**, so features written
   against them today keep working after that story lands.
+
+## Internationalization
+
+`src/shared/i18n/` holds the i18next bootstrap: `config.ts` (the language
+contract), `index.ts` (init), `direction.ts` (the only place `<html
+dir/lang>` is written), `resources.ts` (the namespace registry), and
+`i18next.d.ts` (the typed `t()`). `common`/`errors` locale JSON live under
+`shared/i18n/locales/{en,ar}/`; each feature's own copy lives at
+`src/features/<feature>/locales/{en,ar}.json` and is registered in
+`resources.ts`. See `CONVENTIONS.md` § 18 for the full rules (no hardcoded
+strings, logical CSS properties, locale formatting).
 
 ## The API layer
 
@@ -60,6 +69,9 @@ folder when it has a component. Do not pre-create empty modules.
 - `lib/api/queryKeys.ts` — the `[feature, resource, ...]` key convention.
 - `lib/logger.ts` — the only sanctioned `console.*` access. Never call
   `console.*` directly outside this file.
+- `lib/format.ts` — locale-bound date/number/currency helpers. Prefer the
+  `shared/hooks/useFormatters.ts` hook in components; never call `Intl` or
+  `toLocaleString` directly in a feature.
 
 Features call `api.get/post/put/patch/delete/getPage` and TanStack Query hooks
 built on top of them. No `fetch`, no ad-hoc Axios, ever, in a feature.
@@ -72,3 +84,4 @@ built on top of them. No `fetch`, no ad-hoc Axios, ever, in a feature.
 The full conventions document is [`CONVENTIONS.md`](../../CONVENTIONS.md) (`CONV`)
 and references this file rather than restating it. The response envelope this
 layout serves is documented in the root `README.md` under **API conventions**.
+Internationalization rules are in `CONVENTIONS.md` § 18.

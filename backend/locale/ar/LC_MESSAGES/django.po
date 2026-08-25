@@ -1,0 +1,33 @@
+# Arabic translations for SupportOS's own custom backend messages.
+#
+# DRF's and Django's own messages (NotFound, PermissionDenied, etc.) already
+# ship pre-compiled Arabic .mo files and need no entry here — see
+# CONVENTIONS.md §18. This catalogue covers only the two custom strings in
+# apps/core/exceptions.py.
+#
+# NOTE: GNU gettext (msgfmt) was not available on the machine that authored
+# this file, so it has not been compiled to django.mo. Run
+# `python manage.py compilemessages` once gettext is installed; until then
+# these two messages fall back to their English msgid.
+msgid ""
+msgstr ""
+"Project-Id-Version: SupportOS\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-25 00:00+0000\n"
+"PO-Revision-Date: 2026-08-25 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#: apps/core/exceptions.py
+msgid "The submitted data is invalid."
+msgstr "البيانات المُرسلة غير صالحة."
+
+#: apps/core/exceptions.py
+msgid "An unexpected error occurred."
+msgstr "حدث خطأ غير متوقع."

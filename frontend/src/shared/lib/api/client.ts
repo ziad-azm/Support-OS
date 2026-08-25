@@ -2,6 +2,7 @@ import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 
 import { env } from '@/config/env'
+import { i18next } from '@/shared/i18n'
 
 import { ApiRequestError, toApiRequestError } from './errors'
 import type { ApiEnvelope, ApiMeta, Page } from './types'
@@ -32,6 +33,10 @@ httpClient.interceptors.request.use((config) => {
   const token = tokenProvider()
   if (token) {
     config.headers.set('Authorization', `Bearer ${token}`)
+  }
+  const language = i18next.resolvedLanguage ?? i18next.language
+  if (language) {
+    config.headers.set('Accept-Language', language)
   }
   return config
 })

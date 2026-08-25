@@ -1,10 +1,28 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { logger } from '@/shared/lib/logger'
 
 type Props = { children: ReactNode }
 type State = { hasError: boolean }
+
+/**
+ * The crash fallback, as a function component so it can call
+ * useTranslation() — a class component cannot use hooks. AppErrorBoundary
+ * stays a class for componentDidCatch; only this child needs the hook.
+ */
+function ErrorBoundaryFallback() {
+  const { t } = useTranslation()
+  return (
+    <div role="alert">
+      <p>{t('states.error.render')}</p>
+      <button type="button" onClick={() => window.location.reload()}>
+        {t('actions.reload')}
+      </button>
+    </div>
+  )
+}
 
 /**
  * Catches render-time crashes anywhere below it in the tree — NOT query
@@ -24,14 +42,7 @@ export class AppErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div role="alert">
-          <p>Something went wrong. Please reload the page.</p>
-          <button type="button" onClick={() => window.location.reload()}>
-            Reload
-          </button>
-        </div>
-      )
+      return <ErrorBoundaryFallback />
     }
     return this.props.children
   }

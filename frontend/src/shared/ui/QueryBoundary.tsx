@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { ApiRequestError } from '@/shared/lib/api/errors'
 
@@ -28,13 +29,15 @@ export function QueryBoundary<T>({
   loading,
   empty,
 }: QueryBoundaryProps<T>) {
+  const { t } = useTranslation()
+
   if (query.isPending) return <>{loading ?? <Loading />}</>
 
   if (query.isError) {
     const error =
       query.error instanceof ApiRequestError
         ? query.error
-        : new ApiRequestError({ code: 'unknown_error', message: 'Something went wrong.' })
+        : new ApiRequestError({ code: 'unknown_error', message: t('states.error.generic') })
     return <ErrorState error={error} onRetry={() => void query.refetch()} />
   }
 

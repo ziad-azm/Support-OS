@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { ToastContext } from './ToastContext'
 import { setToastSink } from './toastSink'
@@ -18,6 +19,7 @@ let nextId = 0
  * still surface a toast.
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
   const [toasts, setToasts] = useState<Toast[]>([])
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
@@ -51,10 +53,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast, dismiss }}>
       {children}
       <div role="status" aria-live="polite" aria-atomic="true">
-        {toasts.map((t) => (
-          <div key={t.id} data-tone={t.tone}>
-            <span>{t.message}</span>
-            <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss">
+        {toasts.map((toastItem) => (
+          <div key={toastItem.id} data-tone={toastItem.tone}>
+            <span>{toastItem.message}</span>
+            <button
+              type="button"
+              onClick={() => dismiss(toastItem.id)}
+              aria-label={t('actions.dismiss')}
+            >
               ×
             </button>
           </div>

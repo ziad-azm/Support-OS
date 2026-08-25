@@ -1,0 +1,16 @@
+{
+  "app": { "name": "SupportOS" },
+  "actions": { "retry": "Retry", "reload": "Reload", "dismiss": "Dismiss", "goHome": "Go home" },
+  "states": {
+    "loading": "Loading…",
+    "empty": { "title": "Nothing here yet" },
+    "error": {
+      "generic": "Something went wrong.",
+      "render": "Something went wrong. Please reload the page.",
+      "route": "Something went wrong loading this page."
+    },
+    "notFound": "Page not found."
+  },
+  "debug": { "details": "Debug details" },
+  "language": { "label": "Language", "en": "English", "ar": "العربية" }
+}

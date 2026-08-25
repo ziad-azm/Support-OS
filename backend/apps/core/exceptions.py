@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework import exceptions as drf_exceptions
 from rest_framework import status
 from rest_framework.response import Response
@@ -16,8 +17,8 @@ from .envelope import error_envelope
 
 logger = logging.getLogger(__name__)
 
-VALIDATION_MESSAGE = "The submitted data is invalid."
-INTERNAL_MESSAGE = "An unexpected error occurred."
+VALIDATION_MESSAGE = _("The submitted data is invalid.")
+INTERNAL_MESSAGE = _("An unexpected error occurred.")
 NON_FIELD_KEY = "non_field_errors"
 
 
