@@ -284,6 +284,12 @@ reloads with no flash, the same way the language choice does. See `CONVENTIONS.m
 full design-system rules, including why `@tanstack/react-table` and `sonner` are deliberately not
 installed.
 
+Forms are React Hook Form + Zod, composed from the shared field components in
+`frontend/src/shared/ui/form/` via the single `useAppForm` entry point. Validation messages are
+localised through an i18next namespace backed by Zod's own translated locale as a fallback, so a
+form reads like product copy in both English and Arabic rather than Zod's developer-facing
+defaults. See `CONVENTIONS.md` § 20 for the full rules and a worked example.
+
 ---
 
 ## API conventions

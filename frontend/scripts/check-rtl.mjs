@@ -22,6 +22,11 @@ const PATTERNS = [
   /text-align:\s*(?:left|right)/g,
   // Raw CSS physical box properties.
   /(?:margin|padding|border|inset)-(?:left|right)\b/g,
+  // Physical horizontal translate. Does not flip with direction, so a thumb /
+  // slider / drawer animated with it moves the wrong way in RTL. Exempt when
+  // the line also carries an `rtl:` counterpart (see RTL_HANDLED below), or
+  // when it is the symmetric centring idiom (see CENTERING above).
+  /(?<![\w-])-?translate-x-(?!0(?![\w.]))/g,
 ]
 
 /**
@@ -33,6 +38,25 @@ const PATTERNS = [
  * overlay's className. See Story 06 task 6a.
  */
 const CENTERING = /left-(?:1\/2|\[50%\]).*translate-x-(?:\[-50%\]|1\/2|-1\/2)/
+
+/**
+ * A line that already carries an `rtl:` variant has handled its own
+ * direction, so a physical `translate-x` on it is deliberate. This is why
+ * primitives/switch.tsx passes: it pairs the checked translate with an
+ * `rtl:` negation on the same line. See Story 07 task 5.
+ */
+const RTL_HANDLED = /\brtl:/
+
+/**
+ * Radix's popper positioning offsets a floating panel opposite whichever
+ * screen edge it opened against (`data-[side=left]:-translate-x-1`,
+ * `data-[side=right]:translate-x-1`, …). That is anchor-relative
+ * screen-space positioning, not text direction — `left`/`right` here name a
+ * side of the trigger, not a reading direction, so the translate must stay
+ * physical. Verified: primitives/select.tsx's popper offset is the only
+ * occurrence in this codebase. See Story 07 task 5.
+ */
+const SIDE_POSITIONED = /data-\[side=(?:left|right)\]:-?translate-x-/
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
@@ -48,6 +72,12 @@ for (const path of walk(ROOT)) {
   lines.forEach((line, index) => {
     if (CENTERING.test(line)) return
     for (const pattern of PATTERNS) {
+      if (
+        pattern.source.includes('translate-x') &&
+        (RTL_HANDLED.test(line) || SIDE_POSITIONED.test(line))
+      ) {
+        continue
+      }
       for (const match of line.matchAll(pattern)) {
         process.stdout.write(`${path}:${index + 1}  ${match[0]}\n`)
         failures += 1

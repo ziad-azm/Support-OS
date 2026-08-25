@@ -3,8 +3,10 @@ import healthEn from '@/features/health/locales/en.json'
 
 import arCommon from './locales/ar/common.json'
 import arErrors from './locales/ar/errors.json'
+import arValidation from './locales/ar/validation.json'
 import enCommon from './locales/en/common.json'
 import enErrors from './locales/en/errors.json'
+import enValidation from './locales/en/validation.json'
 
 /**
  * The whole resource map, explicitly registered.
@@ -15,8 +17,8 @@ import enErrors from './locales/en/errors.json'
  * "every feature adds its own namespace" checklist item.
  */
 export const resources = {
-  en: { common: enCommon, errors: enErrors, health: healthEn },
-  ar: { common: arCommon, errors: arErrors, health: healthAr },
+  en: { common: enCommon, errors: enErrors, validation: enValidation, health: healthEn },
+  ar: { common: arCommon, errors: arErrors, validation: arValidation, health: healthAr },
 } as const
 
 export type AppResources = (typeof resources)['en']

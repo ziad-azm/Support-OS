@@ -96,10 +96,13 @@ hand-roll an `isPending`/`isError` branch in a feature.**
 
 ## 6. Validation
 
-`FORM` (React Hook Form + Zod) is defined by **FORM-1**, not yet planned.
-
-Until then: no forms exist in this codebase. Do not introduce a second
-validation approach ahead of FORM-1.
+`FORM` is React Hook Form + Zod, established by story 07 and specified in
+§ 20. `useAppForm` (`frontend/src/shared/ui/form/useAppForm.ts`) is the
+**only** entry point — a feature never calls `useForm` or imports
+`@hookform/resolvers` itself. Validation messages come from the i18next
+`validation` namespace via a Zod error map, never from a literal string in a
+schema. Compose the shared field components in `shared/ui/form/` with a
+schema built from the helpers in `shared/validation/schemas.ts`.
 
 ---
 
@@ -471,3 +474,147 @@ and it is the first real instance of § 18's bidi rule.
 primitives here. FORM-1 binds them to React Hook Form + Zod; **`Select` is
 not a native form control** and integrates through `Controller`, not
 `register()`.
+
+---
+
+## 20. Forms & validation
+
+**React Hook Form + Zod is the only approach.** `useAppForm`
+(`frontend/src/shared/ui/form/useAppForm.ts`) is the **only** entry point —
+no feature calls `useForm` directly, and `@hookform/resolvers` is imported
+in exactly one file, `shared/validation/resolver.ts`. Compose the shared
+field components in `shared/ui/form/` (`TextField`, `TextareaField`,
+`SelectField`, `CheckboxField`, `SwitchField`, `RadioGroupField`) with a
+schema built from `shared/validation/schemas.ts`'s helpers
+(`requiredString`, `optionalString`, `email`, `optionalEmail`,
+`positiveInt`, `choice`, `requiredBoolean`).
+
+**Why Zod's own copy is unusable for forms.** Verified against `zod@4.4.3`:
+a blank required field renders `Too small: expected string to have >=1
+characters` (Arabic: `أصغر من اللازم: يفترض لـ string أن يكون >= 1 حرف`),
+and a missing key renders `Invalid input: expected string, received
+undefined` — leaking the literal token `undefined` to an Arabic user. Those
+are the two most common messages in any form.
+
+**The error-map-plus-locale-fallback design.** `shared/validation/config.ts`
+calls `z.config({ ...locale(), customError: zodErrorMap })` exactly once.
+`zodErrorMap` (`shared/validation/errorMap.ts`) returns a translated string
+for the issue codes a form actually produces (via the `validation` i18next
+namespace, keyed on Zod's own issue codes the way `errors` is keyed on
+`ApiRequestError.code`) and `undefined` for everything else, which **falls
+through** to Zod's own locale underneath. Never call `z.config()` a second
+time anywhere — it replaces the map and the locale together, silently
+disabling every translation.
+
+**Messages resolve at parse time, not at render time.** `zodResolver`
+reduces a Zod issue to `{ message, type }` for React Hook Form — `minimum`,
+`origin`, and `input` are dropped. So a message must be a finished,
+interpolated string by the time the map returns it, and a language switch
+cannot retranslate an error already on screen on its own. `useAppForm`
+calls `trigger()` on `languageChanged`, **guarded on `isSubmitted`** so a
+switch never paints a pristine form red.
+
+**A `custom` issue keeps its own message.** `z.string().refine(fn, { error:
+'...' })` sets `issue.message` before the map runs; returning `undefined`
+for `code === 'custom'` preserves it. That is how a feature adds a one-off
+rule with its own copy.
+
+**Field names are `snake_case`, matching the DRF serializer — no mapping
+layer.** § 12's "wire format is snake_case end to end" means a schema key,
+an RHF field path, and a serializer field are the same string, so
+`applyServerErrors` (`shared/validation/serverErrors.ts`) can call
+`form.setError(field, …)` directly from a `validation_error` envelope's
+`fields` map.
+
+**Server errors are applied untranslated.** The backend already localised
+them via `Accept-Language` (§ 18); running them through `t()` would look up
+a full sentence as a translation key. They are also **not** retranslated on
+a language switch — `trigger()` clears them instead, which is correct: only
+the server can re-issue a server error.
+
+**The nested-serializer limitation.** `_as_message_list`
+(`backend/apps/core/exceptions.py`) flattens a nested serializer one level
+into `"child: message"` strings under the **parent** key, so a path like
+`address.city` never exists on the wire. `applyServerErrors` does not parse
+that string apart — a message can itself contain `": "` — and surfaces such
+errors at form level instead. True nested field errors need the backend to
+emit dotted paths.
+
+**A `validation_error` toasts *and* fills the fields — a known rough edge.**
+`MutationCache.onError` (`shared/lib/api/queryClient.ts`) toasts every
+mutation failure, so a rejected submit shows a generic toast on top of the
+inline field errors. Accepted for now; suppressing it means changing the
+shared `queryClient`.
+
+**Radix-backed controls are not native form controls.** `Select`,
+`Checkbox`, `Switch`, and `RadioGroup` report changes via
+`onValueChange`/`onCheckedChange`, not `onChange`, and have no DOM `ref`.
+Their field components wire `field.value`/`field.onChange` explicitly inside
+`FormField`'s `Controller` — spreading `{...field}` onto one of these
+silently does nothing.
+
+**The `translate-x` RTL trap.** A physical `translate-x` does not flip with
+direction, so a thumb, slider, or drawer animated with it moves the wrong
+way in RTL — verified in `primitives/switch.tsx`'s checked-state thumb
+position, which shipped this way from the shadcn registry. `check-rtl.mjs`
+(§ 19) has a `translate-x` pattern for exactly this, with two sanctioned
+exemptions: a line carrying its own `rtl:` counterpart, and Radix's
+`data-[side=left|right]:translate-x-*` popper-positioning idiom, which is
+anchor-relative screen-space positioning, not text direction.
+
+**Worked example**, from a schema to a submitted form with server-error
+handling:
+
+```tsx
+const schema = z.object({
+  subject: requiredString(),
+  priority: choice(['low', 'medium', 'high']),
+})
+
+function TicketForm() {
+  const { t } = useTranslation(['tickets', 'validation'])
+  const form = useAppForm({
+    schema,
+    defaultValues: { subject: '', priority: 'medium' },
+  })
+  const [formErrors, setFormErrors] = useState<string[]>([])
+
+  const { mutate } = useMutation({
+    mutationFn: (values: z.output<typeof schema>) => api.post('/tickets/', values),
+    onError: (error) => {
+      if (isValidationError(error)) {
+        setFormErrors(applyServerErrors(form, error))
+      }
+    },
+  })
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit((values) => mutate(values))}>
+        <TextField control={form.control} name="subject" label={t('tickets:subject')} />
+        <SelectField
+          control={form.control}
+          name="priority"
+          label={t('tickets:priority')}
+          options={[
+            { value: 'low', label: t('tickets:priorityLow') },
+            { value: 'medium', label: t('tickets:priorityMedium') },
+            { value: 'high', label: t('tickets:priorityHigh') },
+          ]}
+        />
+        {formErrors.length > 0 ? (
+          <Alert variant="destructive">
+            <AlertDescription>
+              {t('validation:form.submitFailed')}
+              {formErrors.map((message, i) => (
+                <p key={i}>{message}</p>
+              ))}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        <Button type="submit">{t('tickets:submit')}</Button>
+      </form>
+    </Form>
+  )
+}
+```

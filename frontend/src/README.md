@@ -51,6 +51,19 @@ restyled with the shadcn treatment **without changing their props** — the
 promise this file made when they were reserved held. See `CONVENTIONS.md`
 § 19 for the full rules.
 
+## Forms & validation
+
+`src/shared/validation/` holds the Zod bootstrap: `config.ts` (the only
+`z.config()` call), `errorMap.ts` (the i18next-backed error map, with Zod's
+own locale as the fallback), `resolver.ts` (the only `@hookform/resolvers`
+import), `schemas.ts` (shared field-shape helpers), and `serverErrors.ts`
+(applies a `validation_error` envelope's `fields` map onto a form).
+`src/shared/ui/form/` holds `useAppForm` (the only form entry point) and the
+six shared field components (`TextField`, `TextareaField`, `SelectField`,
+`CheckboxField`, `SwitchField`, `RadioGroupField`), following the same
+file-shape precedent as `shared/ui/confirm/`. See `CONVENTIONS.md` § 20 for
+the full rules and a worked example.
+
 ## Internationalization
 
 `src/shared/i18n/` holds the i18next bootstrap: `config.ts` (the language
@@ -58,8 +71,8 @@ contract), `index.ts` (init), `direction.ts` (the only place `<html
 dir/lang>` is written), `useDirection.ts` (the React-readable form of the
 same state, read by Radix's `DirectionProvider` and the data table's
 pagination chevrons), `resources.ts` (the namespace registry), and
-`i18next.d.ts` (the typed `t()`). `common`/`errors` locale JSON live under
-`shared/i18n/locales/{en,ar}/`; each feature's own copy lives at
+`i18next.d.ts` (the typed `t()`). `common`/`errors`/`validation` locale JSON
+live under `shared/i18n/locales/{en,ar}/`; each feature's own copy lives at
 `src/features/<feature>/locales/{en,ar}.json` and is registered in
 `resources.ts`. See `CONVENTIONS.md` § 18 for the full rules (no hardcoded
 strings, logical CSS properties, locale formatting).
@@ -90,9 +103,10 @@ built on top of them. No `fetch`, no ad-hoc Axios, ever, in a feature.
 
 `shared/hooks/` follows the same "a module owns its own hook" precedent as
 `shared/ui/toast/useToast.ts`: `useFormatters.ts` is its first occupant,
-`useServerTable` lives beside `DataTable` in `shared/ui/data-table/`, and
-`useConfirm` lives beside `ConfirmProvider` in `shared/ui/confirm/` — not all
-hooks live in `shared/hooks/`.
+`useServerTable` lives beside `DataTable` in `shared/ui/data-table/`,
+`useConfirm` lives beside `ConfirmProvider` in `shared/ui/confirm/`, and
+`useAppForm` lives beside the field components in `shared/ui/form/` — not
+all hooks live in `shared/hooks/`.
 
 `import.meta.env` is read in exactly four files, nowhere else: `config/env.ts`,
 `main.tsx`, `app/providers.tsx`, and `shared/lib/logger.ts`.
@@ -103,4 +117,4 @@ The full conventions document is [`CONVENTIONS.md`](../../CONVENTIONS.md) (`CONV
 and references this file rather than restating it. The response envelope this
 layout serves is documented in the root `README.md` under **API conventions**.
 Internationalization rules are in `CONVENTIONS.md` § 18; the design system,
-theming, and data-table rules are in § 19.
+theming, and data-table rules are in § 19; forms and validation are in § 20.

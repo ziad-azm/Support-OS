@@ -8,6 +8,7 @@ Entry point for the **internationalization-design-system** feature. Stories exec
 |----|------|-------|------------|------------|
 | 05 | [05-story-i18n-rtl-foundation-SUPPORTOS-9.md](05-story-i18n-rtl-foundation-SUPPORTOS-9.md) | Internationalization & RTL Foundation | SUPPORTOS-9 | Stories 03, 04 |
 | 06 | [06-story-design-system-shared-components-SUPPORTOS-11.md](06-story-design-system-shared-components-SUPPORTOS-11.md) | Design System & Shared Components | SUPPORTOS-11 | Stories 03, 04, 05 |
+| 07 | [07-story-forms-validation-foundation-SUPPORTOS-12.md](07-story-forms-validation-foundation-SUPPORTOS-12.md) | Forms & Validation Foundation | SUPPORTOS-12 | Stories 05, 06 |
 
 ## Dependency notes
 
@@ -17,7 +18,9 @@ The whole epic depends on EPIC 0 being complete — see [`../project-foundation-
 
 Sequencing inside the epic is fixed by the backlog's own dependency lines:
 
-`I18N-1` (story 05) → `UI-1` (story 06) → `FORM-1`
+`I18N-1` (story 05) → `UI-1` (story 06) → `FORM-1` (story 07)
+
+**With story 07 planned, EPIC 1 is fully planned.** The next story is AUTH-1 (EPIC 2), which is the first consumer of both `UI` and `FORM`.
 
 **I18N-1 must come first.** UI-1 depends on FND-3 *and* I18N-1, and FORM-1 depends on UI-1 *and* I18N-1. That ordering is why story 05 cannot install Tailwind even though its intake mentions "Tailwind logical properties usage" — Tailwind belongs to UI-1, which comes after. Story 05 instead writes the logical-property rule into `CONVENTIONS.md` § 18 as the binding constraint UI-1 must follow.
 
@@ -29,7 +32,7 @@ Sequencing inside the epic is fixed by the backlog's own dependency lines:
 |---|---|---|
 | `I18N` | Story 05 | i18next with per-feature namespaces, a compile-time-typed `t()`, `<html dir>`/`lang` driven by the active language, a persisted language switcher, and locale-bound date/number/currency helpers. |
 | `UI` | Story 06 | Tailwind CSS v4 (CSS-first tokens, no JS config) + shadcn/ui under `shared/ui/primitives/`, a light/dark/system theme, the Radix `DirectionProvider` bridge, restyled story-03 state components with unchanged props, a `useConfirm()` pattern, and one server-driven `DataTable`. |
-| `FORM` | FORM-1 | Not yet planned. React Hook Form + Zod as the single forms/validation approach, with localised messages via `I18N`. Story 06 hands it `Input`, `Label`, and `Select` — and the warning that `Select` is not a native form control and integrates through RHF's `Controller`, not `register()`. |
+| `FORM` | Story 07 | React Hook Form + Zod as the single approach, with one `useAppForm` entry point, validation messages resolved through an i18next `validation` namespace (Zod's own locale as the fallback beneath it), six shared field components, schema helpers, and a server-error bridge that applies a `validation_error` envelope's `fields` map onto the right inputs. |
 
 **Cross-story contracts set by story 05:**
 
@@ -69,6 +72,27 @@ Sequencing inside the epic is fixed by the backlog's own dependency lines:
 - **`sonner` was rejected too.** `shared/ui/toast/toastSink.ts` is how `createQueryClient`'s `onError` reaches a toast from outside React; sonner has no equivalent seam. The existing provider is restyled instead, and dark mode gets a 60-line `shared/theme/` module rather than `next-themes`.
 - **`?ordering=` was a fiction.** `REST_FRAMEWORK` had no `DEFAULT_FILTER_BACKENDS`, so the param would have been silently ignored. Story 06 adds `rest_framework.filters.OrderingFilter` — one key, no new dependency, inert until a list view exists.
 
-**Note on testing:** per standing project policy this project authors no automated tests. Stories 05 and 06 add none. Story 05's checks are `npm run build` (which typechecks every `t()` key), `npm run lint`, and the greps in its Verification Steps; story 06 adds `npm run check:rtl` as a real CI gate and leans on bilingual, bi-directional, bi-theme manual walkthroughs for everything a static check cannot see.
+**Cross-story contracts set by story 07:**
 
-**Known gap carried out of story 06:** `DataTable` ships with **no production consumer**, because no paginated endpoint exists yet. `npm run build` proves the generic contract typechecks and a throwaway harness proves it renders, but the first list feature is where it earns its keep — and where it will likely need adjustment.
+- **`useAppForm` is the only form entry point.** No feature calls `useForm` or imports `@hookform/resolvers` directly. It binds the shared resolver and the language-switch re-validation so neither has to be remembered.
+- **Validation messages resolve through i18next, at parse time.** A new `validation` namespace, keyed on Zod's issue codes the way `errors` is keyed on `ApiRequestError.code`. Zod's own locale sits underneath as the fallback for codes we have not authored.
+- **`z.config()` is called in exactly one file** (`shared/validation/config.ts`), keyed off the single `Language` list in `shared/i18n/config.ts`. A second caller anywhere silently disables our translations everywhere.
+- **Schema field names are `snake_case`**, matching the DRF serializer, so a serializer field, a Zod key, and an RHF path are the same string and the server-error bridge needs **no** mapping layer. This is § 12's snake_case-end-to-end rule paying off.
+- **Server `validation_error` field errors are applied untranslated.** The backend already localised them via `Accept-Language`; running them through `t()` would look up a sentence as a key.
+- **`check:rtl` now covers `translate-x`** — the physical-transform bug class the story-06 version was blind to.
+
+**Verified findings that shaped story 07:**
+
+- **Zod's built-in locales are unusable as form copy.** Verified against `zod@4.4.3`: a blank required field renders `Too small: expected string to have >=1 characters` (`ar`: `أصغر من اللازم: يفترض لـ string أن يكون >= 1 حرف`), and a missing key renders `Invalid input: expected string, received undefined` — leaking the literal token `undefined` to an Arabic user. Those are the two most common messages in any form, which is why story 07 authors its own map rather than calling `z.config(z.locales.ar())` and declaring victory.
+- **But the two compose, and that is the design.** Verified: `z.config({ ...z.locales.ar(), customError })` lets `customError` win where it returns a string and **fall through to the locale where it returns `undefined`**. So only the codes a form actually produces cost a translation; the exotic tail is still localised for free.
+- **`zodResolver` throws the issue detail away.** Verified with `@hookform/resolvers@5.9.1`: RHF receives `{ message, type }` only — `minimum`, `origin`, and `input` are dropped. So messages must be fully resolved at parse time, which means a language switch cannot retranslate errors already on screen. Story 07 re-validates on `languageChanged`, guarded on `isSubmitted` so a switch never paints a pristine form red.
+- **Radix's switch thumb moves the wrong way in RTL, and the story-06 gate could not see it.** `switch.tsx` positions the thumb with `data-[state=checked]:translate-x-[calc(100%-2px)]`; `translate-x` is physical and does not flip. `check-rtl.mjs` greps for physical *utilities*, not transforms, so it passed the file clean. Story 07 fixes the file **and** adds the pattern — a gate that missed a real bug is the strongest argument for extending it.
+- **Nested serializer errors cannot reach a nested field.** `_as_message_list` (`apps/core/exceptions.py:74`) flattens one level into `"child: message"` strings under the *parent* key, so `address.city` never appears on the wire. Story 07 refuses to parse that string back apart (a message can itself contain `": "`) and surfaces such errors at form level instead; dotted paths would be a backend change.
+- **No backend change was needed.** The `validation_error` + `fields` contract has been in place since story 02, so FORM-1 is a pure frontend story — the first in this epic.
+
+**Note on testing:** per standing project policy this project authors no automated tests. Stories 05, 06, and 07 add none. Story 05's checks are `npm run build` (which typechecks every `t()` key), `npm run lint`, and the greps in its Verification Steps; story 06 adds `npm run check:rtl` as a real CI gate; story 07 extends that gate and leans on bilingual, bi-directional manual walkthroughs for everything a static check cannot see.
+
+**Known gaps carried out of this epic — both foundations, both awaiting their first consumer:**
+
+- **`DataTable` (story 06)** ships with no production consumer, because no paginated endpoint exists yet. The first list feature is where it earns its keep.
+- **The form pattern (story 07)** ships with no production consumer, because no screen needs a form and no endpoint accepts writes. **AUTH-1's login form is the immediate next consumer**, and both foundations should be expected to need adjustment when they first meet real data.

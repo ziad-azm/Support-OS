@@ -4,9 +4,11 @@ import { RouterProvider } from 'react-router'
 
 // Side-effect imports: must run before any component calling useTranslation()
 // or useTheme() is imported, or the first render sees an uninitialised
-// i18next instance / stale theme class.
+// i18next instance / stale theme class. ./shared/validation reads the
+// i18next instance, so it must come after ./shared/i18n.
 import './shared/i18n'
 import './shared/theme'
+import './shared/validation'
 
 import { AppProviders } from './app/providers'
 import { router } from './app/router'
