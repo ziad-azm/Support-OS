@@ -48,3 +48,48 @@ class Customer(TimeStampedModel):
         super().clean()
         if not self.email:
             self.email = None
+
+
+class ContactDetail(TimeStampedModel):
+    """A single additional contact channel for a customer — CUST-2.
+
+    Additive to `Customer.email`/`Customer.phone`, not a replacement: those
+    two stay the primary contact fields (Story 10's open forward decision,
+    now resolved this way — see Story 11 `## Story Goal`). `ContactDetail`
+    covers channels the two singular `Customer` columns cannot hold: a
+    second phone number, a WhatsApp identifier, a secondary email.
+    """
+
+    class Channel(models.TextChoices):
+        EMAIL = "email", _("Email")
+        PHONE = "phone", _("Phone")
+        WHATSAPP = "whatsapp", _("WhatsApp")
+
+    # CASCADE, not PROTECT: contrast `accounts.User.role` (PROTECT, because
+    # many users reference one role that must not vanish silently). A
+    # contact has no existence independent of its customer — deleting the
+    # customer should delete its contacts, not block on them.
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name="contacts", verbose_name=_("customer")
+    )
+    channel = models.CharField(_("channel"), max_length=20, choices=Channel.choices)
+    # One column for every channel's value, like `Customer.phone`: an email
+    # address, a phone number, and a WhatsApp identifier are all "a string
+    # with a length cap" at the model layer. Per-channel format validation
+    # is the serializer's job (`ContactDetailSerializer.validate`) — DRF
+    # does not call model `clean()`, and this model deliberately has none.
+    value = models.CharField(_("value"), max_length=254)
+
+    class Meta:
+        verbose_name = _("contact detail")
+        verbose_name_plural = _("contact details")
+        ordering = ("customer", "channel", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["customer", "channel", "value"],
+                name="unique_customer_channel_value",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_channel_display()}: {self.value}"

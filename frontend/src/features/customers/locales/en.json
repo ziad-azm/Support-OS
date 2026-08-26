@@ -26,5 +26,32 @@
   "created": "Customer created.",
   "updated": "Customer updated.",
   "deleted": "Customer deleted.",
-  "notFound": "That customer could not be found."
+  "notFound": "That customer could not be found.",
+  "contacts": {
+    "title": "Contact channels",
+    "empty": "No contact channels yet.",
+    "fields": {
+      "channel": "Channel",
+      "value": "Value"
+    },
+    "channels": {
+      "email": "Email",
+      "phone": "Phone",
+      "whatsapp": "WhatsApp"
+    },
+    "actions": {
+      "add": "Add",
+      "edit": "Edit",
+      "remove": "Remove",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "delete": {
+      "title": "Remove this contact channel?",
+      "description": "This permanently removes the contact channel. This cannot be undone."
+    },
+    "created": "Contact channel added.",
+    "updated": "Contact channel updated.",
+    "deleted": "Contact channel removed."
+  }
 }

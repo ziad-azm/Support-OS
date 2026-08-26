@@ -11,6 +11,7 @@ import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 
 import { useCustomer } from '../api/useCustomer'
 import { useDeleteCustomer } from '../api/useCustomerMutations'
+import { ContactDetailsSection } from './ContactDetailsSection'
 
 export function CustomerProfilePage() {
   const { t } = useTranslation('customers')
@@ -46,46 +47,49 @@ export function CustomerProfilePage() {
       {isValidId ? (
         <QueryBoundary query={query}>
           {(customer) => (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{customer.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <dl className="grid grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{t('fields.email')}</dt>
-                    <dd>{customer.email ?? '—'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{t('fields.phone')}</dt>
-                    <dd>{customer.phone || '—'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{t('fields.company')}</dt>
-                    <dd>{customer.company || '—'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{t('fields.createdAt')}</dt>
-                    <dd>{date(customer.created_at)}</dd>
-                  </div>
-                </dl>
-                <Can permission="customers.manage">
-                  <div className="flex gap-2">
-                    <Button asChild variant="outline">
-                      <Link to={`/customers/${customer.id}/edit`}>{t('edit')}</Link>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={deleteMutation.isPending}
-                      onClick={() => void handleDelete()}
-                    >
-                      {t('actions.delete')}
-                    </Button>
-                  </div>
-                </Can>
-              </CardContent>
-            </Card>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{customer.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <dl className="grid grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.email')}</dt>
+                      <dd>{customer.email ?? '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.phone')}</dt>
+                      <dd>{customer.phone || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.company')}</dt>
+                      <dd>{customer.company || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.createdAt')}</dt>
+                      <dd>{date(customer.created_at)}</dd>
+                    </div>
+                  </dl>
+                  <Can permission="customers.manage">
+                    <div className="flex gap-2">
+                      <Button asChild variant="outline">
+                        <Link to={`/customers/${customer.id}/edit`}>{t('edit')}</Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => void handleDelete()}
+                      >
+                        {t('actions.delete')}
+                      </Button>
+                    </div>
+                  </Can>
+                </CardContent>
+              </Card>
+              <ContactDetailsSection customerId={customer.id} />
+            </>
           )}
         </QueryBoundary>
       ) : (

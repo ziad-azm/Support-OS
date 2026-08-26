@@ -433,7 +433,10 @@ page, so invalidating one cache entry would leave the others stale. See
 not `api.put`: DRF drops an absent optional field from `validated_data` on either method, so a PUT
 cannot clear a value by omission — PATCH's "only what I sent" semantics are what an edit form
 actually means, and a field is cleared by sending its value explicitly (`null` or `''`), never by
-leaving the key out.
+leaving the key out. **Exception:** a non-paginated child resource scoped to one parent (e.g. a
+customer's contact channels) may invalidate only its own scoped key instead of the whole feature
+prefix, when a write cannot affect a sibling query — see
+`frontend/src/features/customers/api/useContactDetailMutations.ts`.
 
 ---
 

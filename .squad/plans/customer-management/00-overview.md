@@ -7,6 +7,7 @@ Entry point for the **customer-management** feature. Stories execute in order by
 | NN | File | Title | Tracker id | Depends on |
 |----|------|-------|------------|------------|
 | 10 | [10-story-customer-profiles-SUPPORTOS-28.md](10-story-customer-profiles-SUPPORTOS-28.md) | Customer Profiles | SUPPORTOS-28 | Stories 05–09 (`I18N`, `UI`, `FORM`, `AUTHZ`) |
+| 11 | [11-story-contact-details-SUPPORTOS-29.md](11-story-contact-details-SUPPORTOS-29.md) | Contact Details | SUPPORTOS-29 | Story 10 |
 
 ## Dependency notes
 
@@ -35,7 +36,7 @@ That is the point of sequencing it here: the foundations get exercised together,
 
 So story 10's `Customer` has **no** `notes` text field (it would be dead weight the moment CUST-4 lands) and **no** contact-channel modelling. It does carry a primary `email` and `phone`, because a list screen with no contact column is not useful and `email` is the dedup key behind the intake's *"each customer has one record"*.
 
-**Open forward decision for CUST-2:** whether `ContactDetail` supersedes story 10's primary `email`/`phone` fields or hangs beside them as additional channels. Story 10 deliberately does not pre-empt that choice; it only guarantees that `Customer.email` is unique-when-present today.
+**Open forward decision for CUST-2 — now resolved by story 11:** `ContactDetail` hangs **beside** story 10's primary `email`/`phone` fields as additional channels; it does not supersede them. `Customer.email`/`Customer.phone` are unchanged by story 11. See [`11-story-contact-details-SUPPORTOS-29.md`](11-story-contact-details-SUPPORTOS-29.md) `## Prerequisites`.
 
 **Cross-story contracts set by story 10** (all documented in `CONVENTIONS.md` § 23, which this story appends):
 

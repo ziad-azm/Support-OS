@@ -941,3 +941,18 @@ two `null` writes never collide against each other through the validator
 either — matching Postgres's own behaviour. See
 `apps/customers/serializers.py::CustomerSerializer.email` for the worked
 example.
+
+**A child resource of an existing feature reuses the parent's permissions.**
+A sub-resource that is part of an existing domain record (e.g. `ContactDetail`
+on `Customer`) does not get its own permission constants — it is gated by the
+parent feature's existing `permission_map` values. Add a new constant only
+when the sub-resource is a genuinely separate authorization concern.
+
+**A non-paginated, per-parent child resource may invalidate its own scoped
+query key instead of the whole feature prefix**, when a write cannot affect a
+sibling query's result set (no shared pagination, no shared sort). State the
+reasoning at the call site — this is a documented exception, not the default;
+the default (this section's own rule above) is still prefix-wide invalidation
+for anything paginated or sorted.
+`frontend/src/features/customers/api/useContactDetailMutations.ts` (Story 11,
+`CUST-2`) is the worked example.

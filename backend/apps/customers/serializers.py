@@ -1,9 +1,11 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from apps.core.serializers import BaseModelSerializer
 
-from .models import Customer
+from .models import ContactDetail, Customer
 
 
 class CustomerSerializer(BaseModelSerializer):
@@ -49,3 +51,43 @@ class CustomerSerializer(BaseModelSerializer):
         DRF does not call model `clean()`, so this cannot be left to the model.
         """
         return value or None
+
+
+class ContactDetailSerializer(BaseModelSerializer):
+    """No fields declared beyond `Meta` — verified unnecessary. `customer` is
+    a required FK the ModelSerializer auto-generates as `PrimaryKeyRelatedField`,
+    and the (customer, channel, value) `UniqueConstraint` auto-derives a
+    `UniqueTogetherValidator` with no `validators=[...]` needed, unlike the
+    single-field gap `CustomerSerializer.email` works around. See Story 11
+    `## Prerequisites` for the verified proof.
+    """
+
+    class Meta(BaseModelSerializer.Meta):
+        model = ContactDetail
+        fields = ("id", "customer", "channel", "value", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        """Per-channel value format: an email-channel contact must parse as
+        an email address. DRF does not call model `clean()`, and this model
+        deliberately has none, so this is the one enforcement point.
+
+        `channel`/`value` fall back to the existing instance's value on a
+        PATCH that sends only the other one, so a partial update still
+        validates the pair together.
+        """
+        channel = attrs.get("channel", getattr(self.instance, "channel", None))
+        value = attrs.get("value", getattr(self.instance, "value", None))
+        if channel == ContactDetail.Channel.EMAIL and value:
+            try:
+                validate_email(value)
+            except DjangoValidationError as exc:
+                raise serializers.ValidationError({"value": list(exc.messages)}) from exc
+        return attrs
+
+    def update(self, instance, validated_data):
+        """Reassigning a contact to a different customer is not a supported
+        operation — delete and recreate under the new customer instead.
+        `customer` stays writable on create (it's how the contact is
+        attached in the first place) but is ignored on every PATCH."""
+        validated_data.pop("customer", None)
+        return super().update(instance, validated_data)
