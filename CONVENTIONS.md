@@ -1030,3 +1030,18 @@ endpoint would be. **A signed, unpersisted session token**
 anonymous identity that does not warrant a real customer account — reach for
 it before adding a session/account model for a single-conversation
 credential.
+
+**A webhook signature scheme can depend on more than the raw request body —
+verify what it actually signs before choosing how to check it.** Meta's
+`X-Hub-Signature-256` (Story 15, `COMM-2`) is computed over raw request
+bytes alone; Twilio's `X-Twilio-Signature` (Story 17, `COMM-4`) is computed
+over the exact webhook URL plus every decoded POST parameter. When a
+provider's algorithm depends on the URL, pin it as an explicit setting
+(`SMS_WEBHOOK_URL`) rather than reconstructing it from the request — a
+reverse proxy or tunnel rewriting `Host` would otherwise break verification
+silently, not loudly. **A webhook's payload shape (JSON vs. form-encoded)
+determines its `parser_classes`, and this project's `DEFAULT_PARSER_CLASSES`
+is JSON-only** (`config/settings/base.py`) — a view receiving a
+form-encoded provider payload must declare `parser_classes = [FormParser]`
+itself, scoped to that one view, the same way `PlainTextRenderer` (Story 15)
+was scoped to one view's `GET` method rather than changing a global default.

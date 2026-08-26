@@ -485,6 +485,11 @@ developer discovers it.
 | `WHATSAPP_ACCESS_TOKEN` | no | *(empty)* | Bearer token for the WhatsApp Cloud API. |
 | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | no | *(empty — verification handshake rejects every request until set)* | Shared secret Meta's `GET` webhook-verification handshake checks against `hub.verify_token`. |
 | `WHATSAPP_APP_SECRET` | no | *(empty — inbound webhook rejects every request until set)* | Meta App Secret used to verify the `X-Hub-Signature-256` header on every inbound `POST`. |
+| `SMS_API_BASE_URL` | no | *(empty — sending refuses to run until set)* | Base URL of Twilio's REST API, e.g. `https://api.twilio.com/2010-04-01`. |
+| `SMS_ACCOUNT_SID` | no | *(empty)* | Twilio Account SID, used both as the API path segment and the Basic Auth username. |
+| `SMS_AUTH_TOKEN` | no | *(empty — inbound webhook rejects every request until set)* | Twilio Auth Token — the Basic Auth password for sending, and the HMAC key for verifying `X-Twilio-Signature` on inbound webhooks. |
+| `SMS_FROM_NUMBER` | no | *(empty)* | The Twilio phone number outbound SMS is sent from. |
+| `SMS_WEBHOOK_URL` | no | *(empty — inbound webhook rejects every request until set)* | The exact URL configured in the Twilio console for the inbound SMS webhook — used, not reconstructed, because Twilio's signature depends on it. |
 
 ### Frontend — `frontend/.env`
 

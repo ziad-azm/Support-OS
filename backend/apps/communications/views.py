@@ -5,6 +5,7 @@ from django.utils.crypto import constant_time_compare
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.parsers import FormParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,6 +19,8 @@ from .email_adapter import EmailAdapter
 from .live_chat_adapter import LiveChatAdapter
 from .models import Message
 from .serializers import MessageSerializer
+from .sms_adapter import SMSAdapter
+from .sms_adapter import verify_signature as verify_sms_signature
 from .whatsapp_adapter import WhatsAppAdapter, extract_text_message, verify_signature
 
 logger = logging.getLogger(__name__)
@@ -155,6 +158,42 @@ class WhatsAppInboundWebhookView(APIView):
             return Response(status=status.HTTP_200_OK)
 
         message = WhatsAppAdapter().receive(request.data)
+        return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+
+class SMSInboundWebhookView(APIView):
+    """Twilio's Programmable Messaging webhook — POST-only, form-encoded
+    (unlike WhatsApp's JSON), no verification-handshake GET (unlike Meta's
+    Callback URL setup). Signature-verified via `X-Twilio-Signature`
+    (`sms_adapter.verify_signature`) against `SMS_WEBHOOK_URL` — the exact
+    URL configured in the Twilio console, not reconstructed from the
+    request, so a reverse proxy/tunnel rewriting `Host` does not silently
+    break verification. See Story 17 `## Prerequisites`.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    parser_classes = [FormParser]
+
+    def post(self, request):
+        # Fail closed, same reasoning as EmailInboundWebhookView (Story 14).
+        if not (settings.SMS_AUTH_TOKEN and settings.SMS_WEBHOOK_URL):
+            raise PermissionDenied()
+        signature = request.headers.get("X-Twilio-Signature", "")
+        params = {key: request.data.get(key, "") for key in request.data}
+        if not verify_sms_signature(
+            settings.SMS_AUTH_TOKEN, settings.SMS_WEBHOOK_URL, params, signature
+        ):
+            raise PermissionDenied()
+
+        from_number = request.data.get("From", "")
+        body = request.data.get("Body", "")
+        if not from_number or not body:
+            return Response(status=status.HTTP_200_OK)
+
+        message = SMSAdapter().receive(
+            {"from": from_number, "body": body, "message_sid": request.data.get("MessageSid", "")}
+        )
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
 

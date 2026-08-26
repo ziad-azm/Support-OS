@@ -9,5 +9,6 @@ class CommunicationsConfig(AppConfig):
         from . import (  # noqa: F401 — imports run @register_adapter
             email_adapter,
             live_chat_adapter,
+            sms_adapter,
             whatsapp_adapter,
         )

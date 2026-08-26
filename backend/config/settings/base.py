@@ -343,3 +343,19 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
+
+# --- SMS (COMM-4) ------------------------------------------------------------
+# Twilio's Programmable Messaging API. No safe default anywhere, same
+# reasoning as WhatsApp (COMM-2) — every SMS_* setting stays blank until
+# explicitly configured, in every environment. SMSAdapter.send refuses to
+# run against blank config rather than firing a real request at Twilio's
+# live API with empty credentials. See Story 17 `## Prerequisites`.
+SMS_API_BASE_URL = env("SMS_API_BASE_URL", default="")
+SMS_ACCOUNT_SID = env("SMS_ACCOUNT_SID", default="")
+SMS_AUTH_TOKEN = env("SMS_AUTH_TOKEN", default="")
+SMS_FROM_NUMBER = env("SMS_FROM_NUMBER", default="")
+# The exact URL configured in the Twilio console for this webhook — used to
+# verify X-Twilio-Signature. Not reconstructed from the request: Twilio's
+# algorithm signs the URL it was told to POST to, and a proxy/tunnel
+# rewriting Host would otherwise break every signature check silently.
+SMS_WEBHOOK_URL = env("SMS_WEBHOOK_URL", default="")
