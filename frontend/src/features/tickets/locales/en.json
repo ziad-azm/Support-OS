@@ -39,5 +39,28 @@
   "created": "Ticket created.",
   "updated": "Ticket updated.",
   "deleted": "Ticket deleted.",
-  "notFound": "That ticket could not be found."
+  "notFound": "That ticket could not be found.",
+  "conversation": {
+    "title": "Conversation",
+    "empty": "No messages yet.",
+    "directions": {
+      "inbound": "Customer",
+      "outbound": "Agent"
+    },
+    "channels": {
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "chat": "Live chat",
+      "sms": "SMS",
+      "web_form": "Web form"
+    },
+    "fields": {
+      "channel": "Channel",
+      "body": "Message"
+    },
+    "actions": {
+      "send": "Send"
+    },
+    "sent": "Message sent."
+  }
 }

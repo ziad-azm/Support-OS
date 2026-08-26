@@ -973,3 +973,15 @@ id+name selector in `tickets`), and the alternative (importing across
 `features/`) is what `no-restricted-imports` forbids outright.
 `frontend/src/features/tickets/api/getCustomerOptions.ts` is the worked
 example.
+
+**A component "shared across channels/variants" is not automatically a
+`shared/` component.** When every real consumer of a "reusable" UI piece
+renders in the same place (one parent screen), the reuse axis is *handling
+every variant uniformly*, not *appearing on multiple screens* — it belongs in
+the feature that owns that screen, not in `src/shared/ui/` or a separate
+feature folder built to match a domain name.
+`frontend/src/features/tickets/components/TicketConversation.tsx` (Story 13,
+`COMM-0`) is the worked example: it renders every message channel identically
+and lives in `tickets` (the one screen that ever shows it), not in a
+`features/communications/` folder that would have needed to import it back
+out — which `no-restricted-imports` forbids.

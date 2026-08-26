@@ -12,6 +12,7 @@ import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 
 import { useDeleteTicket } from '../api/useTicketMutations'
 import { useTicket } from '../api/useTicket'
+import { TicketConversation } from './TicketConversation'
 
 export function TicketDetailPage() {
   const { t } = useTranslation('tickets')
@@ -47,58 +48,61 @@ export function TicketDetailPage() {
       {isValidId ? (
         <QueryBoundary query={query}>
           {(ticket) => (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{ticket.subject}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <dl className="grid grid-cols-2 gap-4">
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{ticket.subject}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <dl className="grid grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.customer')}</dt>
+                      <dd>
+                        <Link to={`/customers/${ticket.customer}`} className="hover:underline">
+                          {ticket.customer_name}
+                        </Link>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.status')}</dt>
+                      <dd>
+                        <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.priority')}</dt>
+                      <dd>
+                        <Badge variant="secondary">{t(`priorities.${ticket.priority}`)}</Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.createdAt')}</dt>
+                      <dd>{date(ticket.created_at)}</dd>
+                    </div>
+                  </dl>
                   <div>
-                    <dt className="text-sm text-muted-foreground">{t('fields.customer')}</dt>
-                    <dd>
-                      <Link to={`/customers/${ticket.customer}`} className="hover:underline">
-                        {ticket.customer_name}
-                      </Link>
-                    </dd>
+                    <p className="text-sm text-muted-foreground">{t('fields.description')}</p>
+                    <p className="whitespace-pre-wrap">{ticket.description}</p>
                   </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{t('fields.status')}</dt>
-                    <dd>
-                      <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{t('fields.priority')}</dt>
-                    <dd>
-                      <Badge variant="secondary">{t(`priorities.${ticket.priority}`)}</Badge>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{t('fields.createdAt')}</dt>
-                    <dd>{date(ticket.created_at)}</dd>
-                  </div>
-                </dl>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t('fields.description')}</p>
-                  <p className="whitespace-pre-wrap">{ticket.description}</p>
-                </div>
-                <Can permission="tickets.manage">
-                  <div className="flex gap-2">
-                    <Button asChild variant="outline">
-                      <Link to={`/tickets/${ticket.id}/edit`}>{t('edit')}</Link>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={deleteMutation.isPending}
-                      onClick={() => void handleDelete()}
-                    >
-                      {t('actions.delete')}
-                    </Button>
-                  </div>
-                </Can>
-              </CardContent>
-            </Card>
+                  <Can permission="tickets.manage">
+                    <div className="flex gap-2">
+                      <Button asChild variant="outline">
+                        <Link to={`/tickets/${ticket.id}/edit`}>{t('edit')}</Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => void handleDelete()}
+                      >
+                        {t('actions.delete')}
+                      </Button>
+                    </div>
+                  </Can>
+                </CardContent>
+              </Card>
+              <TicketConversation ticketId={ticket.id} />
+            </>
           )}
         </QueryBoundary>
       ) : (
