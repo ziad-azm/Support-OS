@@ -1,6 +1,6 @@
 from rest_framework.routers import SimpleRouter
 
-from .views import TicketViewSet
+from .views import CategoryViewSet, TicketViewSet
 
 app_name = "tickets"
 
@@ -9,7 +9,10 @@ app_name = "tickets"
 # auto-generated API-root view already claims `/api/` (Story 10). A second
 # DefaultRouter mounted at the same prefix would register a second, dead
 # root view. SimpleRouter generates none — see Story 12 `## Prerequisites`.
+# Two viewsets on one router, mirroring apps/customers/urls.py's
+# customers/contact-details pair (Story 11).
 router = SimpleRouter()
 router.register("tickets", TicketViewSet, basename="ticket")
+router.register("categories", CategoryViewSet, basename="category")
 
 urlpatterns = router.urls

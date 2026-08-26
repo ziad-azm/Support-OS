@@ -64,6 +64,10 @@ export function TicketDetailPage() {
                       </dd>
                     </div>
                     <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.category')}</dt>
+                      <dd>{ticket.category_name ?? t('fields.noCategory')}</dd>
+                    </div>
+                    <div>
                       <dt className="text-sm text-muted-foreground">{t('fields.status')}</dt>
                       <dd>
                         <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>

@@ -11,6 +11,8 @@
     "subject": "Subject",
     "description": "Description",
     "customer": "Customer",
+    "category": "Category",
+    "noCategory": "No category",
     "status": "Status",
     "priority": "Priority",
     "createdAt": "Created"
@@ -26,6 +28,12 @@
     "medium": "Medium",
     "high": "High",
     "urgent": "Urgent"
+  },
+  "filters": {
+    "category": "Filter by category",
+    "priority": "Filter by priority",
+    "allCategories": "All categories",
+    "allPriorities": "All priorities"
   },
   "actions": {
     "save": "Save",

@@ -12,6 +12,8 @@ export type Ticket = {
   description: string
   customer: number
   customer_name: string
+  category: number | null
+  category_name: string | null
   status: TicketStatus
   priority: TicketPriority
   created_at: string
@@ -21,10 +23,12 @@ export type Ticket = {
 /** The write shape. `status` is excluded on purpose: this story ships no
  * status-changing UI (TKT-4 owns it) — the server default (`open`) is what
  * every created ticket gets, and there is no form field to send anything
- * else. */
+ * else. `category` is nullable — a ticket may be uncategorized; the form
+ * always sends this key explicitly (`null` to clear), never omits it. */
 export type TicketInput = {
   subject: string
   description: string
   customer: number
+  category: number | null
   priority: TicketPriority
 }

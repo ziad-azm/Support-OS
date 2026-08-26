@@ -12,11 +12,17 @@ import { Loading } from '@/shared/ui/Loading'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
+import { useCategories } from '../api/useCategories'
 import { useCustomerOptions } from '../api/useCustomerOptions'
 import { useTicket } from '../api/useTicket'
 import { useCreateTicket, useUpdateTicket } from '../api/useTicketMutations'
 import { TICKET_PRIORITIES } from '../types/ticket'
 import type { Ticket, TicketInput } from '../types/ticket'
+
+// Radix's `Select.Item` requires a non-empty `value` — this sentinel stands
+// in for "no category" the same way the list filters' `"all"` sentinel
+// stands in for "no filter" (TicketListPage). See CONVENTIONS.md §19.
+const CATEGORY_NONE = 'none'
 
 const ticketSchema = z.object({
   subject: requiredString(200),
@@ -28,6 +34,7 @@ const ticketSchema = z.object({
   // string-typed (Radix), and RHF's field.value must match. Converted to a
   // number only in `toTicketInput`. See Story 12 `## Prerequisites`.
   customer: z.string().min(1),
+  category: z.string().min(1),
   priority: choice(TICKET_PRIORITIES),
 })
 
@@ -37,6 +44,7 @@ const EMPTY_DEFAULTS: FormValues = {
   subject: '',
   description: '',
   customer: '',
+  category: CATEGORY_NONE,
   priority: 'medium',
 }
 
@@ -45,6 +53,7 @@ function toDefaults(ticket: Ticket): FormValues {
     subject: ticket.subject,
     description: ticket.description,
     customer: String(ticket.customer),
+    category: ticket.category === null ? CATEGORY_NONE : String(ticket.category),
     priority: ticket.priority,
   }
 }
@@ -54,6 +63,7 @@ function toTicketInput(values: FormValues): TicketInput {
     subject: values.subject,
     description: values.description,
     customer: Number(values.customer),
+    category: values.category === CATEGORY_NONE ? null : Number(values.category),
     priority: values.priority,
   }
 }
@@ -94,6 +104,7 @@ function TicketForm({
   const [formErrors, setFormErrors] = useState<string[]>([])
 
   const customerOptionsQuery = useCustomerOptions()
+  const categoriesQuery = useCategories()
 
   const form = useAppForm({
     schema: ticketSchema,
@@ -126,10 +137,16 @@ function TicketForm({
       label: customer.name,
     })) ?? []
 
+  const categoryOptions =
+    categoriesQuery.data?.items.map((category) => ({
+      value: String(category.id),
+      label: category.name,
+    })) ?? []
+
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t(mode === 'create' ? 'new' : 'edit')}</h1>
-      {customerOptionsQuery.isPending ? (
+      {customerOptionsQuery.isPending || categoriesQuery.isPending ? (
         <Loading />
       ) : (
         <Form {...form}>
@@ -145,6 +162,15 @@ function TicketForm({
               name="customer"
               label={t('fields.customer')}
               options={customerOptions}
+            />
+            <SelectField
+              control={form.control}
+              name="category"
+              label={t('fields.category')}
+              options={[
+                { value: CATEGORY_NONE, label: t('fields.noCategory') },
+                ...categoryOptions,
+              ]}
             />
             <SelectField
               control={form.control}

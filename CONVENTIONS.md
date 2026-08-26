@@ -485,6 +485,17 @@ primitives here. FORM-1 binds them to React Hook Form + Zod; **`Select` is
 not a native form control** and integrates through `Controller`, not
 `register()`.
 
+**An equality filter on a list screen is local component state merged into
+the query params at the call site, exactly like free-text `search`** — not a
+`useServerTable` feature. `TicketListPage`'s category/priority filters
+(Story 18, `TKT-2`) are the worked example: each filter is a plain `Select`
+(the `LanguageSwitcher` pattern — controlled `value`/`onValueChange`, not
+React Hook Form's `Controller`, since a filter is not a form field) with a
+non-empty sentinel value (`"all"`) standing in for "no filter," because
+Radix's `Select.Item` requires a non-empty `value`. **Changing a filter
+resets the page** the same way changing `search` already does — a filtered
+result set can be narrower than the page the user was on.
+
 ---
 
 ## 20. Forms & validation
@@ -1045,3 +1056,23 @@ is JSON-only** (`config/settings/base.py`) — a view receiving a
 form-encoded provider payload must declare `parser_classes = [FormParser]`
 itself, scoped to that one view, the same way `PlainTextRenderer` (Story 15)
 was scoped to one view's `GET` method rather than changing a global default.
+
+**A foreign key has three deletion behaviours in this project, chosen by
+what the relationship means, not by default.** `PROTECT` (`Ticket.customer`,
+Story 12) is for an identity relationship that must not silently vanish.
+`CASCADE` (`Message.ticket`, Story 13) is for a child with no existence
+independent of its parent. `SET_NULL` (`Ticket.category`, Story 18, `TKT-2`)
+is for a classification tag: deleting the referenced row should leave the
+referencing row intact, just unset — the FK must be `null=True` for Django
+to allow `SET_NULL`, making this the project's first nullable foreign key.
+
+**An optional equality filter on a list endpoint is validated when present,
+never required.** Contrast `MessageViewSet`/`ContactDetailViewSet`'s
+`ticket`/`customer` query params (Story 13/11), which raise
+`ValidationError` when *absent* because the endpoint is meaningless without
+them. `TicketViewSet`'s `category`/`priority` filters (Story 18) do the
+opposite: silently skip filtering when the param is absent, but still raise
+`ValidationError` for a present-but-malformed value (a non-numeric
+`category`, an unrecognised `priority`) — a list screen's default
+(unfiltered) view must keep working, but garbage input should not silently
+do nothing either.

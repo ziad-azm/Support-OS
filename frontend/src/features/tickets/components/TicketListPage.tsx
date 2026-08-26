@@ -7,13 +7,22 @@ import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/primitives/select'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
 
+import { useCategories } from '../api/useCategories'
 import { useTickets } from '../api/useTickets'
-import type { Ticket } from '../types/ticket'
+import { TICKET_PRIORITIES } from '../types/ticket'
+import type { Ticket, TicketPriority } from '../types/ticket'
 
 const SEARCH_DEBOUNCE_MS = 300
 
@@ -33,20 +42,29 @@ export function TicketListPage() {
 
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  // "all" is the sentinel for "no filter" — Radix's Select.Item requires a
+  // non-empty value, mirroring the form's CATEGORY_NONE sentinel.
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [priorityFilter, setPriorityFilter] = useState('all')
+  const categoriesQuery = useCategories()
 
   useEffect(() => {
     const handle = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(handle)
   }, [searchInput])
 
-  // `useServerTable.setSort` resets the page on a sort change, but nothing
-  // resets it on a search change — a filtered result set can be narrower
-  // than the page the user was on. Reset explicitly.
+  // A filter change narrows the result set the same way a search does —
+  // reset to page 1, or the user can land on a now-nonexistent page.
   useEffect(() => {
     setPage(1)
-  }, [search, setPage])
+  }, [search, categoryFilter, priorityFilter, setPage])
 
-  const query = useTickets({ ...params, ...(search ? { search } : {}) })
+  const query = useTickets({
+    ...params,
+    ...(search ? { search } : {}),
+    ...(categoryFilter !== 'all' ? { category: categoryFilter } : {}),
+    ...(priorityFilter !== 'all' ? { priority: priorityFilter as TicketPriority } : {}),
+  })
 
   const columns: readonly ColumnDef<Ticket>[] = [
     {
@@ -61,6 +79,14 @@ export function TicketListPage() {
       // Not sortable: `customer_name` is not in the viewset's `ordering_fields`
       // — the same choice Story 10 made for `Customer.phone`.
       cell: (row) => row.customer_name,
+    },
+    {
+      id: 'category_name',
+      header: t('fields.category'),
+      // Not sortable: mirrors `customer_name`'s precedent (Story 12) — a
+      // joined/derived display column, not in the viewset's
+      // `ordering_fields`. See Story 18 `## Prerequisites`.
+      cell: (row) => row.category_name ?? t('fields.noCategory'),
     },
     {
       id: 'status',
@@ -98,6 +124,34 @@ export function TicketListPage() {
         placeholder={t('searchPlaceholder')}
         aria-label={t('search')}
       />
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger aria-label={t('filters.category')} size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allCategories')}</SelectItem>
+            {(categoriesQuery.data?.items ?? []).map((category) => (
+              <SelectItem key={category.id} value={String(category.id)}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger aria-label={t('filters.priority')} size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allPriorities')}</SelectItem>
+            {TICKET_PRIORITIES.map((value) => (
+              <SelectItem key={value} value={value}>
+                {t(`priorities.${value}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <DataTable
         columns={columns}
         query={query}

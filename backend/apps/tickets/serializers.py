@@ -2,7 +2,13 @@ from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
 
-from .models import Ticket
+from .models import Category, Ticket
+
+
+class CategorySerializer(BaseModelSerializer):
+    class Meta(BaseModelSerializer.Meta):
+        model = Category
+        fields = ("id", "name", "created_at", "updated_at")
 
 
 class TicketSerializer(BaseModelSerializer):
@@ -11,6 +17,13 @@ class TicketSerializer(BaseModelSerializer):
     # the viewset's `select_related("customer")` (task 3) is what keeps this
     # from costing an extra query per row on `list`.
     customer_name = serializers.CharField(source="customer.name", read_only=True)
+    # `category` itself needs no explicit declaration — DRF derives
+    # `required=False`/`allow_null=True` from the model field's own
+    # `null=True`/`blank=True` (verified, see Story 18 `## Prerequisites`).
+    # `category_name` does need one: `allow_null=True` is what makes
+    # `source="category.name"` return `None` instead of erroring when a
+    # ticket has no category — also verified against DRF's own source.
+    category_name = serializers.CharField(source="category.name", read_only=True, allow_null=True)
 
     class Meta(BaseModelSerializer.Meta):
         model = Ticket
@@ -20,6 +33,8 @@ class TicketSerializer(BaseModelSerializer):
             "description",
             "customer",
             "customer_name",
+            "category",
+            "category_name",
             "status",
             "priority",
             "created_at",

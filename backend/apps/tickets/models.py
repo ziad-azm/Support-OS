@@ -5,13 +5,33 @@ from apps.core.models import TimeStampedModel
 from apps.customers.models import Customer
 
 
+class Category(TimeStampedModel):
+    """A ticket classification tag — TKT-2's own model. Unlike
+    `ContactDetail` (shared machinery reused by every channel adapter),
+    nothing outside `apps.tickets` references this model. See Story 18
+    `## Story Goal`.
+    """
+
+    name = models.CharField(_("name"), max_length=100, unique=True)
+
+    class Meta:
+        verbose_name = _("category")
+        verbose_name_plural = _("categories")
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Ticket(TimeStampedModel):
     """A support ticket — the core record EPIC 4's sibling stories extend.
 
-    `status` and `priority` are deliberately minimal placeholders: TKT-2 owns
-    real priority/category management, TKT-3 owns assignment, TKT-4 owns
-    status-transition validation and escalation, TKT-5 owns activity history.
-    None of that is pre-empted here. See Story 12 `## Story Goal`.
+    `priority` and `category` are real as of Story 18 (TKT-2): `Category`
+    is a full CRUD resource (`CategoryViewSet`), and `priority` has always
+    been the editable `TextChoices` field it appears as. `status` is still
+    a placeholder pending TKT-4 (status-transition validation, escalation).
+    TKT-3 owns assignment, TKT-5 owns activity history. None of that is
+    pre-empted here.
     """
 
     class Status(models.TextChoices):
@@ -38,6 +58,20 @@ class Ticket(TimeStampedModel):
     # with an unhandled 500 the moment a customer has tickets.
     customer = models.ForeignKey(
         Customer, on_delete=models.PROTECT, related_name="tickets", verbose_name=_("customer")
+    )
+    # SET_NULL, not PROTECT or CASCADE: the project's first nullable FK.
+    # Contrast `customer` above (PROTECT — an identity that must not
+    # silently vanish) and `Message.ticket` (CASCADE — no existence
+    # independent of its parent, Story 13). A category is a classification
+    # tag: deleting one should leave every ticket that had it intact, just
+    # uncategorized. See Story 18 `## Prerequisites`.
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tickets",
+        verbose_name=_("category"),
     )
     status = models.CharField(
         _("status"), max_length=20, choices=Status.choices, default=Status.OPEN

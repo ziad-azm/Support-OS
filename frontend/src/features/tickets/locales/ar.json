@@ -11,6 +11,8 @@
     "subject": "الموضوع",
     "description": "الوصف",
     "customer": "العميل",
+    "category": "الفئة",
+    "noCategory": "بدون فئة",
     "status": "الحالة",
     "priority": "الأولوية",
     "createdAt": "تاريخ الإنشاء"
@@ -26,6 +28,12 @@
     "medium": "متوسطة",
     "high": "عالية",
     "urgent": "عاجلة"
+  },
+  "filters": {
+    "category": "تصفية حسب الفئة",
+    "priority": "تصفية حسب الأولوية",
+    "allCategories": "كل الفئات",
+    "allPriorities": "كل الأولويات"
   },
   "actions": {
     "save": "حفظ",

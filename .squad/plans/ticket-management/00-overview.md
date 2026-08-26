@@ -7,6 +7,7 @@ Entry point for the **ticket-management** feature. Stories execute in order by t
 | NN | File | Title | Tracker id | Depends on |
 |----|------|-------|------------|------------|
 | 12 | [12-story-create-track-tickets-SUPPORTOS-32.md](12-story-create-track-tickets-SUPPORTOS-32.md) | Create & Track Tickets | SUPPORTOS-32 | Story 10 (`CUST-1`), Story 09 (`AUTH-2`) |
+| 18 | [18-story-categories-priorities-SUPPORTOS-33.md](18-story-categories-priorities-SUPPORTOS-33.md) | Categories & Priorities | SUPPORTOS-33 | Story 12 (`TKT-1`) |
 
 ## Dependency notes
 
@@ -32,3 +33,5 @@ So story 12's `Ticket` has `status`/`priority` as bare placeholder fields (no tr
 **Router collision, also resolved.** `apps.customers.urls` already mounts a `DefaultRouter` at the API root (`/api/`, established by Story 10). A second `DefaultRouter` for tickets at the same mount point would silently shadow part of it. `apps/tickets/urls.py` uses `SimpleRouter` instead, which generates no root view — Story 10's own plan named this as the documented alternative, for a different original reason (keeping the enveloped 404 at `/api/`).
 
 **Note on testing:** per standing project policy this project authors no automated tests. Story 12 adds none. Its checks are the backend's `manage.py check`/`test`/`ruff`, the frontend's `lint`/`format:check`/`check:rtl`/`build`, an `en`/`ar` key-set comparison, real HTTP across four verbs × three permission states (including the `ProtectedError` fix in both directions), and a bilingual walkthrough of the list, detail, and form.
+
+**Story 18 (TKT-2, Categories & Priorities) adds the `Category` model the backlog named as this story's job**, plus the project's first nullable foreign key (`Ticket.category`, `on_delete=SET_NULL` — a third FK-deletion pattern alongside `PROTECT`/`CASCADE`, chosen because a category is a classification tag, not an identity or a parent). `priority` itself was already real since Story 12; this story's "priority... with management endpoints" (intake) is satisfied by `Category`'s CRUD, reusing `tickets.*` permissions with no new constants (the intake's own "Reuse `AUTHZ`" instruction) and no new grant migration. It is also the first story to add equality-filter dropdowns to a list screen — `TicketListPage`'s category/priority filters are plain, locally-stated `Select`s (the `LanguageSwitcher` pattern) merged into the query params the same way free-text `search` already is, a new `CONVENTIONS.md` §19 pattern future filtered list screens (e.g. TKT-3's "my tickets") can reuse.
