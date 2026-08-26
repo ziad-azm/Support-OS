@@ -190,20 +190,21 @@ renamed in transit.
 
 ## 13. Auth conventions
 
-`AUTHZ` is defined by **AUTH-1** (JWT) and **AUTH-2** (roles/permissions),
-neither planned yet.
+`AUTHZ`'s authentication half is defined by **AUTH-1** (JWT), which has
+landed — see § 21 for the full design. **AUTH-2** (roles, granular
+permissions) is not planned yet.
 
-Two live seams already exist so neither reinvents its own hook point:
+JWT auth (login/refresh/logout, token storage, silent refresh) is
+`frontend/src/shared/auth/` and `backend/apps/accounts/`. Never build a
+second auth flow, a second token store, or a second `useAuth()`-shaped hook
+— extend what is there.
 
-- `setAuthTokenProvider` in `frontend/src/shared/lib/api/client.ts`.
-- The `JWT_SIGNING_KEY` / `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` /
-  `JWT_REFRESH_TOKEN_LIFETIME_DAYS` variables already staged in
-  `backend/config/settings/base.py`.
-
-**Open security note:** `DEFAULT_PERMISSION_CLASSES` is `AllowAny` and no
-authentication classes are configured, until AUTH-2 lands. **Any endpoint
-added before then must set `permission_classes` explicitly on its own
-view.**
+**Open security note, still true after AUTH-1:** `DEFAULT_PERMISSION_CLASSES`
+is `AllowAny`. `JWTAuthentication` is now registered globally, so
+`request.user` resolves correctly wherever a valid token is presented, but
+nothing **enforces** authentication by default. **Any endpoint that must be
+protected sets `permission_classes` explicitly on its own view** — AUTH-2 is
+what makes this the default instead of an opt-in.
 
 ---
 
@@ -618,3 +619,92 @@ function TicketForm() {
   )
 }
 ```
+
+---
+
+## 21. Authentication (JWT)
+
+AUTH-1 (Story 08). `backend/apps/accounts/` and `frontend/src/shared/auth/`
+are the only places auth logic lives — no feature reimplements login, token
+storage, or a guard.
+
+**The stock `djangorestframework-simplejwt` views need no subclassing.**
+`EnvelopeJSONRenderer` wraps *any* non-`Envelope` response body in
+`success_envelope(data)`. `TokenObtainPairView`/`TokenRefreshView` return a
+plain `{access, refresh}` dict, so the envelope contract holds with zero
+custom serializers or views — `apps/accounts/urls.py` wires the library's
+views directly.
+
+**The exception handler's error `code` comes from the exception *class*, not
+the raised instance.** Verified against the real endpoints:
+
+| Case | `code` |
+|---|---|
+| Wrong login credentials | `authentication_failed` |
+| Missing/blank login field | `validation_error`, `fields: {"password": [...]}` |
+| Bad/expired refresh token | `token_not_valid` |
+| Bad/expired access token on any protected endpoint | `token_not_valid` |
+| No token at all | `not_authenticated` |
+
+A bad login and an expired session are **different, already-meaningful**
+codes. The login serializer's dynamic field name (`get_user_model().USERNAME_FIELD`,
+which is `"email"`) is why a missing-password validation error lands on the
+frontend with field name `email`/`password` — the same strings the Zod login
+schema uses — with zero name-mapping. This is § 12's snake_case-end-to-end
+rule paying off a second time (the first was FORM-1's `applyServerErrors`).
+
+**Token storage: in-memory access token, `localStorage` refresh token — a
+deliberate trade-off, not an oversight.** The access token is never
+persisted, so it is not readable by an XSS payload that survives a reload.
+The refresh token must survive a reload to keep the user signed in, so it is
+the one piece of auth state in `localStorage['supportos.refreshToken']`. An
+httpOnly-cookie refresh token would be more XSS-resistant but needs no
+client-side "token storage" logic at all — the intake explicitly asked for
+storage and refresh *in the Axios interceptor*, which only makes sense for a
+client-held token. If a future story moves to a cookie-based refresh flow,
+`shared/auth/tokenStorage.ts` and `refresh.ts` are the two files to replace;
+nothing else should need to change.
+
+**Two seams on `httpClient`, not one.** `client.ts` exposes
+`setAuthTokenProvider` (reads the current access token for every outgoing
+request) and `setUnauthorizedHandler` (attempts one silent refresh on a
+`token_not_valid` 401, retries the original request once). Both are wired in
+`shared/auth/index.ts`'s side-effect import — never call `httpClient`'s
+interceptors directly from a feature. The refresh-retry interceptor is
+registered **before** the existing error-normalising one, so it still sees
+the raw envelope's `error.code` rather than an already-wrapped
+`ApiRequestError`. It exempts the refresh endpoint itself from retrying (a
+`token_not_valid` from `/auth/token/refresh/` must not trigger another
+refresh — that is the infinite-recursion case).
+
+**`refreshAccessToken()` is a single-flight promise, verified necessary.**
+`SIMPLE_JWT` sets `ROTATE_REFRESH_TOKENS` and `BLACKLIST_AFTER_ROTATION`
+together: every successful refresh issues a new refresh token and blacklists
+the one it consumed. Confirmed with real requests — reusing an
+already-rotated-away refresh token fails with `token_not_valid` /
+`"Token is blacklisted"`, not a generic error. If two 401s fired two
+independent refresh calls, the second would present a token the first had
+already spent, logging the user out for no real security reason.
+`shared/auth/refresh.ts` holds one in-flight promise; every caller —
+`AuthProvider`'s boot sequence and the interceptor's `unauthorizedHandler`
+alike — awaits the same call.
+
+**`LogoutView` takes no `Authorization` header on purpose.** The refresh
+token in the request body *is* the credential being revoked; requiring a
+still-valid access token would make logout impossible in exactly the case it
+exists for (the access token already expired). It swallows `TokenError` so a
+second logout call with an already-blacklisted token is a no-op 200, not an
+error.
+
+**`DEFAULT_PERMISSION_CLASSES` is still `AllowAny` everywhere except
+`MeView`.** AUTH-1 only fills in *authentication* (does this token identify a
+real user?); AUTH-2 is what adds general *authorization* enforcement.
+`MeView` sets `permission_classes = [IsAuthenticated]` explicitly, the way
+every protected view must until AUTH-2 lands — see § 13.
+
+**A known rough edge, accepted rather than engineered around:** a failed
+login also fires the shared `MutationCache.onError` toast (the same
+translated `authentication_failed` copy `LoginPage` would otherwise have had
+to render itself) — this is a feature, not a duplicate, and is why
+`LoginPage`'s own `onError` only handles `validation_error` field errors and
+does nothing else.

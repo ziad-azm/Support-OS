@@ -7,7 +7,8 @@
     "goHome": "Go home",
     "close": "Close",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "logout": "Log out"
   },
   "states": {
     "loading": "Loading…",

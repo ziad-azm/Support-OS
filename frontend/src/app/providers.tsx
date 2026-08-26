@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Direction } from 'radix-ui'
 
+import { AuthProvider } from '@/shared/auth'
 import { useDirection } from '@/shared/i18n/useDirection'
 import { createQueryClient } from '@/shared/lib/api/queryClient'
 import { AppErrorBoundary } from '@/shared/ui/AppErrorBoundary'
@@ -41,10 +42,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <Direction.DirectionProvider dir={dir}>
         <ToastProvider>
           <ConfirmProvider>
-            <QueryClientProvider client={queryClient}>
-              {children}
-              {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-            </QueryClientProvider>
+            <AuthProvider>
+              <QueryClientProvider client={queryClient}>
+                {children}
+                {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+              </QueryClientProvider>
+            </AuthProvider>
           </ConfirmProvider>
         </ToastProvider>
       </Direction.DirectionProvider>

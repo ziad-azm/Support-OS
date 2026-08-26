@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router'
 
 import { RootLayout } from './RootLayout'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
+import { RequireAuth } from '@/shared/auth'
 
 export const router = createBrowserRouter([
   {
@@ -10,11 +11,23 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
     children: [
       {
-        index: true,
+        path: 'login',
         lazy: async () => {
-          const { HealthPage } = await import('@/features/health/components/HealthPage')
-          return { element: <HealthPage /> }
+          const { LoginPage } = await import('@/features/auth/components/LoginPage')
+          return { element: <LoginPage /> }
         },
+      },
+      {
+        element: <RequireAuth />,
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { HealthPage } = await import('@/features/health/components/HealthPage')
+              return { element: <HealthPage /> }
+            },
+          },
+        ],
       },
       {
         path: '*',

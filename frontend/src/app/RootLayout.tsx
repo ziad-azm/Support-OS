@@ -1,6 +1,8 @@
 import { Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
 
+import { useAuth } from '@/shared/auth'
+import { Button } from '@/shared/ui/primitives/button'
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/shared/ui/ThemeToggle'
 
@@ -8,6 +10,7 @@ import { ThemeToggle } from '@/shared/ui/ThemeToggle'
  * a main content area for the routed page. */
 export function RootLayout() {
   const { t } = useTranslation()
+  const { user, logout } = useAuth()
 
   return (
     <div className="min-h-dvh bg-background">
@@ -15,6 +18,14 @@ export function RootLayout() {
         <div className="container mx-auto flex items-center gap-4 px-4 py-3">
           <span className="font-semibold">{t('app.name')}</span>
           <div className="ms-auto flex items-center gap-2">
+            {user ? (
+              <>
+                <span className="text-sm text-muted-foreground">{user.email}</span>
+                <Button variant="ghost" size="sm" onClick={() => void logout()}>
+                  {t('actions.logout')}
+                </Button>
+              </>
+            ) : null}
             <LanguageSwitcher />
             <ThemeToggle />
           </div>

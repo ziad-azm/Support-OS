@@ -9,6 +9,7 @@ export const API_ERROR_CODES = [
   'parse_error',
   'not_authenticated',
   'authentication_failed',
+  'token_not_valid',
   'permission_denied',
   'not_found',
   'method_not_allowed',

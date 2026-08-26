@@ -1,3 +1,5 @@
+import authAr from '@/features/auth/locales/ar.json'
+import authEn from '@/features/auth/locales/en.json'
 import healthAr from '@/features/health/locales/ar.json'
 import healthEn from '@/features/health/locales/en.json'
 
@@ -17,8 +19,20 @@ import enValidation from './locales/en/validation.json'
  * "every feature adds its own namespace" checklist item.
  */
 export const resources = {
-  en: { common: enCommon, errors: enErrors, validation: enValidation, health: healthEn },
-  ar: { common: arCommon, errors: arErrors, validation: arValidation, health: healthAr },
+  en: {
+    common: enCommon,
+    errors: enErrors,
+    validation: enValidation,
+    health: healthEn,
+    auth: authEn,
+  },
+  ar: {
+    common: arCommon,
+    errors: arErrors,
+    validation: arValidation,
+    health: healthAr,
+    auth: authAr,
+  },
 } as const
 
 export type AppResources = (typeof resources)['en']

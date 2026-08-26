@@ -29,6 +29,21 @@ export function setAuthTokenProvider(provider: TokenProvider): void {
   tokenProvider = provider
 }
 
+type UnauthorizedHandler = () => Promise<string | null>
+
+let unauthorizedHandler: UnauthorizedHandler | null = null
+
+/**
+ * Seam for AUTH-1's silent-refresh flow. Resolves to a new access token, or
+ * `null` if refresh itself failed — in which case the caller must treat the
+ * user as logged out. `shared/auth` is the only sanctioned caller of this.
+ */
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): void {
+  unauthorizedHandler = handler
+}
+
+const retriedRequests = new WeakSet<object>()
+
 httpClient.interceptors.request.use((config) => {
   const token = tokenProvider()
   if (token) {
@@ -40,6 +55,42 @@ httpClient.interceptors.request.use((config) => {
   }
   return config
 })
+
+// Must be registered BEFORE the error-normalising interceptor below, so it
+// still sees the raw Axios error with `error.response.data.error.code` in
+// envelope form. Anything it does not handle falls through unchanged.
+httpClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const response = error?.response
+    const config = error?.config
+    const code = response?.data?.error?.code
+
+    // The refresh endpoint itself failing must not trigger another refresh —
+    // that is the infinite-recursion case this check exists to prevent.
+    const isRefreshCall =
+      typeof config?.url === 'string' && config.url.includes('/auth/token/refresh/')
+
+    if (
+      response?.status === 401 &&
+      code === 'token_not_valid' &&
+      unauthorizedHandler &&
+      config &&
+      !isRefreshCall &&
+      !retriedRequests.has(config)
+    ) {
+      retriedRequests.add(config)
+      const newAccessToken = await unauthorizedHandler()
+      if (newAccessToken) {
+        config.headers = config.headers ?? {}
+        config.headers['Authorization'] = `Bearer ${newAccessToken}`
+        return httpClient(config)
+      }
+    }
+
+    return Promise.reject(error)
+  },
+)
 
 httpClient.interceptors.response.use(
   (response) => response,

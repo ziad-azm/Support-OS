@@ -9,6 +9,7 @@ import { RouterProvider } from 'react-router'
 import './shared/i18n'
 import './shared/theme'
 import './shared/validation'
+import './shared/auth'
 
 import { AppProviders } from './app/providers'
 import { router } from './app/router'

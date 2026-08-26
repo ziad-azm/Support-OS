@@ -64,6 +64,19 @@ six shared field components (`TextField`, `TextareaField`, `SelectField`,
 file-shape precedent as `shared/ui/confirm/`. See `CONVENTIONS.md` § 20 for
 the full rules and a worked example.
 
+## Authentication
+
+`src/shared/auth/` is the single source of auth state: `tokenStorage.ts`
+(in-memory access token, `localStorage`-persisted refresh token),
+`refresh.ts` (`refreshAccessToken()`, a single-flight promise), `AuthContext.ts`
+/ `AuthProvider.tsx` / `useAuth.ts` (the `useToast`/`useConfirm` context
+precedent), and `RequireAuth.tsx` (a path-less layout route guard).
+`index.ts`'s side-effect import wires `client.ts`'s two auth seams
+(`setAuthTokenProvider`, `setUnauthorizedHandler`) — nothing else should call
+either directly. `src/features/auth/` holds `LoginPage`, built from
+`useAppForm` + `TextField` like any other form. See `CONVENTIONS.md` § 21
+for the full design.
+
 ## Internationalization
 
 `src/shared/i18n/` holds the i18next bootstrap: `config.ts` (the language
@@ -104,9 +117,10 @@ built on top of them. No `fetch`, no ad-hoc Axios, ever, in a feature.
 `shared/hooks/` follows the same "a module owns its own hook" precedent as
 `shared/ui/toast/useToast.ts`: `useFormatters.ts` is its first occupant,
 `useServerTable` lives beside `DataTable` in `shared/ui/data-table/`,
-`useConfirm` lives beside `ConfirmProvider` in `shared/ui/confirm/`, and
-`useAppForm` lives beside the field components in `shared/ui/form/` — not
-all hooks live in `shared/hooks/`.
+`useConfirm` lives beside `ConfirmProvider` in `shared/ui/confirm/`,
+`useAppForm` lives beside the field components in `shared/ui/form/`, and
+`useAuth` lives beside `AuthProvider` in `shared/auth/` — not all hooks live
+in `shared/hooks/`.
 
 `import.meta.env` is read in exactly four files, nowhere else: `config/env.ts`,
 `main.tsx`, `app/providers.tsx`, and `shared/lib/logger.ts`.
@@ -117,4 +131,5 @@ The full conventions document is [`CONVENTIONS.md`](../../CONVENTIONS.md) (`CONV
 and references this file rather than restating it. The response envelope this
 layout serves is documented in the root `README.md` under **API conventions**.
 Internationalization rules are in `CONVENTIONS.md` § 18; the design system,
-theming, and data-table rules are in § 19; forms and validation are in § 20.
+theming, and data-table rules are in § 19; forms and validation are in § 20;
+authentication is in § 21.

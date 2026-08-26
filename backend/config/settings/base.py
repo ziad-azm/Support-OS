@@ -9,6 +9,7 @@ Environment-specific overrides live in `dev.py` and `prod.py`; select one with
 DJANGO_SETTINGS_MODULE.
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -41,6 +42,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "rest_framework",
     "corsheaders",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 # Domain apps: one per business area. See backend/apps/README.md for the rule
@@ -62,6 +64,8 @@ LOCAL_APPS = [
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     # Must sit above CommonMiddleware so preflight responses are not rewritten.
@@ -154,15 +158,28 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# JWT env contract, staged here so AUTH-1 (djangorestframework-simplejwt) adds a
-# package and a SIMPLE_JWT mapping — never new config plumbing. Nothing reads
-# these values yet; that is intentional.
+# JWT env contract, staged for AUTH-1. Story 08 (AUTH-1) is what reads these.
 # `or SECRET_KEY` rather than `default=SECRET_KEY`: .env.example ships
 # `JWT_SIGNING_KEY=` (present but blank), and django-environ treats a blank value
 # as a value, so a plain default would never fire.
 JWT_SIGNING_KEY = env("JWT_SIGNING_KEY", default="").strip() or SECRET_KEY
 JWT_ACCESS_TOKEN_LIFETIME_MINUTES = env.int("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=15)
 JWT_REFRESH_TOKEN_LIFETIME_DAYS = env.int("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=7)
+
+# Only the settings that differ from djangorestframework-simplejwt's own
+# defaults are listed — see CONVENTIONS.md §0 ("only set what's necessary").
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=JWT_ACCESS_TOKEN_LIFETIME_MINUTES),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=JWT_REFRESH_TOKEN_LIFETIME_DAYS),
+    # Rotating on every refresh, and blacklisting the token it replaces, is
+    # what makes `token_blacklist` worth having. See CONVENTIONS.md §21 for
+    # the concurrency hazard this creates on the frontend and how the
+    # frontend's refreshAccessToken() avoids it.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "SIGNING_KEY": JWT_SIGNING_KEY,
+}
 
 
 # --- CORS ---------------------------------------------------------------
@@ -212,11 +229,14 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.core.exceptions.envelope_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPageNumberPagination",
     "PAGE_SIZE": DRF_PAGE_SIZE,
-    # AUTH-1 fills in authentication; AUTH-2 tightens permissions to
-    # IsAuthenticated and audits every view. Until then the API is
-    # deliberately open — any endpoint added before AUTH-2 must set
-    # permission_classes explicitly on its own view.
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    # AUTH-1 fills in authentication (this block). AUTH-2 tightens permissions
+    # to IsAuthenticated and audits every view. Until then request.user
+    # resolves correctly wherever a valid token is presented, but the API
+    # stays open by default — any endpoint that must be protected sets
+    # permission_classes explicitly on its own view. See CONVENTIONS.md §13.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],

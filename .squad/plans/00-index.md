@@ -6,3 +6,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 |---------|----------|----------|
 | project-foundation-architecture | [project-foundation-architecture/00-overview.md](project-foundation-architecture/00-overview.md) | 01–04 (EPIC 0 complete) |
 | internationalization-design-system | [internationalization-design-system/00-overview.md](internationalization-design-system/00-overview.md) | 05–07 (EPIC 1 fully planned) |
+| authentication-authorization | [authentication-authorization/00-overview.md](authentication-authorization/00-overview.md) | 08 |
