@@ -471,6 +471,15 @@ developer discovers it.
 | `DJANGO_LOG_LEVEL` | no | `INFO` | Level for the `apps.*` logger tree. See `CONVENTIONS.md` § Logging. |
 | `DJANGO_SECURE_SSL_REDIRECT` | no | `True` | **Prod only.** Redirect HTTP to HTTPS. |
 | `DJANGO_SECURE_HSTS_SECONDS` | no | `31536000` | **Prod only.** HSTS max-age. |
+| `EMAIL_HOST` | no | *(empty)* | SMTP host. Ignored in dev (console backend); needed in prod for real delivery. |
+| `EMAIL_PORT` | no | `587` | SMTP port. |
+| `EMAIL_HOST_USER` | no | *(empty)* | SMTP auth username. |
+| `EMAIL_HOST_PASSWORD` | no | *(empty)* | SMTP auth password. |
+| `EMAIL_USE_TLS` | no | `True` | Use STARTTLS for SMTP. |
+| `DEFAULT_FROM_EMAIL` | no | `support@example.com` | `From` address for outbound email. |
+| `EMAIL_INBOUND_LOCAL_PART` | no | `support` | Local-part of the inbound routing address, before the `+<ticket id>` tag. |
+| `EMAIL_INBOUND_DOMAIN` | no | `support.example.com` | Domain of the inbound routing address a reply-to uses. |
+| `EMAIL_INBOUND_WEBHOOK_TOKEN` | no | *(empty — endpoint rejects every request until set)* | Shared secret `EmailInboundWebhookView` requires as `?token=`. |
 
 ### Frontend — `frontend/.env`
 

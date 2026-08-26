@@ -288,3 +288,26 @@ LOGGING = {
         },
     },
 }
+
+
+# --- Email (COMM-1) -------------------------------------------------------
+# Outbound uses Django's own SMTP backend. EMAIL_BACKEND itself is NOT read
+# from ENV — dev.py hardcodes the console backend so local development can
+# never accidentally send a real email; prod.py hardcodes SMTP. Provider
+# config stays ENV-only for this story; INT-3 (SupportOs backlog.MD:661-665)
+# is where a DB-backed config UI eventually lands.
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="support@example.com")
+
+# Inbound routing: a reply lands on `{EMAIL_INBOUND_LOCAL_PART}+<ticket
+# id>@{EMAIL_INBOUND_DOMAIN}`. See apps/communications/email_adapter.py.
+EMAIL_INBOUND_LOCAL_PART = env("EMAIL_INBOUND_LOCAL_PART", default="support")
+EMAIL_INBOUND_DOMAIN = env("EMAIL_INBOUND_DOMAIN", default="support.example.com")
+# No safe default: an empty token makes EmailInboundWebhookView reject every
+# request (fail closed), rather than crash the app at import time over an
+# optional feature that may not be configured yet.
+EMAIL_INBOUND_WEBHOOK_TOKEN = env("EMAIL_INBOUND_WEBHOOK_TOKEN", default="")

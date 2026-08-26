@@ -16,10 +16,9 @@ class ChannelAdapter(ABC):
       conversation UI's reply form, task 8, always persists first) through
       this channel's real API.
 
-    No adapter is registered yet. `channel` -> adapter-class dispatch is
-    deferred to whichever story adds the first concrete subclass (COMM-1) —
-    a registry with zero real entries has nothing to prove it right. See
-    Story 13 `## Prerequisites`.
+    `register_adapter`/`get_adapter` below are the minimal channel ->
+    adapter-class registry COMM-0 deferred. `apps/communications/email_adapter.py`
+    (Story 14, COMM-1) is the first entry.
     """
 
     channel: str
@@ -33,3 +32,21 @@ class ChannelAdapter(ABC):
     def send(self, message: Message) -> None:
         """Deliver an outbound Message through this channel."""
         raise NotImplementedError
+
+
+CHANNEL_ADAPTERS: dict[str, type[ChannelAdapter]] = {}
+
+
+def register_adapter(adapter_cls: type[ChannelAdapter]) -> type[ChannelAdapter]:
+    """Class decorator: `@register_adapter` on a `ChannelAdapter` subclass
+    makes `get_adapter(channel)` find it. The subclass module must actually
+    be imported for this to run — `CommunicationsConfig.ready()` is where
+    that happens, once per process, not per request.
+    """
+    CHANNEL_ADAPTERS[adapter_cls.channel] = adapter_cls
+    return adapter_cls
+
+
+def get_adapter(channel: str) -> ChannelAdapter | None:
+    adapter_cls = CHANNEL_ADAPTERS.get(channel)
+    return adapter_cls() if adapter_cls else None

@@ -1,6 +1,7 @@
+from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import MessageViewSet
+from .views import EmailInboundWebhookView, MessageViewSet
 
 app_name = "communications"
 
@@ -11,4 +12,9 @@ app_name = "communications"
 router = SimpleRouter()
 router.register("messages", MessageViewSet, basename="message")
 
-urlpatterns = router.urls
+urlpatterns = [
+    path(
+        "webhooks/email/inbound/", EmailInboundWebhookView.as_view(), name="email-inbound-webhook"
+    ),
+    *router.urls,
+]

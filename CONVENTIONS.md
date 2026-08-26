@@ -985,3 +985,15 @@ feature folder built to match a domain name.
 and lives in `tickets` (the one screen that ever shows it), not in a
 `features/communications/` folder that would have needed to import it back
 out — which `no-restricted-imports` forbids.
+
+**A channel/provider dispatch table is a decorator plus a dict, wired
+through `AppConfig.ready()` — not more.**
+`apps/communications/adapters.py::register_adapter`/`get_adapter` (Story 14,
+`COMM-1`) is the worked example: a concrete `ChannelAdapter` subclass
+registers itself with `@register_adapter` at import time, and
+`CommunicationsConfig.ready()` is what guarantees that import actually
+happens once per process. **A dispatched side effect (an outbound send) must
+not fail the request that triggered it** — `MessageViewSet.perform_create`
+catches and logs any `adapter.send()` failure; the record it was attached to
+is already committed. The next channel story (COMM-2, WhatsApp) copies both
+shapes.
