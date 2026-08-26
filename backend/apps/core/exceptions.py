@@ -6,6 +6,7 @@ import traceback
 from django.conf import settings
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import ProtectedError
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
 from rest_framework import exceptions as drf_exceptions
@@ -20,6 +21,9 @@ logger = logging.getLogger(__name__)
 VALIDATION_MESSAGE = _("The submitted data is invalid.")
 INTERNAL_MESSAGE = _("An unexpected error occurred.")
 NON_FIELD_KEY = "non_field_errors"
+PROTECTED_DELETE_MESSAGE = _(
+    "This record cannot be deleted because other records still reference it."
+)
 
 
 def envelope_exception_handler(exc, context):
@@ -56,6 +60,14 @@ def _to_drf_exception(exc):
     if isinstance(exc, DjangoValidationError):
         detail = getattr(exc, "message_dict", None) or exc.messages
         return drf_exceptions.ValidationError(detail=detail)
+    if isinstance(exc, ProtectedError):
+        # Raised by Django's delete collector for an on_delete=PROTECT FK —
+        # e.g. DELETE /api/customers/<id>/ on a customer with Ticket rows
+        # (TKT-1, Story 12). Not a DjangoValidationError, so without this
+        # branch it falls through to an unhandled 500. Verified live against
+        # this project's other PROTECT relation (accounts.Role/User.role).
+        # See Story 12 `## Prerequisites`.
+        return drf_exceptions.ValidationError(detail=[str(PROTECTED_DELETE_MESSAGE)])
     return exc
 
 

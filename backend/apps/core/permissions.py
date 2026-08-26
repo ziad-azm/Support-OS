@@ -28,6 +28,8 @@ class Permissions:
     ROLES_MANAGE = "roles.manage"
     CUSTOMERS_VIEW = "customers.view"
     CUSTOMERS_MANAGE = "customers.manage"
+    TICKETS_VIEW = "tickets.view"
+    TICKETS_MANAGE = "tickets.manage"
 
 
 ALL_PERMISSIONS: frozenset[str] = frozenset(

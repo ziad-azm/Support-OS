@@ -4,6 +4,8 @@ import customersAr from '@/features/customers/locales/ar.json'
 import customersEn from '@/features/customers/locales/en.json'
 import healthAr from '@/features/health/locales/ar.json'
 import healthEn from '@/features/health/locales/en.json'
+import ticketsAr from '@/features/tickets/locales/ar.json'
+import ticketsEn from '@/features/tickets/locales/en.json'
 
 import arCommon from './locales/ar/common.json'
 import arErrors from './locales/ar/errors.json'
@@ -28,6 +30,7 @@ export const resources = {
     health: healthEn,
     auth: authEn,
     customers: customersEn,
+    tickets: ticketsEn,
   },
   ar: {
     common: arCommon,
@@ -36,6 +39,7 @@ export const resources = {
     health: healthAr,
     auth: authAr,
     customers: customersAr,
+    tickets: ticketsAr,
   },
 } as const
 

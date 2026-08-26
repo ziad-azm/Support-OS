@@ -1,0 +1,43 @@
+{
+  "title": "Tickets",
+  "new": "New ticket",
+  "edit": "Edit ticket",
+  "search": "Search tickets",
+  "searchPlaceholder": "Subject, description, or customer",
+  "empty": "No tickets yet",
+  "emptyDescription": "Create the first ticket to get started.",
+  "noSearchResults": "No tickets match that search.",
+  "fields": {
+    "subject": "Subject",
+    "description": "Description",
+    "customer": "Customer",
+    "status": "Status",
+    "priority": "Priority",
+    "createdAt": "Created"
+  },
+  "statuses": {
+    "open": "Open",
+    "in_progress": "In progress",
+    "resolved": "Resolved",
+    "closed": "Closed"
+  },
+  "priorities": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "actions": {
+    "save": "Save",
+    "delete": "Delete",
+    "backToList": "Back to tickets"
+  },
+  "delete": {
+    "title": "Delete this ticket?",
+    "description": "This permanently removes the ticket. This cannot be undone."
+  },
+  "created": "Ticket created.",
+  "updated": "Ticket updated.",
+  "deleted": "Ticket deleted.",
+  "notFound": "That ticket could not be found."
+}

@@ -1,0 +1,109 @@
+import { useTranslation } from 'react-i18next'
+import { Link, useNavigate, useParams } from 'react-router'
+
+import { Can } from '@/shared/auth'
+import { useFormatters } from '@/shared/hooks/useFormatters'
+import { Badge } from '@/shared/ui/primitives/badge'
+import { Button } from '@/shared/ui/primitives/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
+import { useConfirm } from '@/shared/ui/confirm/useConfirm'
+import { Empty } from '@/shared/ui/Empty'
+import { QueryBoundary } from '@/shared/ui/QueryBoundary'
+
+import { useDeleteTicket } from '../api/useTicketMutations'
+import { useTicket } from '../api/useTicket'
+
+export function TicketDetailPage() {
+  const { t } = useTranslation('tickets')
+  const { date } = useFormatters()
+  const navigate = useNavigate()
+  const { confirm } = useConfirm()
+  const { id: idParam } = useParams()
+  const id = Number(idParam)
+  const isValidId = !Number.isNaN(id)
+
+  // Hooks stay unconditional across renders; `enabled` is what actually
+  // stops the request for a non-numeric id — a hand-typed URL can produce
+  // one even though `tickets/new` is declared before `tickets/:id`.
+  const query = useTicket(id, { enabled: isValidId })
+  const deleteMutation = useDeleteTicket()
+
+  async function handleDelete() {
+    const confirmed = await confirm({
+      title: t('delete.title'),
+      description: t('delete.description'),
+      destructive: true,
+    })
+    if (!confirmed) return
+    await deleteMutation.mutateAsync(id)
+    navigate('/tickets')
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Link to="/tickets" className="text-sm text-muted-foreground hover:underline">
+        {t('actions.backToList')}
+      </Link>
+      {isValidId ? (
+        <QueryBoundary query={query}>
+          {(ticket) => (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{ticket.subject}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <dl className="grid grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm text-muted-foreground">{t('fields.customer')}</dt>
+                    <dd>
+                      <Link to={`/customers/${ticket.customer}`} className="hover:underline">
+                        {ticket.customer_name}
+                      </Link>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">{t('fields.status')}</dt>
+                    <dd>
+                      <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">{t('fields.priority')}</dt>
+                    <dd>
+                      <Badge variant="secondary">{t(`priorities.${ticket.priority}`)}</Badge>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">{t('fields.createdAt')}</dt>
+                    <dd>{date(ticket.created_at)}</dd>
+                  </div>
+                </dl>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t('fields.description')}</p>
+                  <p className="whitespace-pre-wrap">{ticket.description}</p>
+                </div>
+                <Can permission="tickets.manage">
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                      <Link to={`/tickets/${ticket.id}/edit`}>{t('edit')}</Link>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => void handleDelete()}
+                    >
+                      {t('actions.delete')}
+                    </Button>
+                  </div>
+                </Can>
+              </CardContent>
+            </Card>
+          )}
+        </QueryBoundary>
+      ) : (
+        <Empty title={t('notFound')} />
+      )}
+    </div>
+  )
+}

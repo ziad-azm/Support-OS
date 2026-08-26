@@ -66,6 +66,44 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          {
+            element: <RequirePermission permission="tickets.view" />,
+            children: [
+              {
+                path: 'tickets',
+                lazy: async () => {
+                  const { TicketListPage } =
+                    await import('@/features/tickets/components/TicketListPage')
+                  return { element: <TicketListPage /> }
+                },
+              },
+              {
+                // Must stay before `tickets/:id`, same reason as `customers/new`.
+                path: 'tickets/new',
+                lazy: async () => {
+                  const { TicketFormPage } =
+                    await import('@/features/tickets/components/TicketFormPage')
+                  return { element: <TicketFormPage /> }
+                },
+              },
+              {
+                path: 'tickets/:id',
+                lazy: async () => {
+                  const { TicketDetailPage } =
+                    await import('@/features/tickets/components/TicketDetailPage')
+                  return { element: <TicketDetailPage /> }
+                },
+              },
+              {
+                path: 'tickets/:id/edit',
+                lazy: async () => {
+                  const { TicketFormPage } =
+                    await import('@/features/tickets/components/TicketFormPage')
+                  return { element: <TicketFormPage /> }
+                },
+              },
+            ],
+          },
         ],
       },
       {

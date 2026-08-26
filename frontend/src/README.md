@@ -27,6 +27,12 @@ If two features need the same thing, move it to `src/shared/`. A
 `features/a` → `features/b` import is a design smell to fix, not to work
 around.
 
+**Exception in spirit, not in mechanism:** two features may still each call
+the same _backend_ endpoint independently, each with its own minimal local
+type — that is not the same thing as one feature importing another's
+frontend code, and is not a violation of this rule. See
+`frontend/src/features/tickets/api/getCustomerOptions.ts`.
+
 ## `src/shared` is not a dumping ground
 
 Something used once lives in its feature. Moving code into `shared` later is

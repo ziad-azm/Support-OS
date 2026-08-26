@@ -956,3 +956,20 @@ the default (this section's own rule above) is still prefix-wide invalidation
 for anything paginated or sorted.
 `frontend/src/features/customers/api/useContactDetailMutations.ts` (Story 11,
 `CUST-2`) is the worked example.
+
+**A `PROTECT` foreign key needs the shared exception handler to translate
+`ProtectedError`.** `apps/core/exceptions.py::_to_drf_exception` only
+translates the exception types it explicitly lists; a new `on_delete=PROTECT`
+relation is not automatically safe. Verify the referenced model's `destroy`
+endpoint against a row that is actually protected before shipping the new FK
+— `Ticket.customer` (Story 12, `TKT-1`) is the worked example, verified live
+against `accounts.Role`/`User.role`, the only precedent before it.
+
+**Two features may independently call the same backend endpoint.** This is
+not the code duplication `frontend/src/README.md`'s "a feature never imports
+from another feature" rule targets — each feature's `api/` layer owns exactly
+the shape it needs (a full CRUD+search client in `customers`, a minimal
+id+name selector in `tickets`), and the alternative (importing across
+`features/`) is what `no-restricted-imports` forbids outright.
+`frontend/src/features/tickets/api/getCustomerOptions.ts` is the worked
+example.
