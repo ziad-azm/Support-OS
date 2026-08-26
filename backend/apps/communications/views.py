@@ -10,12 +10,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.permissions import Permissions
+from apps.core.renderers import PlainTextRenderer
 from apps.core.views import BaseModelViewSet
 
 from .adapters import get_adapter
 from .email_adapter import EmailAdapter
 from .models import Message
 from .serializers import MessageSerializer
+from .whatsapp_adapter import WhatsAppAdapter, extract_text_message, verify_signature
 
 logger = logging.getLogger(__name__)
 
@@ -103,4 +105,53 @@ class EmailInboundWebhookView(APIView):
             raise ValidationError({key: [_("This field is required.")] for key in missing})
 
         message = EmailAdapter().receive(payload)
+        return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+
+class WhatsAppInboundWebhookView(APIView):
+    """Meta's WhatsApp Business (Cloud) API webhook — one URL handles both
+    the `GET` verification handshake and `POST` inbound message delivery,
+    matching how Meta's own webhook configuration works (a single Callback
+    URL). `POST` is signature-verified (`X-Hub-Signature-256`,
+    `WHATSAPP_APP_SECRET`), not token-in-query-string like
+    `EmailInboundWebhookView` — Meta's own convention, not this project's
+    invention. See Story 15 `## Prerequisites`.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def get_renderers(self):
+        if self.request.method == "GET":
+            return [PlainTextRenderer()]
+        return super().get_renderers()
+
+    def get(self, request):
+        # Fail closed, same reasoning as EmailInboundWebhookView (Story 14).
+        if not settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN:
+            raise PermissionDenied()
+        mode = request.query_params.get("hub.mode")
+        token = request.query_params.get("hub.verify_token", "")
+        challenge = request.query_params.get("hub.challenge", "")
+        if mode != "subscribe" or not constant_time_compare(
+            token, settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN
+        ):
+            raise PermissionDenied()
+        return Response(challenge)
+
+    def post(self, request):
+        if not settings.WHATSAPP_APP_SECRET:
+            raise PermissionDenied()
+        signature = request.headers.get("X-Hub-Signature-256", "")
+        if not verify_signature(settings.WHATSAPP_APP_SECRET, request.body, signature):
+            raise PermissionDenied()
+
+        # Meta POSTs every webhook event (message delivered, read receipts,
+        # ...) to this same URL, not just inbound text messages — Meta
+        # requires 200 OK for all of them or it retries and eventually
+        # disables the subscription. Only a text message is processed.
+        if extract_text_message(request.data) is None:
+            return Response(status=status.HTTP_200_OK)
+
+        message = WhatsAppAdapter().receive(request.data)
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)

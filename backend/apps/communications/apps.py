@@ -6,4 +6,4 @@ class CommunicationsConfig(AppConfig):
     name = "apps.communications"
 
     def ready(self):
-        from . import email_adapter  # noqa: F401 — import runs @register_adapter
+        from . import email_adapter, whatsapp_adapter  # noqa: F401 — imports run @register_adapter

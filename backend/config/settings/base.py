@@ -311,3 +311,20 @@ EMAIL_INBOUND_DOMAIN = env("EMAIL_INBOUND_DOMAIN", default="support.example.com"
 # request (fail closed), rather than crash the app at import time over an
 # optional feature that may not be configured yet.
 EMAIL_INBOUND_WEBHOOK_TOKEN = env("EMAIL_INBOUND_WEBHOOK_TOKEN", default="")
+
+
+# --- WhatsApp (COMM-2) -----------------------------------------------------
+# Meta's WhatsApp Business (Cloud) API. No safe default anywhere — unlike
+# email's dev/prod EMAIL_BACKEND split, there is no "print instead of send"
+# abstraction for an arbitrary HTTP call, so every WHATSAPP_* setting stays
+# blank until explicitly configured, in every environment.
+# WhatsAppAdapter.send refuses to run against blank config rather than
+# firing a real request at Meta's live API with empty credentials. See
+# Story 15 `## Prerequisites`.
+WHATSAPP_API_BASE_URL = env("WHATSAPP_API_BASE_URL", default="")
+WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")
+WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN", default="")
+# Fail closed: GET verification handshake rejects every request until set.
+WHATSAPP_WEBHOOK_VERIFY_TOKEN = env("WHATSAPP_WEBHOOK_VERIFY_TOKEN", default="")
+# Fail closed: POST signature verification rejects every request until set.
+WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")

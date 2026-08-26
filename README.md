@@ -480,6 +480,11 @@ developer discovers it.
 | `EMAIL_INBOUND_LOCAL_PART` | no | `support` | Local-part of the inbound routing address, before the `+<ticket id>` tag. |
 | `EMAIL_INBOUND_DOMAIN` | no | `support.example.com` | Domain of the inbound routing address a reply-to uses. |
 | `EMAIL_INBOUND_WEBHOOK_TOKEN` | no | *(empty — endpoint rejects every request until set)* | Shared secret `EmailInboundWebhookView` requires as `?token=`. |
+| `WHATSAPP_API_BASE_URL` | no | *(empty — sending refuses to run until set)* | Base URL of Meta's Graph API, e.g. `https://graph.facebook.com/v21.0`. |
+| `WHATSAPP_PHONE_NUMBER_ID` | no | *(empty)* | Meta's internal id for the business's WhatsApp number. |
+| `WHATSAPP_ACCESS_TOKEN` | no | *(empty)* | Bearer token for the WhatsApp Cloud API. |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | no | *(empty — verification handshake rejects every request until set)* | Shared secret Meta's `GET` webhook-verification handshake checks against `hub.verify_token`. |
+| `WHATSAPP_APP_SECRET` | no | *(empty — inbound webhook rejects every request until set)* | Meta App Secret used to verify the `X-Hub-Signature-256` header on every inbound `POST`. |
 
 ### Frontend — `frontend/.env`
 

@@ -997,3 +997,19 @@ not fail the request that triggered it** — `MessageViewSet.perform_create`
 catches and logs any `adapter.send()` failure; the record it was attached to
 is already committed. The next channel story (COMM-2, WhatsApp) copies both
 shapes.
+
+**A channel adapter's identity/routing key is whatever the channel actually
+offers — not a pattern copied from the previous channel.** Email routes by a
+`+<ticket id>` address tag; WhatsApp has no such per-conversation address, so
+it routes by matching the sender's number against `ContactDetail(channel=...)`
+(`CUST-2`, Story 11) and continuing the customer's most recent non-closed
+ticket. **When a third-party protocol dictates a response shape this API's
+envelope cannot express** (Meta's plain-text webhook-verification echo),
+scope the exception to exactly the one view/method that needs it —
+`PlainTextRenderer` (`apps/core/renderers.py`) plus a `get_renderers()`
+override, not a global renderer change. **An outbound integration with no
+safe "don't actually send" backend to swap** (unlike Django's mail backends)
+should refuse to run at all against unconfigured settings, in every
+environment, rather than attempting a live call with blank credentials.
+`apps/communications/whatsapp_adapter.py` (Story 15, `COMM-2`) is the worked
+example for all three.

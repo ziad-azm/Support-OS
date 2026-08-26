@@ -22,3 +22,28 @@ class EnvelopeJSONRenderer(JSONRenderer):
             data = success_envelope(data)
 
         return super().render(data, accepted_media_type, renderer_context)
+
+
+class PlainTextRenderer:
+    """Meta's WhatsApp webhook verification handshake requires the
+    `hub.challenge` value echoed back as a raw string — not this API's
+    envelope, which `EnvelopeJSONRenderer` would otherwise wrap it in. A
+    deliberate, narrow exception to CONVENTIONS.md §11 ("the envelope is
+    the only response shape") for an external protocol this project does
+    not control the contract of. Used only by
+    `WhatsAppInboundWebhookView.get_renderers()` (Story 15, COMM-2), and
+    only for its `GET` method.
+    """
+
+    media_type = "text/plain"
+    format = "txt"
+    # Required by `rest_framework.response.Response.rendered_content`, which
+    # reads `renderer.charset` unconditionally — verified live: omitting
+    # this attribute raises `AttributeError` on every request through this
+    # renderer, not just the happy path (DRF's exception handling still
+    # renders the response through the negotiated renderer for an error
+    # response). See Story 15 `## Prerequisites`.
+    charset = "utf-8"
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return str(data).encode("utf-8")
