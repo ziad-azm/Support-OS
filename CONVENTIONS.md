@@ -190,21 +190,30 @@ renamed in transit.
 
 ## 13. Auth conventions
 
-`AUTHZ`'s authentication half is defined by **AUTH-1** (JWT), which has
-landed — see § 21 for the full design. **AUTH-2** (roles, granular
-permissions) is not planned yet.
+`AUTHZ` is complete. Both halves have landed:
 
-JWT auth (login/refresh/logout, token storage, silent refresh) is
-`frontend/src/shared/auth/` and `backend/apps/accounts/`. Never build a
-second auth flow, a second token store, or a second `useAuth()`-shaped hook
+- **Authentication** — AUTH-1. Who are you? See **§ 21**.
+- **Authorization** — AUTH-2. What may you do? See **§ 22**.
+
+Auth lives in `frontend/src/shared/auth/` and `backend/apps/accounts/`, with
+the permission vocabulary and the one DRF permission class in
+`backend/apps/core/permissions.py`. Never build a second auth flow, a second
+token store, a second `useAuth()`-shaped hook, or a second permission check
 — extend what is there.
 
-**Open security note, still true after AUTH-1:** `DEFAULT_PERMISSION_CLASSES`
-is `AllowAny`. `JWTAuthentication` is now registered globally, so
-`request.user` resolves correctly wherever a valid token is presented, but
-nothing **enforces** authentication by default. **Any endpoint that must be
-protected sets `permission_classes` explicitly on its own view** — AUTH-2 is
-what makes this the default instead of an opt-in.
+**Standing note on the project-wide default, now narrowed.**
+`DEFAULT_PERMISSION_CLASSES` is still `AllowAny`, and that is a decision
+rather than an unfinished task. A viewset subclassing `BaseModelViewSet` is
+**closed by default** (`IsAuthenticated + HasPermission`), so the hazard is
+now limited to a plain `APIView` that sets neither a base nor explicit
+`permission_classes` — such a view is public. **Any `APIView` that must be
+protected still sets `permission_classes` explicitly on itself.**
+
+Flipping the global default to `IsAuthenticated` is a one-line change and
+would work today (`HealthView` and `ApiNotFoundView` both set `AllowAny`
+explicitly). It is deliberately deferred until there are enough endpoints for
+the default to be load-bearing — right now there is exactly one authenticated
+endpoint, so the change would trade real regression risk for no real safety.
 
 ---
 
@@ -696,11 +705,12 @@ exists for (the access token already expired). It swallows `TokenError` so a
 second logout call with an already-blacklisted token is a no-op 200, not an
 error.
 
-**`DEFAULT_PERMISSION_CLASSES` is still `AllowAny` everywhere except
-`MeView`.** AUTH-1 only fills in *authentication* (does this token identify a
-real user?); AUTH-2 is what adds general *authorization* enforcement.
-`MeView` sets `permission_classes = [IsAuthenticated]` explicitly, the way
-every protected view must until AUTH-2 lands — see § 13.
+**AUTH-1 fills in *authentication* only** (does this token identify a real
+user?). *Authorization* — what that user may then do — is § 22. `MeView`
+sets `permission_classes = [IsAuthenticated]` explicitly, which is still how
+a plain `APIView` gets protected; a **viewset** inherits its defaults from
+`BaseModelViewSet` instead. See § 13 for the standing note on the global
+`AllowAny` default.
 
 **A known rough edge, accepted rather than engineered around:** a failed
 login also fires the shared `MutationCache.onError` toast (the same
@@ -708,3 +718,102 @@ translated `authentication_failed` copy `LoginPage` would otherwise have had
 to render itself) — this is a feature, not a duplicate, and is why
 `LoginPage`'s own `onError` only handles `validation_error` field errors and
 does nothing else.
+
+---
+
+## 22. Authorization (roles & permissions)
+
+AUTH-2 (Story 09). `backend/apps/core/permissions.py` is the vocabulary and
+the one permission class; `accounts.Role` and `User.role` are the data;
+`frontend/src/shared/auth/` gates the UI. Nothing else checks a role.
+
+**The vocabulary is code; the mapping is data.** Three pieces, and where each
+lives is forced, not chosen:
+
+| Thing | Lives in | Why not the other place |
+|---|---|---|
+| Permission **strings** (`users.view`, …) | Code — `apps/core/permissions.py` | Code enforces a permission. A DB-defined string no view checks grants nothing — it would be a lie in the admin UI. |
+| Role → permission **mapping** | Data — `Role.permissions` (JSON) | SEC-2 builds a UI over it. A Python dict has no UI. |
+| User → role **assignment** | Data — `User.role` (FK) | Operational; an admin assigns it, and SEC-1 builds that screen. |
+
+`Role.clean()` validates the mapping against the code registry, so the two
+halves cannot drift.
+
+**Views declare permissions, never roles.** A view names `customers.manage`;
+only a `Role` row names permissions in bulk. This is what lets the org chart
+be re-cut without editing a single view — `allowed_roles = ["admin"]` in a
+view would have to change every time a role is added or renamed.
+
+**The `permission_map` convention.** Subclass `BaseModelViewSet` and declare
+action → permission:
+
+```python
+class CustomerViewSet(BaseModelViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
+    permission_map = {
+        "list": Permissions.CUSTOMERS_VIEW,
+        "retrieve": Permissions.CUSTOMERS_VIEW,
+        "create": Permissions.CUSTOMERS_MANAGE,
+        "update": Permissions.CUSTOMERS_MANAGE,
+        "partial_update": Permissions.CUSTOMERS_MANAGE,
+        "destroy": Permissions.CUSTOMERS_MANAGE,
+    }
+```
+
+Add the permission constants to `Permissions` in the same change as the
+viewset that declares them — never a string literal at the call site. A plain
+`APIView` has no `self.action`, so for those `permission_map` may be keyed by
+lowercased HTTP method instead.
+
+**An unmapped action grants; it does not deny.** An action absent from
+`permission_map` falls through to `IsAuthenticated`-only. This is deliberate:
+a missing entry is far more often an unfinished map than an intent to forbid,
+and a silent 403 on a working endpoint is the harder bug to find. **Never
+rely on omission as a deny** — write the entry.
+
+**Superuser is the one bypass, and `/auth/me/` mirrors it.** `is_superuser`
+short-circuits Django's `has_perm` to `True` for any string (verified,
+including a made-up one), and `permissions_for` keeps that behaviour.
+`UserSerializer.get_permissions` therefore returns the **entire registry**
+for a superuser, through that same function. If it returned only
+role-derived permissions, the API would permit actions the UI hides — for a
+superuser, who has every permission and no role at all.
+
+**`Role.clean()` guards forms, not programmatic writes.** Django runs
+`clean()` from `full_clean()`, which `ModelForm` (and so the admin) calls. A
+bare `Role.objects.create(permissions=["bogus"])` in a shell or a migration
+bypasses it entirely, and DRF serializers do not call model `clean()` either.
+A future `RoleSerializer` that **writes** `permissions` must validate them
+itself.
+
+**Renaming a permission's string value is a data migration, not a
+refactor.** `Role.permissions` stores the strings. Changing
+`Permissions.USERS_MANAGE`'s *value* leaves every role row pointing at the
+old string — which grants nothing, and then fails `clean()` on the next admin
+save. Migrate the stored rows in the same change.
+
+**Row-level rules are the named extension point.** `HasPermission`
+implements `has_permission` only. The first feature that needs "an agent may
+edit *their own* ticket" adds `has_object_permission` to that same class —
+not a second permission class, and not a check inside a view.
+
+**Frontend: `can()` and nothing else.** `useAuth().can(permission)`, the
+`<Can permission=…>` component, and the `RequirePermission` route guard are
+the only sanctioned ways to gate UI. They read `user.permissions` — the flat
+list the backend already resolved — and **never** derive from `user.role`.
+Hiding a control is UX; the endpoint behind it enforces the same permission
+independently (§ 12).
+
+`ApiRequestError.isForbidden` (403) is **separate from** `isAuth` (401). A
+forbidden action must not send the user to the login screen: signing in again
+does not grant a permission, and treating the two alike produces an infinite
+login loop for an under-privileged user.
+
+**Forward constraint: the query cache is not permission-aware.** TanStack
+Query keys include neither the user nor their role, so if an account's role
+changes while the app is open, cached results computed under the old
+permissions persist until refetched — the same class of constraint § 18
+records for language. `queryClient.clear()` on a role-change event is the fix;
+it is not reachable today, because a role change requires Django admin plus a
+reload.

@@ -46,6 +46,13 @@ export class ApiRequestError extends Error {
     return this.code === 'not_authenticated' || this.code === 'authentication_failed'
   }
 
+  /** 403 — authenticated, but not allowed. Distinct from `isAuth`, which is
+   * "not signed in": a forbidden action must NOT trigger a re-login, because
+   * signing in again does not grant a permission. See CONVENTIONS.md §22. */
+  get isForbidden(): boolean {
+    return this.code === 'permission_denied'
+  }
+
   /** Transport-level failure — worth retrying; a 4xx is not. */
   get isTransport(): boolean {
     return this.code === 'network_error' || this.code === 'timeout'

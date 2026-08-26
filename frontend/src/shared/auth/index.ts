@@ -20,4 +20,7 @@ setUnauthorizedHandler(async () => {
 export { AuthProvider } from './AuthProvider'
 export { useAuth } from './useAuth'
 export { RequireAuth } from './RequireAuth'
-export type { AuthUser, AuthContextValue } from './types'
+export { RequirePermission } from './RequirePermission'
+export { Can } from './Can'
+export { hasPermission } from './permissions'
+export type { AuthUser, AuthRole, AuthContextValue } from './types'

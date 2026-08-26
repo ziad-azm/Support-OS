@@ -2,18 +2,33 @@ from django.db import connection
 from django.db.utils import OperationalError
 from rest_framework import status, viewsets
 from rest_framework.exceptions import NotFound
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from .permissions import HasPermission
 
 
 class BaseModelViewSet(viewsets.ModelViewSet):
     """Single inheritance point for every domain ModelViewSet.
 
-    Deliberately empty. It exists so AUTH-2 can add project-wide permission
-    and filtering defaults in one place instead of editing every viewset.
-    Return plain payloads from actions — the renderer adds the envelope.
+    Carries the project's authorization defaults so no viewset repeats them:
+    a caller must be authenticated, and must hold the permission this
+    viewset's `permission_map` demands for the action being performed.
+
+    Declare `permission_map` as action -> permission string (see
+    `apps.core.permissions.HasPermission`). An action with no entry is
+    authenticated-only, NOT forbidden — a missing entry is usually an
+    unfinished map, and a silent 403 is the harder bug to find. Return plain
+    payloads from actions; the renderer adds the envelope.
+
+    `DEFAULT_PERMISSION_CLASSES` stays `AllowAny` project-wide (see
+    CONVENTIONS.md §13) — this base is what makes a domain endpoint closed by
+    default, not the global setting.
     """
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map: dict[str, str] = {}
 
 
 class HealthView(APIView):

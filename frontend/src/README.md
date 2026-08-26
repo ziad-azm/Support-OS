@@ -64,7 +64,7 @@ six shared field components (`TextField`, `TextareaField`, `SelectField`,
 file-shape precedent as `shared/ui/confirm/`. See `CONVENTIONS.md` § 20 for
 the full rules and a worked example.
 
-## Authentication
+## Authentication & authorization
 
 `src/shared/auth/` is the single source of auth state: `tokenStorage.ts`
 (in-memory access token, `localStorage`-persisted refresh token),
@@ -76,6 +76,14 @@ precedent), and `RequireAuth.tsx` (a path-less layout route guard).
 either directly. `src/features/auth/` holds `LoginPage`, built from
 `useAppForm` + `TextField` like any other form. See `CONVENTIONS.md` § 21
 for the full design.
+
+Authorization lives beside it: `permissions.ts` (`hasPermission`, the pure
+resolution), `Can.tsx` (declarative gating of a control), and
+`RequirePermission.tsx` (a route guard, nested inside `RequireAuth`).
+`useAuth().can(permission)` is the hook form. All three read
+`user.permissions` — the flat list the backend already resolved, superuser
+bypass included — and **never** derive from `user.role`. A feature that reads
+`user.role` directly is bypassing `can()`. See `CONVENTIONS.md` § 22.
 
 ## Internationalization
 
@@ -132,4 +140,4 @@ and references this file rather than restating it. The response envelope this
 layout serves is documented in the root `README.md` under **API conventions**.
 Internationalization rules are in `CONVENTIONS.md` § 18; the design system,
 theming, and data-table rules are in § 19; forms and validation are in § 20;
-authentication is in § 21.
+authentication is in § 21; authorization is in § 22.

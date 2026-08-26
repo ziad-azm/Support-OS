@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { api } from '@/shared/lib/api/client'
 
 import { AuthContext } from './AuthContext'
+import { hasPermission } from './permissions'
 import { refreshAccessToken } from './refresh'
 import { clearTokens, getRefreshToken, setAccessToken, setRefreshToken } from './tokenStorage'
 import type { AuthStatus, AuthUser } from './types'
@@ -79,7 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const can = useCallback((permission: string) => hasPermission(user, permission), [user])
+
   return (
-    <AuthContext.Provider value={{ user, status, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, status, can, login, logout }}>
+      {children}
+    </AuthContext.Provider>
   )
 }

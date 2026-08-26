@@ -362,6 +362,7 @@ The pagination block lives under `meta`, **not** at the top level — DRF's defa
 | `parse_error` | 400 |
 | `not_authenticated` | 401 |
 | `authentication_failed` | 401 |
+| `token_not_valid` | 401 |
 | `permission_denied` | 403 |
 | `not_found` | 404 |
 | `method_not_allowed` | 405 |
