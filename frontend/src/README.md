@@ -62,7 +62,12 @@ import), `schemas.ts` (shared field-shape helpers), and `serverErrors.ts`
 six shared field components (`TextField`, `TextareaField`, `SelectField`,
 `CheckboxField`, `SwitchField`, `RadioGroupField`), following the same
 file-shape precedent as `shared/ui/confirm/`. See `CONVENTIONS.md` § 20 for
-the full rules and a worked example.
+the full rules and a worked example. `schemas.ts` also holds
+`nullableString`/`nullableEmail` beside `optionalString`/`optionalEmail` —
+reach for the nullable pair on a **nullable** database column, where a
+cleared field must round-trip as an explicit `null`; keep the optional pair
+for a value that is genuinely absent rather than empty. See `CONVENTIONS.md`
+§ 23.
 
 ## Authentication & authorization
 

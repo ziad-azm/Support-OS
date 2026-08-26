@@ -30,6 +30,30 @@ export function optionalEmail() {
   return z.union([z.literal(''), z.email().max(254)]).transform((v) => (v === '' ? undefined : v))
 }
 
+/**
+ * Optional text for a NULLABLE database column. Transforms '' to `null`, not
+ * `undefined` — an undefined key is dropped by `JSON.stringify`, and DRF
+ * treats an absent field as "leave unchanged", so a cleared input would
+ * silently fail to clear. Verified; see CONVENTIONS.md §20.
+ *
+ * Use `optionalString` instead when the field is genuinely absent rather than
+ * null (a query parameter, a partial payload you build by hand).
+ */
+export function nullableString(max = 255) {
+  return z
+    .string()
+    .trim()
+    .max(max)
+    .transform((value) => (value === '' ? null : value))
+}
+
+/** Nullable email. Same '' -> null rule as `nullableString`. */
+export function nullableEmail() {
+  return z
+    .union([z.literal(''), z.email().max(254)])
+    .transform((value) => (value === '' ? null : value))
+}
+
 /** A number typed into a text input. `coerce` turns '42' into 42. */
 export function positiveInt(max?: number) {
   const base = z.coerce.number().int().min(1)

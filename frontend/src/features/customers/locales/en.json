@@ -1,0 +1,30 @@
+{
+  "title": "Customers",
+  "new": "New customer",
+  "edit": "Edit customer",
+  "search": "Search customers",
+  "searchPlaceholder": "Name, email, or company",
+  "empty": "No customers yet",
+  "emptyDescription": "Create the first customer to get started.",
+  "noSearchResults": "No customers match that search.",
+  "fields": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "createdAt": "Created"
+  },
+  "actions": {
+    "save": "Save",
+    "delete": "Delete",
+    "backToList": "Back to customers"
+  },
+  "delete": {
+    "title": "Delete this customer?",
+    "description": "This permanently removes the customer record. This cannot be undone."
+  },
+  "created": "Customer created.",
+  "updated": "Customer updated.",
+  "deleted": "Customer deleted.",
+  "notFound": "That customer could not be found."
+}

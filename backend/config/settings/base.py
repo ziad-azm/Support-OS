@@ -220,11 +220,14 @@ REST_FRAMEWORK = {
     ],
     # OrderingFilter is what makes the frontend's `?ordering=field` /
     # `?ordering=-field` contract real — see CONVENTIONS.md §19 and
-    # frontend/src/shared/ui/data-table/useServerTable.ts. Inert until a list
-    # view exists: a view must declare `ordering_fields` (or the filter falls
-    # back to its serializer's fields) before any column becomes sortable.
+    # frontend/src/shared/ui/data-table/useServerTable.ts. SearchFilter does
+    # the same for `?search=`. Both are inert until a view declares
+    # `ordering_fields` / `search_fields` (or OrderingFilter falls back to its
+    # serializer's fields), so adding them globally changes nothing for
+    # existing views. DRF core — no new package.
     "DEFAULT_FILTER_BACKENDS": [
         "rest_framework.filters.OrderingFilter",
+        "rest_framework.filters.SearchFilter",
     ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.envelope_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPageNumberPagination",

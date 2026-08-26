@@ -1,5 +1,7 @@
 import authAr from '@/features/auth/locales/ar.json'
 import authEn from '@/features/auth/locales/en.json'
+import customersAr from '@/features/customers/locales/ar.json'
+import customersEn from '@/features/customers/locales/en.json'
 import healthAr from '@/features/health/locales/ar.json'
 import healthEn from '@/features/health/locales/en.json'
 
@@ -25,6 +27,7 @@ export const resources = {
     validation: enValidation,
     health: healthEn,
     auth: authEn,
+    customers: customersEn,
   },
   ar: {
     common: arCommon,
@@ -32,6 +35,7 @@ export const resources = {
     validation: arValidation,
     health: healthAr,
     auth: authAr,
+    customers: customersAr,
   },
 } as const
 

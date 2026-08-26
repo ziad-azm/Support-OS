@@ -817,3 +817,127 @@ permissions persist until refetched — the same class of constraint § 18
 records for language. `queryClient.clear()` on a role-change event is the fix;
 it is not reachable today, because a role change requires Django admin plus a
 reload.
+
+---
+
+## 23. Feature module conventions
+
+Story 10 (Customer Profiles, `CUST-1`) is the first feature story — the first
+consumer of `BaseModelViewSet`, `DataTable`, `useAppForm`, and `can()`/`<Can>`
+all at once. What it established is the template every later feature copies.
+
+**The backend shape of a feature.** One Django app under `apps/`, with:
+
+- `models.py` — extends `apps.core.models.TimeStampedModel`.
+- `serializers.py` — extends `apps.core.serializers.BaseModelSerializer`, with
+  `class Meta(BaseModelSerializer.Meta)` (inheriting, not just naming the same
+  class) so `read_only_fields` applies.
+- `views.py` — extends `apps.core.views.BaseModelViewSet` with a **fully
+  populated** `permission_map` (§ 22 — every action mapped, because an
+  unmapped one grants rather than denies).
+- `urls.py` — a `DefaultRouter` (or `SimpleRouter`, if the router's
+  auto-generated API-root view at the include's prefix is unwanted — see the
+  worked example below).
+- One `include()` line in `config/api_urls.py`, added **above** the catch-all
+  `re_path`, which must stay last.
+
+**A feature story grants its own permissions.** The permission constants go
+into `apps/core/permissions.py` in the same change as the viewset that
+declares them (§ 22). The role grant itself is a **cross-app data migration
+in the feature app**, depending on `("accounts", "0003_seed_roles")`:
+
+```python
+# apps/<feature>/migrations/000N_grant_<feature>_permissions.py
+dependencies = [
+    ("<feature>", "000{N-1}_initial"),
+    ("accounts", "0003_seed_roles"),
+]
+```
+
+It grants by **set union**, never assignment — `role.permissions =
+sorted(set(role.permissions) | set(new_permissions))` — so it never wipes a
+grant made by another story, and is safe to re-run. The reverse migration
+uses set *difference* for the same reason. Story 10's
+`apps/customers/migrations/0002_grant_customer_permissions.py` is the worked
+example.
+
+**`ordering_fields`/`search_fields` are the contract with `DataTable`.** A
+`ColumnDef.id` marked `sortable: true` must appear in the viewset's
+`ordering_fields`, or the header toggles `aria-sort` and changes nothing else
+— `OrderingFilter` silently drops a field it does not recognise. The same
+`id` is also what a column's data comes from, so it must match the
+serializer's field name exactly. `search_fields` needs no such pairing — it
+is server-only, reached through `DataTable`'s consumer wiring a `search` query
+param, not through `ColumnDef`.
+
+**The frontend shape of a feature**, under `src/features/<feature>/`:
+
+- `types/` — the TypeScript mirror of the serializer (§ 12, `snake_case`
+  verbatim), plus a `<Thing>Input` write shape when create/update differ from
+  the read shape (e.g. omitting server-managed fields).
+- `api/` — one file per network call (`get<Thing>.ts`, `create<Thing>.ts`, …),
+  `<feature>Keys.ts` (`featureKey('feature')`), a `use<Thing>`/`use<Things>`
+  query hook per resource, and `use<Thing>Mutations.ts` for the create/update
+  /delete hooks.
+- `components/` — the screens.
+- `locales/{en,ar}.json` — registered in `shared/i18n/resources.ts`.
+
+**Every mutation invalidates its feature's whole key prefix**
+(`<feature>Keys.all`), never an individual page or detail key. A create
+changes which rows land on which page, an edit can change sort position, and
+a delete shifts every later page — invalidating one cache entry would leave
+the others stale.
+
+**PATCH for edits, not PUT.** Verified against this project's DRF: a PUT
+request with an optional field absent still drops that key from
+`validated_data` entirely (DRF does not treat a full-update method as
+"clear what's missing"), so the instance keeps its old value regardless of
+HTTP semantics. PATCH's "only what I sent" contract is what an edit form
+actually means, and it is what a client must use consistently: a field is
+*cleared* by sending its value explicitly (`null` for a nullable field, `''`
+for a blank-but-non-nullable one), never by omitting the key.
+
+**`nullableString`/`nullableEmail` vs `optionalString`/`optionalEmail`**
+(`shared/validation/schemas.ts`). Both pairs transform an empty input, but to
+different things, and the difference is not stylistic:
+
+| Helper | Transforms `''` to | Use for |
+|---|---|---|
+| `optionalString` / `optionalEmail` | `undefined` | A genuinely absent value — a query parameter, a field that should not appear in the payload at all when empty. |
+| `nullableString` / `nullableEmail` | `null` | A **nullable database column**, so a cleared field round-trips as an explicit `null` the server can act on. |
+
+The reason the `null`-transforming pair exists at all: `JSON.stringify` drops
+an `undefined`-valued key, and DRF treats an absent key as "leave unchanged"
+on a PATCH. So `optionalEmail()` on a nullable column would make a user who
+clears the field silently fail to clear it — the value round-trips as if
+nothing changed. Reach for `nullableString`/`nullableEmail` whenever the
+column is `null=True`; keep `optionalString`/`optionalEmail` for a field that
+is truly meant to be absent rather than explicitly empty.
+
+**A unique nullable column needs blank→`NULL` normalisation in two places,**
+because the two write paths do not share validation:
+
+1. The model's `clean()` — guards the admin and any `full_clean()` caller.
+2. The serializer (a `validate_<field>` method, or an equivalent) — guards
+   the API path, because **DRF does not call model `clean()`.**
+
+Verified against this project's Postgres 17: a unique column accepts any
+number of `NULL`s but rejects a second `''` — `''` collides with itself,
+`NULL` does not. Skipping either normalisation point leaves the path it does
+not cover exposed to an `IntegrityError` (an unhandled 500) the moment a
+second record is saved with that field left empty.
+
+**One more verified trap this story surfaced:** if the unique field must also
+be **explicitly declared** on the serializer (as it is here, to add
+`allow_blank`/`allow_null`), `ModelSerializer` does **not** auto-derive a
+`UniqueValidator` from the model's `unique=True` for it — that derivation
+only applies to a field the serializer generates on its own. An explicitly
+declared unique field needs its own `validators=[UniqueValidator(queryset=...)]`,
+or a duplicate value also reaches the database's constraint directly as an
+unhandled `IntegrityError` rather than a `validation_error`. This is safe to
+combine with `allow_null=True`: DRF's own empty-value handling skips a
+field's validators entirely when the incoming value is explicit `None`, so
+two `null` writes never collide against each other through the validator
+either — matching Postgres's own behaviour. See
+`apps/customers/serializers.py::CustomerSerializer.email` for the worked
+example.

@@ -425,6 +425,16 @@ A `4xx` never retries — a `404` or a validation error will not become true by 
 **Query keys.** `[feature, resource, ...discriminators]`, built with `featureKey('feature')` from
 `@/shared/lib/api/queryKeys`, so a feature's whole cache can be invalidated as a unit.
 
+**Mutations & invalidation.** Every mutation invalidates its feature's whole key prefix
+(`featureKey('feature').all`) on success — never an individual page or detail key. A create changes
+which rows land on which page, an edit can change sort position, and a delete shifts every later
+page, so invalidating one cache entry would leave the others stale. See
+`frontend/src/features/customers/api/useCustomerMutations.ts` for the pattern. Edits use `api.patch`,
+not `api.put`: DRF drops an absent optional field from `validated_data` on either method, so a PUT
+cannot clear a value by omission — PATCH's "only what I sent" semantics are what an edit form
+actually means, and a field is cleared by sending its value explicitly (`null` or `''`), never by
+leaving the key out.
+
 ---
 
 ## Environment variables
