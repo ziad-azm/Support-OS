@@ -31,6 +31,9 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 # Application definition
 
 DJANGO_APPS = [
+    # Must precede django.contrib.staticfiles — Channels' own documented
+    # setup requirement — so manage.py runserver becomes ASGI/WebSocket-aware.
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -43,6 +46,7 @@ THIRD_PARTY_APPS = [
     "rest_framework",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
+    "channels",
 ]
 
 # Domain apps: one per business area. See backend/apps/README.md for the rule
@@ -328,3 +332,14 @@ WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN", default="")
 WHATSAPP_WEBHOOK_VERIFY_TOKEN = env("WHATSAPP_WEBHOOK_VERIFY_TOKEN", default="")
 # Fail closed: POST signature verification rejects every request until set.
 WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")
+
+# --- Live Chat / Channels (COMM-3) ------------------------------------------
+# Django Channels' ASGI entrypoint and channel layer. InMemoryChannelLayer is
+# single-process only — a deliberate scope limit, no Redis dependency in this
+# project. See Story 16 `## Prerequisites`.
+ASGI_APPLICATION = "config.asgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}

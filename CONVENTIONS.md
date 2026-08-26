@@ -1013,3 +1013,20 @@ should refuse to run at all against unconfigured settings, in every
 environment, rather than attempting a live call with blank credentials.
 `apps/communications/whatsapp_adapter.py` (Story 15, `COMM-2`) is the worked
 example for all three.
+
+**Real-time delivery for a channel with no external provider is a WebSocket
+broadcast to a per-record channel-layer group, not a third-party API call.**
+`LiveChatAdapter.send()` (Story 16, `COMM-3`) bridges from synchronous view
+code to the (async) channel layer via `asgiref.sync.async_to_sync`;
+`TicketChatConsumer` (async) bridges back to synchronous Django ORM/adapter
+calls via `channels.db.database_sync_to_async` — both are Channels' own
+documented utilities for this exact shape, not project inventions. **A
+browser cannot set custom headers on a WebSocket handshake** — auth (a JWT,
+or an anonymous signed session token) travels in the query string on every
+WS connection this project makes, and a connection should be
+**permission-checked, not just authenticated**, whenever the equivalent REST
+endpoint would be. **A signed, unpersisted session token**
+(`django.core.signing`, no new model field) is the pattern for a lightweight
+anonymous identity that does not warrant a real customer account — reach for
+it before adding a session/account model for a single-conversation
+credential.

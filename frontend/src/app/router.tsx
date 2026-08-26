@@ -18,6 +18,13 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: 'chat',
+        lazy: async () => {
+          const { LiveChatWidget } = await import('@/features/live-chat/components/LiveChatWidget')
+          return { element: <LiveChatWidget /> }
+        },
+      },
+      {
         element: <RequireAuth />,
         children: [
           {

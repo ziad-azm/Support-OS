@@ -1,7 +1,12 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import EmailInboundWebhookView, MessageViewSet, WhatsAppInboundWebhookView
+from .views import (
+    EmailInboundWebhookView,
+    LiveChatStartView,
+    MessageViewSet,
+    WhatsAppInboundWebhookView,
+)
 
 app_name = "communications"
 
@@ -21,5 +26,6 @@ urlpatterns = [
         WhatsAppInboundWebhookView.as_view(),
         name="whatsapp-inbound-webhook",
     ),
+    path("live-chat/start/", LiveChatStartView.as_view(), name="live-chat-start"),
     *router.urls,
 ]

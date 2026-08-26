@@ -16,6 +16,7 @@ import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useCreateMessage } from '../api/useMessageMutations'
 import { useMessages } from '../api/useMessages'
+import { useTicketChatSocket } from '../api/useTicketChatSocket'
 import { MESSAGE_CHANNELS } from '../types/message'
 import type { Message, MessageInput } from '../types/message'
 
@@ -38,6 +39,7 @@ function toMessageInput(ticketId: number, values: ReplyFormValues): MessageInput
 export function TicketConversation({ ticketId }: { ticketId: number }) {
   const { t } = useTranslation('tickets')
   const query = useMessages(ticketId)
+  useTicketChatSocket(ticketId)
 
   return (
     <Card>

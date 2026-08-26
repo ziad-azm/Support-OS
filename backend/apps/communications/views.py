@@ -15,6 +15,7 @@ from apps.core.views import BaseModelViewSet
 
 from .adapters import get_adapter
 from .email_adapter import EmailAdapter
+from .live_chat_adapter import LiveChatAdapter
 from .models import Message
 from .serializers import MessageSerializer
 from .whatsapp_adapter import WhatsAppAdapter, extract_text_message, verify_signature
@@ -155,3 +156,28 @@ class WhatsAppInboundWebhookView(APIView):
 
         message = WhatsAppAdapter().receive(request.data)
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+
+class LiveChatStartView(APIView):
+    """Starts (or resumes) an anonymous live-chat session: creates a
+    Customer + Ticket (or continues the customer's most recent non-closed
+    one) and returns a signed session token the widget uses to open its
+    WebSocket connection. Public — a live-chat widget has no login;
+    PORTAL-0 (`SupportOs backlog.MD:526-529`) owns real customer
+    authentication, deliberately not pre-empted here. See Story 16
+    `## Prerequisites`.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        name = (request.data.get("name") or "").strip()
+        if not name:
+            raise ValidationError({"name": [_("This field is required.")]})
+        email = (request.data.get("email") or "").strip() or None
+
+        ticket, token = LiveChatAdapter().start_session(name, email)
+        return Response(
+            {"ticket_id": ticket.id, "session_token": token}, status=status.HTTP_201_CREATED
+        )
