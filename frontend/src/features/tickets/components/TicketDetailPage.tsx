@@ -13,6 +13,7 @@ import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useDeleteTicket, useEscalateTicket } from '../api/useTicketMutations'
 import { useTicket } from '../api/useTicket'
+import { CustomerContextPanel } from './CustomerContextPanel'
 import { TicketAssigneeControl } from './TicketAssigneeControl'
 import { TicketConversation } from './TicketConversation'
 import { TicketHistorySection } from './TicketHistorySection'
@@ -73,112 +74,119 @@ export function TicketDetailPage() {
       {isValidId ? (
         <QueryBoundary query={query}>
           {(ticket) => (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">{ticket.subject}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <dl className="grid grid-cols-2 gap-4">
-                    <div>
-                      <dt className="text-sm text-muted-foreground">{t('fields.customer')}</dt>
-                      <dd>
-                        <Link to={`/customers/${ticket.customer}`} className="hover:underline">
-                          {ticket.customer_name}
-                        </Link>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">{t('fields.category')}</dt>
-                      <dd>{ticket.category_name ?? t('fields.noCategory')}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">{t('fields.assignedAgent')}</dt>
-                      <dd>
-                        {/* Everyone with `tickets.view` sees WHO owns the
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:items-start">
+              <div className="flex flex-col gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{ticket.subject}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <dl className="grid grid-cols-2 gap-4">
+                      <div>
+                        <dt className="text-sm text-muted-foreground">{t('fields.customer')}</dt>
+                        <dd>
+                          <Link to={`/customers/${ticket.customer}`} className="hover:underline">
+                            {ticket.customer_name}
+                          </Link>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">{t('fields.category')}</dt>
+                        <dd>{ticket.category_name ?? t('fields.noCategory')}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">
+                          {t('fields.assignedAgent')}
+                        </dt>
+                        <dd>
+                          {/* Everyone with `tickets.view` sees WHO owns the
                             ticket; only `tickets.manage` can change it —
                             the same split the edit/delete buttons below
                             already use. */}
-                        <Can
-                          permission="tickets.manage"
-                          fallback={ticket.assigned_agent_name ?? t('fields.unassigned')}
-                        >
-                          <TicketAssigneeControl
-                            ticketId={ticket.id}
-                            assignedAgent={ticket.assigned_agent}
-                          />
-                        </Can>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">{t('fields.status')}</dt>
-                      <dd>
-                        <Can
-                          permission="tickets.manage"
-                          fallback={
-                            <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>
-                          }
-                        >
-                          <TicketStatusControl ticketId={ticket.id} status={ticket.status} />
-                        </Can>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">{t('fields.escalation')}</dt>
-                      <dd className="flex items-center gap-2">
-                        {ticket.escalated ? (
-                          <Badge variant="destructive">{t('escalation.escalated')}</Badge>
-                        ) : (
-                          <Badge variant="secondary">{t('escalation.notEscalated')}</Badge>
-                        )}
-                        <Can permission="tickets.manage">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={escalateMutation.isPending}
-                            onClick={() => void handleToggleEscalation(ticket.escalated)}
+                          <Can
+                            permission="tickets.manage"
+                            fallback={ticket.assigned_agent_name ?? t('fields.unassigned')}
                           >
-                            {t(ticket.escalated ? 'escalation.deEscalate' : 'escalation.escalate')}
-                          </Button>
-                        </Can>
-                      </dd>
-                    </div>
+                            <TicketAssigneeControl
+                              ticketId={ticket.id}
+                              assignedAgent={ticket.assigned_agent}
+                            />
+                          </Can>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">{t('fields.status')}</dt>
+                        <dd>
+                          <Can
+                            permission="tickets.manage"
+                            fallback={
+                              <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>
+                            }
+                          >
+                            <TicketStatusControl ticketId={ticket.id} status={ticket.status} />
+                          </Can>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">{t('fields.escalation')}</dt>
+                        <dd className="flex items-center gap-2">
+                          {ticket.escalated ? (
+                            <Badge variant="destructive">{t('escalation.escalated')}</Badge>
+                          ) : (
+                            <Badge variant="secondary">{t('escalation.notEscalated')}</Badge>
+                          )}
+                          <Can permission="tickets.manage">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={escalateMutation.isPending}
+                              onClick={() => void handleToggleEscalation(ticket.escalated)}
+                            >
+                              {t(
+                                ticket.escalated ? 'escalation.deEscalate' : 'escalation.escalate',
+                              )}
+                            </Button>
+                          </Can>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">{t('fields.priority')}</dt>
+                        <dd>
+                          <Badge variant="secondary">{t(`priorities.${ticket.priority}`)}</Badge>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">{t('fields.createdAt')}</dt>
+                        <dd>{date(ticket.created_at)}</dd>
+                      </div>
+                    </dl>
                     <div>
-                      <dt className="text-sm text-muted-foreground">{t('fields.priority')}</dt>
-                      <dd>
-                        <Badge variant="secondary">{t(`priorities.${ticket.priority}`)}</Badge>
-                      </dd>
+                      <p className="text-sm text-muted-foreground">{t('fields.description')}</p>
+                      <p className="whitespace-pre-wrap">{ticket.description}</p>
                     </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">{t('fields.createdAt')}</dt>
-                      <dd>{date(ticket.created_at)}</dd>
-                    </div>
-                  </dl>
-                  <div>
-                    <p className="text-sm text-muted-foreground">{t('fields.description')}</p>
-                    <p className="whitespace-pre-wrap">{ticket.description}</p>
-                  </div>
-                  <Can permission="tickets.manage">
-                    <div className="flex gap-2">
-                      <Button asChild variant="outline">
-                        <Link to={`/tickets/${ticket.id}/edit`}>{t('edit')}</Link>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={deleteMutation.isPending}
-                        onClick={() => void handleDelete()}
-                      >
-                        {t('actions.delete')}
-                      </Button>
-                    </div>
-                  </Can>
-                </CardContent>
-              </Card>
-              <TicketConversation ticketId={ticket.id} />
-              <TicketHistorySection ticketId={ticket.id} />
-            </>
+                    <Can permission="tickets.manage">
+                      <div className="flex gap-2">
+                        <Button asChild variant="outline">
+                          <Link to={`/tickets/${ticket.id}/edit`}>{t('edit')}</Link>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          disabled={deleteMutation.isPending}
+                          onClick={() => void handleDelete()}
+                        >
+                          {t('actions.delete')}
+                        </Button>
+                      </div>
+                    </Can>
+                  </CardContent>
+                </Card>
+                <TicketConversation ticketId={ticket.id} />
+                <TicketHistorySection ticketId={ticket.id} />
+              </div>
+              <CustomerContextPanel ticketId={ticket.id} />
+            </div>
           )}
         </QueryBoundary>
       ) : (

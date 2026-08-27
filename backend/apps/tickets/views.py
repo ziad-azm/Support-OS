@@ -1,13 +1,14 @@
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
-from apps.core.permissions import Permissions
+from apps.core.permissions import Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
 
 from .assignment import assignable_agents
+from .context import build_ticket_context
 from .history import build_history
 from .models import Category, Ticket, TicketActivity
 from .serializers import CategorySerializer, TicketSerializer
@@ -61,6 +62,7 @@ class TicketViewSet(BaseModelViewSet):
         "set_status": Permissions.TICKETS_MANAGE,
         "escalate": Permissions.TICKETS_MANAGE,
         "history": Permissions.TICKETS_VIEW,
+        "context": Permissions.TICKETS_VIEW,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -249,3 +251,18 @@ class TicketViewSet(BaseModelViewSet):
         """
         ticket = self.get_object()
         return Response(build_history(ticket))
+
+    @action(detail=True, methods=["get"], url_path="context")
+    def context(self, request, pk=None):
+        """Combined ticket+customer+recent-history context for the side
+        panel — AGENT-2. Permission-checked twice on purpose, the mirror
+        image of `CustomerViewSet.timeline` (Story 20): `permission_map`
+        gates this on `tickets.view` like every other read here, and the
+        explicit check below adds `customers.view`, because the payload
+        includes a full customer record that `CustomerViewSet` gates that
+        way. See Story 26 `## Prerequisites`.
+        """
+        if Permissions.CUSTOMERS_VIEW not in permissions_for(request.user):
+            raise PermissionDenied()
+        ticket = self.get_object()
+        return Response(build_ticket_context(ticket))

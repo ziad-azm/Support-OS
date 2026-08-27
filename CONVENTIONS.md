@@ -1209,3 +1209,25 @@ already refreshes it with no new code — but `useCreateMessage`'s narrower,
 sibling key by construction, and had to be extended explicitly. When adding
 a new aggregate view, check whether every mutation that should refresh it
 uses prefix-wide or scoped invalidation before assuming it already works.
+
+**A payload that spans two permission domains checks both explicitly,
+regardless of which domain's action it hangs off.** `TicketViewSet.context`
+(Story 26, `AGENT-2`) is the mirror image of `CustomerViewSet.timeline`
+(Story 20, `CUST-3`): where `timeline` is a `customers.view`-gated action
+whose payload reaches into `tickets`-gated data and re-checks `tickets.view`,
+`context` is a `tickets.view`-gated action whose payload includes a full
+customer record and re-checks `customers.view`. The direction of the anchor
+(which app the `@action` lives in) is decided by what the endpoint is
+*about* — here, "context for the ticket currently open" — not by which
+domain's data makes up more of the response. **Reusing another domain's own
+serializer for a sub-payload, not just its models, avoids a second
+declaration of the same shape.** `apps/tickets/context.py::build_ticket_context`
+calls `apps.customers.serializers.CustomerSerializer(customer).data`
+directly rather than hand-assembling a dict of customer fields — the same
+"reuse the target domain's already-built piece" instinct
+`apps/customers/timeline.py` (Story 20) established for `Ticket`/`Message`,
+extended here to a serializer, not just querysets. **The project's first
+two-column/side-panel page layout uses the same arbitrary-value
+`grid-cols-[...]` syntax already present in this codebase's own UI
+primitives** (`alert.tsx`, `card.tsx`) — `TicketDetailPage`'s new grid is
+that idiom's first use at the page level, not a new pattern.

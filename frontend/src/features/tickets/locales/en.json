@@ -54,6 +54,15 @@
     "label": "Change assignee",
     "updated": "Assignee updated."
   },
+  "context": {
+    "customerTitle": "Customer",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "historyTitle": "Recent History",
+    "historyEmpty": "No other recent activity.",
+    "onTicket": "On ticket #{{id}}"
+  },
   "myQueue": {
     "title": "My Tickets",
     "empty": "No tickets assigned to you",
