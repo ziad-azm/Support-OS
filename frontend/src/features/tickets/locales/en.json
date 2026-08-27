@@ -92,5 +92,16 @@
       "send": "Send"
     },
     "sent": "Message sent."
+  },
+  "history": {
+    "title": "History",
+    "empty": "No activity yet.",
+    "kinds": {
+      "status_changed": "Status changed",
+      "assigned": "Assignment changed"
+    },
+    "statusChanged": "Status changed from {{from}} to {{to}}",
+    "assigneeChanged": "Assignee changed from {{from}} to {{to}}",
+    "by": "by {{actor}}"
   }
 }

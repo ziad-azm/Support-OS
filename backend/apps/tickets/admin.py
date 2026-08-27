@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apps.communications.models import Message
 
-from .models import Category, Ticket
+from .models import Category, Ticket, TicketActivity
 
 
 class MessageInline(admin.TabularInline):
@@ -39,3 +39,11 @@ class TicketAdmin(admin.ModelAdmin):
     search_fields = ("subject", "description", "customer__name")
     readonly_fields = ("created_at", "updated_at")
     inlines = (MessageInline,)
+
+
+@admin.register(TicketActivity)
+class TicketActivityAdmin(admin.ModelAdmin):
+    list_display = ("ticket", "kind", "actor", "from_value", "to_value", "created_at")
+    list_filter = ("kind",)
+    search_fields = ("ticket__subject",)
+    readonly_fields = ("created_at", "updated_at")

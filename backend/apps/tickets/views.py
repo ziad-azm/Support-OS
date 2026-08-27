@@ -8,7 +8,8 @@ from apps.core.permissions import Permissions
 from apps.core.views import BaseModelViewSet
 
 from .assignment import assignable_agents
-from .models import Category, Ticket
+from .history import build_history
+from .models import Category, Ticket, TicketActivity
 from .serializers import CategorySerializer, TicketSerializer
 from .status import is_valid_transition
 
@@ -59,6 +60,7 @@ class TicketViewSet(BaseModelViewSet):
         # through to authenticated-only. See Story 23 `## Migration / Rollback`.
         "set_status": Permissions.TICKETS_MANAGE,
         "escalate": Permissions.TICKETS_MANAGE,
+        "history": Permissions.TICKETS_VIEW,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -150,8 +152,17 @@ class TicketViewSet(BaseModelViewSet):
                 )
 
         ticket = self.get_object()
+        old_agent = ticket.assigned_agent
         ticket.assigned_agent = agent
         ticket.save(update_fields=["assigned_agent", "updated_at"])
+        if agent != old_agent:
+            TicketActivity.objects.create(
+                ticket=ticket,
+                actor=request.user,
+                kind=TicketActivity.Kind.ASSIGNED,
+                from_value=old_agent.get_full_name() if old_agent else "",
+                to_value=agent.get_full_name() if agent else "",
+            )
         return Response(self.get_serializer(ticket).data)
 
     @action(detail=True, methods=["post"], url_path="status")
@@ -183,8 +194,16 @@ class TicketViewSet(BaseModelViewSet):
                 }
             )
 
+        old_status = ticket.status
         ticket.status = new_status
         ticket.save(update_fields=["status", "updated_at"])
+        TicketActivity.objects.create(
+            ticket=ticket,
+            actor=request.user,
+            kind=TicketActivity.Kind.STATUS_CHANGED,
+            from_value=old_status,
+            to_value=new_status,
+        )
         return Response(self.get_serializer(ticket).data)
 
     @action(detail=True, methods=["post"], url_path="escalate")
@@ -211,3 +230,16 @@ class TicketViewSet(BaseModelViewSet):
         ticket.escalated_at = timezone.now() if escalated else None
         ticket.save(update_fields=["escalated", "escalated_at", "updated_at"])
         return Response(self.get_serializer(ticket).data)
+
+    @action(detail=True, methods=["get"], url_path="history")
+    def history(self, request, pk=None):
+        """A ticket's full activity history — TKT-5. Merges the persisted
+        `TicketActivity` log (status/assignment changes) with the ticket's
+        `Message` rows (replies) into one feed. Gated on `tickets.view`
+        alone — `MessageViewSet` already reuses the same permission for
+        reading messages, verified in `## Prerequisites`, so no second
+        explicit check is needed the way `CustomerViewSet.timeline`
+        (Story 20) needed one.
+        """
+        ticket = self.get_object()
+        return Response(build_history(ticket))

@@ -15,6 +15,7 @@ import { useDeleteTicket, useEscalateTicket } from '../api/useTicketMutations'
 import { useTicket } from '../api/useTicket'
 import { TicketAssigneeControl } from './TicketAssigneeControl'
 import { TicketConversation } from './TicketConversation'
+import { TicketHistorySection } from './TicketHistorySection'
 import { TicketStatusControl } from './TicketStatusControl'
 
 export function TicketDetailPage() {
@@ -176,6 +177,7 @@ export function TicketDetailPage() {
                 </CardContent>
               </Card>
               <TicketConversation ticketId={ticket.id} />
+              <TicketHistorySection ticketId={ticket.id} />
             </>
           )}
         </QueryBoundary>

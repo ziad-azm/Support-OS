@@ -92,5 +92,16 @@
       "send": "إرسال"
     },
     "sent": "تم إرسال الرسالة."
+  },
+  "history": {
+    "title": "السجل",
+    "empty": "لا يوجد نشاط بعد.",
+    "kinds": {
+      "status_changed": "تغيير الحالة",
+      "assigned": "تغيير التعيين"
+    },
+    "statusChanged": "تم تغيير الحالة من {{from}} إلى {{to}}",
+    "assigneeChanged": "تم تغيير المسؤول من {{from}} إلى {{to}}",
+    "by": "بواسطة {{actor}}"
   }
 }

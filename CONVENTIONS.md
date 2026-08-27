@@ -1178,3 +1178,34 @@ pointing at the source of truth** — `TICKET_STATUS_TRANSITIONS`
 `TICKET_STATUSES` already makes of `Ticket.Status` (§3), narrowing what the
 UI *offers* while the backend remains the sole enforcer of what it
 *accepts*.
+
+**A system-written audit log snapshots values at write time; it does not
+store a live reference that can later resolve to nothing.** `TicketActivity`
+(Story 24, `TKT-5`) is the project's first model written only as a side
+effect of other actions (`assign`/`set_status`), never through its own
+request body. Its `actor` follows the established `SET_NULL` pattern for a
+reference that must survive account deletion, but its `from_value`/
+`to_value` go further: an assignment change stores a **name snapshot**
+(`User.get_full_name()` at write time), not a user id, so the log stays
+correct even after the referenced user is gone — the standard audit-log
+tradeoff of a point-in-time copy over a live foreign key. A status change,
+by contrast, stores the **raw enum value** (not a snapshot label), because
+status values are a fixed set the frontend must still translate via the
+same `statuses.<value>` i18n keys every other status display uses — a
+deliberate asymmetry driven by whether the underlying value can change
+independently of the log entry. **Not every logged event needs a new
+table.** `apps/tickets/history.py::build_history` extends
+`apps/customers/timeline.py::build_timeline`'s (Story 20)
+merge-two-querysets-into-one-feed shape to a second worked example: replies
+are represented by the *existing* `Message` rows, merged into the read
+rather than duplicated into the new `TicketActivity` table, because
+`Message` already is the record of them and a second copy would just be a
+drift risk. **A same-feature derived view invalidated by prefix gets the
+update for free; a scoped-invalidation mutation does not.**
+`useTicketHistory`'s query key is a child of `ticketKeys.all`, so
+`useAssignTicket`/`useSetTicketStatus`'s existing prefix-wide invalidation
+already refreshes it with no new code — but `useCreateMessage`'s narrower,
+*scoped* invalidation (Story 11's documented exception) does not reach a
+sibling key by construction, and had to be extended explicitly. When adding
+a new aggregate view, check whether every mutation that should refresh it
+uses prefix-wide or scoped invalidation before assuming it already works.

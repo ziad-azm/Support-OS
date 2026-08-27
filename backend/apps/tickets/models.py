@@ -27,8 +27,8 @@ class Ticket(TimeStampedModel):
     """A support ticket — the core record EPIC 4's sibling stories extend.
 
     `priority`/`category` (Story 18, TKT-2), `assigned_agent` (Story 22,
-    TKT-3), and `status`/`escalated` (Story 23, TKT-4) are all real now.
-    Only TKT-5's activity history remains unimplemented.
+    TKT-3), `status`/`escalated` (Story 23, TKT-4), and now `TicketActivity`
+    (Story 24, TKT-5) are all real. EPIC 4 is complete.
     """
 
     class Status(models.TextChoices):
@@ -108,3 +108,59 @@ class Ticket(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.subject
+
+
+class TicketActivity(TimeStampedModel):
+    """An immutable audit-log entry for a ticket's status/assignment
+    changes — TKT-5's "reusable activity-log pattern" (`SupportOs
+    backlog.MD` lines 343-348). Replies are NOT logged here: `Message`
+    already is the record of them, and duplicating message bodies into a
+    second table would be a real data-integrity risk (two sources of truth
+    for one reply). See `apps/tickets/history.py::build_history`, which
+    merges this table with `Message` into one read-only feed.
+    """
+
+    class Kind(models.TextChoices):
+        STATUS_CHANGED = "status_changed", _("Status changed")
+        ASSIGNED = "assigned", _("Assignment changed")
+
+    # CASCADE, not PROTECT: an activity entry has no existence independent
+    # of its ticket, the same reasoning `Message.ticket` uses (Story 13).
+    ticket = models.ForeignKey(
+        Ticket, on_delete=models.CASCADE, related_name="activities", verbose_name=_("ticket")
+    )
+    # SET_NULL: the project's now-settled pattern (`Note.author`,
+    # `Attachment.uploaded_by`, `Ticket.assigned_agent`) for a reference
+    # that must survive the referenced account being removed — the log
+    # entry still means something after its actor's account is gone.
+    actor = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ticket_activities",
+        verbose_name=_("actor"),
+    )
+    kind = models.CharField(_("kind"), max_length=20, choices=Kind.choices)
+    # Raw values, not pre-rendered sentences. `status_changed` stores the
+    # `Ticket.Status` value string (e.g. "open"), which the frontend
+    # translates via the SAME `statuses.<value>` i18n keys every other
+    # status display already uses. `assigned` stores a NAME SNAPSHOT
+    # (`User.get_full_name()` at write time, "" for unassigned) rather than
+    # a user id, so the log stays historically correct even after the
+    # referenced user is deleted (`assigned_agent` is itself SET_NULL) — the
+    # standard audit-log tradeoff of a point-in-time snapshot over a live
+    # reference. See Story 24 `## Prerequisites`.
+    from_value = models.CharField(_("from value"), max_length=150, blank=True)
+    to_value = models.CharField(_("to value"), max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = _("ticket activity")
+        verbose_name_plural = _("ticket activities")
+        # Newest-first: an audit log reads like a feed, the same choice
+        # `Note.Meta.ordering` makes (Story 21), not `Message.Meta.ordering`
+        # (oldest-first — a conversation reads top-to-bottom).
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} on ticket #{self.ticket_id}"
