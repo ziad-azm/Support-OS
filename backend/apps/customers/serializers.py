@@ -5,7 +5,7 @@ from rest_framework.validators import UniqueValidator
 
 from apps.core.serializers import BaseModelSerializer
 
-from .models import ContactDetail, Customer
+from .models import Attachment, ContactDetail, Customer, Note
 
 
 class CustomerSerializer(BaseModelSerializer):
@@ -91,3 +91,56 @@ class ContactDetailSerializer(BaseModelSerializer):
         attached in the first place) but is ignored on every PATCH."""
         validated_data.pop("customer", None)
         return super().update(instance, validated_data)
+
+
+class NoteSerializer(BaseModelSerializer):
+    # `author` itself is read-only — never client-supplied, always set from
+    # `request.user` in `NoteViewSet.perform_create` (Story 21
+    # `## Product rules`). `author_name` mirrors `TicketSerializer
+    # .category_name`'s verified-safe `allow_null=True` pattern (Story 18):
+    # `source="author.get_full_name"` returns `None`, not an error, when
+    # `author` is `None` (a deleted user).
+    author_name = serializers.CharField(
+        source="author.get_full_name", read_only=True, allow_null=True
+    )
+
+    class Meta(BaseModelSerializer.Meta):
+        model = Note
+        fields = ("id", "customer", "author", "author_name", "body", "created_at", "updated_at")
+        read_only_fields = BaseModelSerializer.Meta.read_only_fields + ("author",)
+
+    def update(self, instance, validated_data):
+        """Reassigning a note to a different customer is not supported —
+        mirrors `ContactDetailSerializer.update` verbatim (Story 11)."""
+        validated_data.pop("customer", None)
+        return super().update(instance, validated_data)
+
+
+class AttachmentSerializer(BaseModelSerializer):
+    uploaded_by_name = serializers.CharField(
+        source="uploaded_by.get_full_name", read_only=True, allow_null=True
+    )
+
+    class Meta(BaseModelSerializer.Meta):
+        model = Attachment
+        fields = (
+            "id",
+            "customer",
+            "uploaded_by",
+            "uploaded_by_name",
+            "file",
+            "original_filename",
+            "size",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = BaseModelSerializer.Meta.read_only_fields + (
+            "uploaded_by",
+            "original_filename",
+            "size",
+        )
+        # write_only: without this, DRF's FileField.to_representation calls
+        # `.url` (UPLOADED_FILES_USE_URL defaults to True), which raises —
+        # no MEDIA_URL is configured. Verified, see Story 21
+        # `## Prerequisites`.
+        extra_kwargs = {"file": {"write_only": True}}

@@ -7,6 +7,6 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | project-foundation-architecture | [project-foundation-architecture/00-overview.md](project-foundation-architecture/00-overview.md) | 01–04 (EPIC 0 complete) |
 | internationalization-design-system | [internationalization-design-system/00-overview.md](internationalization-design-system/00-overview.md) | 05–07 (EPIC 1 fully planned) |
 | authentication-authorization | [authentication-authorization/00-overview.md](authentication-authorization/00-overview.md) | 08–09 (EPIC 2 fully planned) |
-| customer-management | [customer-management/00-overview.md](customer-management/00-overview.md) | 10–11, 20 |
+| customer-management | [customer-management/00-overview.md](customer-management/00-overview.md) | 10–11, 20–21 (EPIC 3 fully planned) |
 | ticket-management | [ticket-management/00-overview.md](ticket-management/00-overview.md) | 12, 18 |
 | communication-channels | [communication-channels/00-overview.md](communication-channels/00-overview.md) | 13–17, 19 (EPIC 5 fully planned) |

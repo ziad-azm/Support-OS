@@ -1114,3 +1114,27 @@ aggregate become a way around it. **A heterogeneous feed is a `<ul>`, not a
 rows; a merged timeline of two record shapes has none of those properties,
 and its React key must combine the discriminator with the id
 (`${kind}-${id}`), because ids are only unique within a kind.
+
+**A file is served through a permission-gated action, never through
+Django's own static/media URL mechanism.** `AttachmentViewSet.download`
+(Story 21, `CUST-4`) returns a `FileResponse`, which bypasses
+`EnvelopeJSONRenderer` entirely because it is not a
+`rest_framework.response.Response` — verified against
+`APIView.finalize_response`, which only attaches the envelope machinery to
+that one class. No `MEDIA_URL` is configured at all, because Django's own
+media serving carries no permission check. **A `FileField` is marked
+`write_only` on its serializer** so DRF never calls `.url` (which would
+raise without `MEDIA_URL`) — the read side exposes `original_filename`/
+`size` instead. **A `FormData` upload through the project's shared
+`httpClient` needs an explicit `Content-Type: undefined` override**,
+because the instance's default JSON header would otherwise make axios
+`JSON.stringify` the `FormData` instead of sending it as multipart —
+verified against the installed axios's `transformRequest`. **An
+authenticated file download cannot be a plain `<a href>` link** (a browser
+navigation carries no `Authorization` header); fetch it as a blob through
+the same authenticated `httpClient` instead, then trigger the save via a
+temporary `URL.createObjectURL` link. **A verb a resource does not support
+is removed from `http_method_names`**, not merely left out of
+`permission_map` — an unmapped action is authenticated-only, not
+forbidden, so narrowing the allowed HTTP methods is the only way to make an
+unsupported verb a clean `405`.

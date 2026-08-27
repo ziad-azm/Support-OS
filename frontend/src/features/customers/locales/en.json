@@ -54,6 +54,45 @@
     "updated": "Contact channel updated.",
     "deleted": "Contact channel removed."
   },
+  "notes": {
+    "title": "Notes",
+    "empty": "No notes yet.",
+    "unknownAuthor": "Unknown",
+    "fields": {
+      "body": "Note"
+    },
+    "actions": {
+      "add": "Add note",
+      "edit": "Edit",
+      "remove": "Remove",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "delete": {
+      "title": "Remove this note?",
+      "description": "This permanently removes the note. This cannot be undone."
+    },
+    "created": "Note added.",
+    "updated": "Note updated."
+  },
+  "attachments": {
+    "title": "Attachments",
+    "empty": "No attachments yet.",
+    "downloadFailed": "Could not download this file.",
+    "fields": {
+      "file": "File"
+    },
+    "actions": {
+      "upload": "Upload",
+      "download": "Download",
+      "remove": "Remove"
+    },
+    "delete": {
+      "title": "Remove this attachment?",
+      "description": "This permanently removes the file. This cannot be undone."
+    },
+    "uploaded": "File uploaded."
+  },
   "timeline": {
     "title": "Interaction history",
     "empty": "No tickets or messages yet.",

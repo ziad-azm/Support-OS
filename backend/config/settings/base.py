@@ -159,6 +159,14 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# --- Media / Attachments (CUST-4) -------------------------------------------
+# Local filesystem storage — no S3/cloud dependency, matching this project's
+# "Docker is deliberately absent" stance (requirements.txt). No MEDIA_URL:
+# attachments are served exclusively through AttachmentViewSet.download
+# (permission-gated), never through Django's own unguarded static/media
+# serving. See Story 21 `## Prerequisites`.
+MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 

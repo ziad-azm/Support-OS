@@ -93,3 +93,83 @@ class ContactDetail(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.get_channel_display()}: {self.value}"
+
+
+def attachment_upload_path(instance: "Attachment", filename: str) -> str:
+    """Scoped per customer so uploads from different customers never
+    collide, and so a customer's files are easy to locate on disk.
+    `instance.customer_id` is already set by the time Django calls this —
+    the FK is assigned before `.save()` triggers the file write.
+    """
+    return f"attachments/{instance.customer_id}/{filename}"
+
+
+class Note(TimeStampedModel):
+    """A free-text note on a customer record — CUST-4. CASCADE, not PROTECT:
+    a note has no existence independent of its customer, the same reasoning
+    `Message.ticket` uses (Story 13), not `Ticket.customer`'s PROTECT
+    (Story 12, an identity that must survive).
+    """
+
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name="notes", verbose_name=_("customer")
+    )
+    # SET_NULL: the project's second nullable FK after `Ticket.category`
+    # (Story 18) — a note's content should survive its author's account
+    # being removed. See Story 21 `## Prerequisites`.
+    author = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="authored_notes",
+        verbose_name=_("author"),
+    )
+    body = models.TextField(_("body"))
+
+    class Meta:
+        verbose_name = _("note")
+        verbose_name_plural = _("notes")
+        # Newest-first: a running log of context reads best with the most
+        # recent entry on top, the same choice `Ticket.Meta.ordering` makes
+        # (a queue), not `Message.Meta.ordering` (a conversation).
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"Note on {self.customer_id}"
+
+
+class Attachment(TimeStampedModel):
+    """An uploaded file on a customer record — CUST-4. CASCADE for the same
+    reason as `Note.customer`. No `update`/`partial_update` — see Story 21
+    `## Prerequisites` for why a file's content is never edited in place.
+    """
+
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name="attachments", verbose_name=_("customer")
+    )
+    uploaded_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="uploaded_attachments",
+        verbose_name=_("uploaded by"),
+    )
+    file = models.FileField(_("file"), upload_to=attachment_upload_path)
+    # Django's storage backend may rename the stored file to avoid a
+    # collision (e.g. a second "report.pdf" for the same customer); this is
+    # the name to show the user and to send back on download, independent
+    # of whatever `file.name` ends up being on disk.
+    original_filename = models.CharField(_("original filename"), max_length=255)
+    # Bytes, captured once at upload time from the incoming UploadedFile —
+    # cheaper than re-`os.path.getsize()`-ing on every list request.
+    size = models.PositiveIntegerField(_("size"))
+
+    class Meta:
+        verbose_name = _("attachment")
+        verbose_name_plural = _("attachments")
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return self.original_filename

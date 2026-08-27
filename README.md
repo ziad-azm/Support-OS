@@ -490,6 +490,7 @@ developer discovers it.
 | `SMS_AUTH_TOKEN` | no | *(empty — inbound webhook rejects every request until set)* | Twilio Auth Token — the Basic Auth password for sending, and the HMAC key for verifying `X-Twilio-Signature` on inbound webhooks. |
 | `SMS_FROM_NUMBER` | no | *(empty)* | The Twilio phone number outbound SMS is sent from. |
 | `SMS_WEBHOOK_URL` | no | *(empty — inbound webhook rejects every request until set)* | The exact URL configured in the Twilio console for the inbound SMS webhook — used, not reconstructed, because Twilio's signature depends on it. |
+| `MEDIA_ROOT` | no | `<repo>/backend/media` | Filesystem path where uploaded `Attachment` files are stored. No `MEDIA_URL` — files are served only through the permission-gated `AttachmentViewSet.download` action. |
 
 ### Frontend — `frontend/.env`
 

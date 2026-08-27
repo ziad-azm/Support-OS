@@ -11,8 +11,10 @@ import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 
 import { useCustomer } from '../api/useCustomer'
 import { useDeleteCustomer } from '../api/useCustomerMutations'
+import { AttachmentsSection } from './AttachmentsSection'
 import { ContactDetailsSection } from './ContactDetailsSection'
 import { InteractionTimelineSection } from './InteractionTimelineSection'
+import { NotesSection } from './NotesSection'
 
 export function CustomerProfilePage() {
   const { t } = useTranslation('customers')
@@ -90,6 +92,8 @@ export function CustomerProfilePage() {
                 </CardContent>
               </Card>
               <ContactDetailsSection customerId={customer.id} />
+              <NotesSection customerId={customer.id} />
+              <AttachmentsSection customerId={customer.id} />
               <InteractionTimelineSection customerId={customer.id} />
             </>
           )}

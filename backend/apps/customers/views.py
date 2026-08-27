@@ -1,13 +1,20 @@
+from django.http import FileResponse
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
 from apps.core.permissions import Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
 
-from .models import ContactDetail, Customer
-from .serializers import ContactDetailSerializer, CustomerSerializer
+from .models import Attachment, ContactDetail, Customer, Note
+from .serializers import (
+    AttachmentSerializer,
+    ContactDetailSerializer,
+    CustomerSerializer,
+    NoteSerializer,
+)
 from .timeline import build_timeline
 
 
@@ -92,3 +99,95 @@ class ContactDetailViewSet(BaseModelViewSet):
         except ValueError:
             raise ValidationError({"customer": [_("Must be a valid customer id.")]}) from None
         return queryset.filter(customer_id=customer_id)
+
+
+class NoteViewSet(BaseModelViewSet):
+    """Note CRUD for one customer. Reuses `customers.*` — a note is part of
+    the customer record, the same reasoning `ContactDetailViewSet` already
+    established (Story 11 `## Product rules`).
+    """
+
+    queryset = Note.objects.select_related("author").all()
+    serializer_class = NoteSerializer
+
+    permission_map = {
+        "list": Permissions.CUSTOMERS_VIEW,
+        "retrieve": Permissions.CUSTOMERS_VIEW,
+        "create": Permissions.CUSTOMERS_MANAGE,
+        "update": Permissions.CUSTOMERS_MANAGE,
+        "partial_update": Permissions.CUSTOMERS_MANAGE,
+        "destroy": Permissions.CUSTOMERS_MANAGE,
+    }
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action != "list":
+            return queryset
+        customer_id = self.request.query_params.get("customer")
+        if not customer_id:
+            raise ValidationError({"customer": [_("This query parameter is required.")]})
+        try:
+            customer_id = int(customer_id)
+        except ValueError:
+            raise ValidationError({"customer": [_("Must be a valid customer id.")]}) from None
+        return queryset.filter(customer_id=customer_id)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+
+class AttachmentViewSet(BaseModelViewSet):
+    """Attachment create/list/retrieve/destroy/download for one customer.
+    Reuses `customers.*`, same reasoning as `NoteViewSet`. No `update`/
+    `partial_update` — see Story 21 `## Prerequisites`.
+    """
+
+    queryset = Attachment.objects.select_related("uploaded_by").all()
+    serializer_class = AttachmentSerializer
+    parser_classes = [MultiPartParser]
+    # Narrows Django's own View.http_method_names — verified this makes
+    # PUT/PATCH a clean 405 before any handler or permission_map lookup
+    # runs (rest_framework/views.py:517). See Story 21 `## Prerequisites`.
+    http_method_names = ["get", "post", "delete", "head", "options"]
+
+    permission_map = {
+        "list": Permissions.CUSTOMERS_VIEW,
+        "retrieve": Permissions.CUSTOMERS_VIEW,
+        "create": Permissions.CUSTOMERS_MANAGE,
+        "destroy": Permissions.CUSTOMERS_MANAGE,
+        "download": Permissions.CUSTOMERS_VIEW,
+    }
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action != "list":
+            return queryset
+        customer_id = self.request.query_params.get("customer")
+        if not customer_id:
+            raise ValidationError({"customer": [_("This query parameter is required.")]})
+        try:
+            customer_id = int(customer_id)
+        except ValueError:
+            raise ValidationError({"customer": [_("Must be a valid customer id.")]}) from None
+        return queryset.filter(customer_id=customer_id)
+
+    def perform_create(self, serializer):
+        file_obj = serializer.validated_data["file"]
+        serializer.save(
+            uploaded_by=self.request.user,
+            original_filename=file_obj.name,
+            size=file_obj.size,
+        )
+
+    @action(detail=True, methods=["get"], url_path="download")
+    def download(self, request, pk=None):
+        """Streams the file back with its original name. Bypasses
+        `EnvelopeJSONRenderer` entirely — verified safe, see Story 21
+        `## Prerequisites`.
+        """
+        attachment = self.get_object()
+        return FileResponse(
+            attachment.file.open("rb"),
+            as_attachment=True,
+            filename=attachment.original_filename,
+        )
