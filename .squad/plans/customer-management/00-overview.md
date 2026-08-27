@@ -8,12 +8,13 @@ Entry point for the **customer-management** feature. Stories execute in order by
 |----|------|-------|------------|------------|
 | 10 | [10-story-customer-profiles-SUPPORTOS-28.md](10-story-customer-profiles-SUPPORTOS-28.md) | Customer Profiles | SUPPORTOS-28 | Stories 05–09 (`I18N`, `UI`, `FORM`, `AUTHZ`) |
 | 11 | [11-story-contact-details-SUPPORTOS-29.md](11-story-contact-details-SUPPORTOS-29.md) | Contact Details | SUPPORTOS-29 | Story 10 |
+| 20 | [20-story-interaction-history-SUPPORTOS-30.md](20-story-interaction-history-SUPPORTOS-30.md) | Interaction History | SUPPORTOS-30 | Story 10 (`CUST-1`), Story 12 (`TKT-1`), Stories 13–19 (`COMM-*`) |
 
 ## Dependency notes
 
 This feature maps to **EPIC 3 — Customer Management** in `SupportOs backlog.MD` (lines 264–303). It depends on EPIC 0, 1, and 2 being complete, which they are — see [`../authentication-authorization/00-overview.md`](../authentication-authorization/00-overview.md).
 
-`CUST-1` (story 10) → `CUST-2` (Contact Details) → `CUST-3` (Interaction History) → `CUST-4` (Notes & Attachments). CUST-3 additionally depends on TKT-1 and COMM-*, so it is not next in line simply because of its number.
+`CUST-1` (story 10) → `CUST-2` (Contact Details) → `CUST-3` (Interaction History, story 20) → `CUST-4` (Notes & Attachments). CUST-3 additionally depended on TKT-1 and COMM-*, which is why it is story **20** rather than 12 — it waited for ticket-management and the whole of EPIC 5 to land first. `CUST-4` depends only on `CUST-1` and is the one story left in this feature.
 
 **Story 10 is the first feature story in the project**, and the first consumer of four foundations that all shipped without one:
 
@@ -56,4 +57,12 @@ So story 10's `Customer` has **no** `notes` text field (it would be dead weight 
 - **`DataTable` must not be wrapped in `QueryBoundary`** — its own docstring records why (`QueryBoundary`'s branches return a `<div>`, which the browser hoists out of `<tbody>`). It renders loading/empty/error as table rows itself.
 - **`DefaultRouter` adds an API-root view.** Registered at `path("")`, that root lands on `/api/`, where the catch-all previously returned an enveloped 404. Harmless but a real behaviour change, so story 10 checks it explicitly rather than assuming, with `SimpleRouter` as the documented alternative.
 
-**Note on testing:** per standing project policy this project authors no automated tests. Story 10 adds none. Its checks are the backend's `manage.py check`/`test`/`ruff`, the frontend's `lint`/`format:check`/`check:rtl`/`build`, an `en`/`ar` key-set comparison, real HTTP across all four verbs × three permission states (including `DELETE`, which an unmapped action would have left open), and a bilingual RTL walkthrough of the list, profile, and form.
+**Story 20 (CUST-3, Interaction History) closes the "is COMM-* satisfied?" question story 13 left open** — by the time it was planned, all six COMM stories (13–17, 19) had shipped, so the timeline aggregates `Message` rows channel-agnostically and the question never needed a product call. It introduces three patterns this project had not used before:
+
+- **The project's first DRF `@action`** (`grep` confirmed zero prior uses). `GET /api/customers/<id>/timeline/` is router-generated from the decorator with **no `urls.py` edit**, and is gated by a `permission_map` entry keyed on the action's own method name (`"timeline"`) — verified against the installed DRF (`routers.py:130-135`, `viewsets.py:158`). The trap worth knowing: a missing `permission_map` entry for a custom action does **not** deny, it falls through to authenticated-only.
+- **An aggregate read that deliberately imports across apps in the reverse direction.** `apps/customers/timeline.py` reads `Ticket` and `Message` because `backend/apps/README.md`'s app-purpose table assigns "interaction history" to `customers`. Safe because no *model* imports across apps — Django loads every model before any view/helper module; `apps/tickets/admin.py` (Story 13) is the existing precedent for the same against-the-grain direction.
+- **A second, explicit permission check layered on top of `permission_map`.** The payload is ticket and message data, so `customers.view` alone would leak what `tickets.view` gates elsewhere — the action also requires `TICKETS_VIEW` via `permissions_for()`, the same closing move Story 16's `TicketChatConsumer` made. No seeded role exercises the branch (every role with `customers.view` also has `tickets.view`), so its verification creates a throwaway role to prove it.
+
+It is also the first heterogeneous list in the project: a `<ul>`, explicitly **not** a `DataTable` (§ 19's rule is about homogeneous, server-sortable, paginated rows), with React keys combining the `kind` discriminator and the id, because a ticket and a message can share the same numeric id.
+
+**Note on testing:** per standing project policy this project authors no automated tests. Story 10 adds none. Its checks are the backend's `manage.py check`/`test`/`ruff`, the frontend's `lint`/`format:check`/`check:rtl`/`build`, an `en`/`ar` key-set comparison, real HTTP across all four verbs × three permission states (including `DELETE`, which an unmapped action would have left open), and a bilingual RTL walkthrough of the list, profile, and form. Story 20's checks add the router-generated route confirmed against an empty `urls.py` diff, both entry kinds interleaving newest-first (not grouped by kind), the three permission states including a purpose-built `customers.view`-only role, a `404` for an unknown customer, and an empty array for a customer with no history.

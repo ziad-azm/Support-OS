@@ -1093,3 +1093,24 @@ recent open ticket** — that rule (Email/WhatsApp/SMS/Live Chat) assumes an
 ongoing conversation; a one-shot structured intake (a web form) should
 always start a new ticket instead, because there is no "conversation" for a
 later message to continue.
+
+**An aggregate read that spans several apps belongs to the app that owns
+the *question*, not the apps that own the rows.** `apps/customers/timeline.py`
+(Story 20, `CUST-3`) reads `Ticket` and `Message` to answer "what has
+happened with this customer," because `backend/apps/README.md`'s
+app-purpose table assigns interaction history to `customers`. That is a
+reverse-direction cross-app import (the models dependency runs
+`customers ← tickets ← communications`) and it is safe **as long as no
+model imports across apps** — Django loads every model before any view or
+helper module, so only a model-level cycle can actually deadlock. **A
+custom `@action` on a `ModelViewSet` is gated by its own method name in
+`permission_map`** (`"timeline": …`), and — like any unmapped action — a
+missing entry falls through to authenticated-only rather than denying, so
+the entry is load-bearing. **When an aggregate's payload contains data
+another domain's endpoints gate separately, check that permission
+explicitly too** (`permissions_for(request.user)`), rather than letting the
+aggregate become a way around it. **A heterogeneous feed is a `<ul>`, not a
+`DataTable`** — § 19's rule covers homogeneous, server-sortable, paginated
+rows; a merged timeline of two record shapes has none of those properties,
+and its React key must combine the discriminator with the id
+(`${kind}-${id}`), because ids are only unique within a kind.

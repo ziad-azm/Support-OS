@@ -1,11 +1,14 @@
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.response import Response
 
-from apps.core.permissions import Permissions
+from apps.core.permissions import Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
 
 from .models import ContactDetail, Customer
 from .serializers import ContactDetailSerializer, CustomerSerializer
+from .timeline import build_timeline
 
 
 class CustomerViewSet(BaseModelViewSet):
@@ -26,6 +29,11 @@ class CustomerViewSet(BaseModelViewSet):
         "update": Permissions.CUSTOMERS_MANAGE,
         "partial_update": Permissions.CUSTOMERS_MANAGE,
         "destroy": Permissions.CUSTOMERS_MANAGE,
+        # Keyed by the @action's own method name — DRF sets
+        # `self.action = "timeline"` for it (verified, see Story 20
+        # `## Prerequisites`). Without this entry the action would fall
+        # through to authenticated-only, NOT be denied.
+        "timeline": Permissions.CUSTOMERS_VIEW,
     }
 
     # `ordering_fields` is what makes `?ordering=` real for these columns —
@@ -33,6 +41,25 @@ class CustomerViewSet(BaseModelViewSet):
     # `ColumnDef.id` on the frontend.
     ordering_fields = ("name", "email", "company", "created_at")
     search_fields = ("name", "email", "company")
+
+    @action(detail=True, methods=["get"], url_path="timeline")
+    def timeline(self, request, pk=None):
+        """A customer's full interaction history — CUST-3. The router
+        generates `/api/customers/<pk>/timeline/` from this decorator; no
+        `urls.py` change is needed (verified, see Story 20
+        `## Prerequisites`).
+
+        Permission-checked twice on purpose: `permission_map` gates it on
+        `customers.view` like every other read here, and the explicit check
+        below adds `tickets.view`, because the payload is ticket and message
+        data that `TicketViewSet`/`MessageViewSet` both gate that way. The
+        same "permission-checked, not just authenticated" move Story 16's
+        `TicketChatConsumer` made. See Story 20 `## Prerequisites`.
+        """
+        if Permissions.TICKETS_VIEW not in permissions_for(request.user):
+            raise PermissionDenied()
+        customer = self.get_object()
+        return Response(build_timeline(customer))
 
 
 class ContactDetailViewSet(BaseModelViewSet):

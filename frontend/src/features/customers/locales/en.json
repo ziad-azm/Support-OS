@@ -53,5 +53,30 @@
     "created": "Contact channel added.",
     "updated": "Contact channel updated.",
     "deleted": "Contact channel removed."
+  },
+  "timeline": {
+    "title": "Interaction history",
+    "empty": "No tickets or messages yet.",
+    "onTicket": "On ticket #{{id}}",
+    "kinds": {
+      "ticket": "Ticket opened"
+    },
+    "statuses": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "directions": {
+      "inbound": "Customer",
+      "outbound": "Agent"
+    },
+    "channels": {
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "chat": "Live chat",
+      "sms": "SMS",
+      "web_form": "Web form"
+    }
   }
 }
