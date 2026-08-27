@@ -26,12 +26,10 @@ class Category(TimeStampedModel):
 class Ticket(TimeStampedModel):
     """A support ticket — the core record EPIC 4's sibling stories extend.
 
-    `priority` and `category` are real as of Story 18 (TKT-2): `Category`
-    is a full CRUD resource (`CategoryViewSet`), and `priority` has always
-    been the editable `TextChoices` field it appears as. `status` is still
-    a placeholder pending TKT-4 (status-transition validation, escalation).
-    TKT-3 owns assignment, TKT-5 owns activity history. None of that is
-    pre-empted here.
+    `priority`/`category` (Story 18, TKT-2) and `assigned_agent` (Story 22,
+    TKT-3) are real. `status` is still a placeholder pending TKT-4
+    (status-transition validation, escalation); TKT-5 owns activity history.
+    Neither is pre-empted here.
     """
 
     class Status(models.TextChoices):
@@ -72,6 +70,20 @@ class Ticket(TimeStampedModel):
         blank=True,
         related_name="tickets",
         verbose_name=_("category"),
+    )
+    # SET_NULL, nullable: the project's fourth use of this behaviour, after
+    # `category` above and `Note.author`/`Attachment.uploaded_by` (Story 21).
+    # Deactivating or deleting an agent's account must not delete their
+    # tickets (CASCADE) or block the deletion (PROTECT) — the ticket simply
+    # becomes unassigned. Written ONLY through `TicketViewSet.assign`;
+    # `TicketSerializer` keeps it read-only. See Story 22 `## Prerequisites`.
+    assigned_agent = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_tickets",
+        verbose_name=_("assigned agent"),
     )
     status = models.CharField(
         _("status"), max_length=20, choices=Status.choices, default=Status.OPEN

@@ -1138,3 +1138,23 @@ is removed from `http_method_names`**, not merely left out of
 `permission_map` — an unmapped action is authenticated-only, not
 forbidden, so narrowing the allowed HTTP methods is the only way to make an
 unsupported verb a clean `405`.
+
+**A field that has its own action endpoint should be read-only on the
+resource's serializer.** `Ticket.assigned_agent` (Story 22, `TKT-3`) is
+written only by `POST /tickets/<id>/assign/`; keeping it in
+`read_only_fields` means a full-payload `PATCH` from the edit form can
+never clear it as a side effect — a real bug class, since this project's
+forms send every field they own on every save. **A `detail=False` `@action`
+does not shadow the detail route**: DRF registers dynamic list routes
+before `^{prefix}/{lookup}/` (`rest_framework/routers.py`), so
+`/api/tickets/assignable-agents/` resolves to the action even though
+`{lookup}` would match that literal string — ordering, not the regex, is
+what makes it safe. **When a picker offers a restricted set of values, the
+write endpoint must validate against the same queryset the picker reads**
+— `apps/tickets/assignment.py::assignable_agents()` backs both, so a
+hand-crafted request cannot assign a ticket to a user the picker would
+never have offered. **A single control that fires a mutation immediately
+is not a form** — § 20's `useAppForm`-is-the-only-entry-point rule governs
+forms with a submit step and client-side validation; a lone `Select` that
+saves on change uses the plain primitive, like `LanguageSwitcher` and the
+ticket list's filters.

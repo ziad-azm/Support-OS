@@ -7,6 +7,7 @@ import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
+import { Label } from '@/shared/ui/primitives/label'
 import {
   Select,
   SelectContent,
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/primitives/select'
+import { Switch } from '@/shared/ui/primitives/switch'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
@@ -46,6 +48,7 @@ export function TicketListPage() {
   // non-empty value, mirroring the form's CATEGORY_NONE sentinel.
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
+  const [onlyMine, setOnlyMine] = useState(false)
   const categoriesQuery = useCategories()
 
   useEffect(() => {
@@ -57,13 +60,14 @@ export function TicketListPage() {
   // reset to page 1, or the user can land on a now-nonexistent page.
   useEffect(() => {
     setPage(1)
-  }, [search, categoryFilter, priorityFilter, setPage])
+  }, [search, categoryFilter, priorityFilter, onlyMine, setPage])
 
   const query = useTickets({
     ...params,
     ...(search ? { search } : {}),
     ...(categoryFilter !== 'all' ? { category: categoryFilter } : {}),
     ...(priorityFilter !== 'all' ? { priority: priorityFilter as TicketPriority } : {}),
+    ...(onlyMine ? { assigned_to_me: 'true' as const } : {}),
   })
 
   const columns: readonly ColumnDef<Ticket>[] = [
@@ -87,6 +91,13 @@ export function TicketListPage() {
       // joined/derived display column, not in the viewset's
       // `ordering_fields`. See Story 18 `## Prerequisites`.
       cell: (row) => row.category_name ?? t('fields.noCategory'),
+    },
+    {
+      id: 'assigned_agent_name',
+      header: t('fields.assignedAgent'),
+      // Not sortable: a joined display column absent from the viewset's
+      // `ordering_fields`, same as `customer_name`/`category_name`.
+      cell: (row) => row.assigned_agent_name ?? t('fields.unassigned'),
     },
     {
       id: 'status',
@@ -151,6 +162,17 @@ export function TicketListPage() {
             ))}
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="only-mine"
+            checked={onlyMine}
+            onCheckedChange={setOnlyMine}
+            aria-label={t('filters.onlyMine')}
+          />
+          <Label htmlFor="only-mine" className="text-sm">
+            {t('filters.onlyMine')}
+          </Label>
+        </div>
       </div>
       <DataTable
         columns={columns}

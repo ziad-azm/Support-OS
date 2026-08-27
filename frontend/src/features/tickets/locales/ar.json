@@ -13,6 +13,8 @@
     "customer": "العميل",
     "category": "الفئة",
     "noCategory": "بدون فئة",
+    "assignedAgent": "المسؤول",
+    "unassigned": "غير مُعيَّن",
     "status": "الحالة",
     "priority": "الأولوية",
     "createdAt": "تاريخ الإنشاء"
@@ -33,7 +35,8 @@
     "category": "تصفية حسب الفئة",
     "priority": "تصفية حسب الأولوية",
     "allCategories": "كل الفئات",
-    "allPriorities": "كل الأولويات"
+    "allPriorities": "كل الأولويات",
+    "onlyMine": "تذاكري فقط"
   },
   "actions": {
     "save": "حفظ",
@@ -43,6 +46,10 @@
   "delete": {
     "title": "هل تريد حذف هذه التذكرة؟",
     "description": "سيؤدي هذا إلى إزالة التذكرة نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+  },
+  "assign": {
+    "label": "تغيير المسؤول",
+    "updated": "تم تحديث المسؤول."
   },
   "created": "تم إنشاء التذكرة.",
   "updated": "تم تحديث التذكرة.",

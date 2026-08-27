@@ -14,6 +14,8 @@ export type Ticket = {
   customer_name: string
   category: number | null
   category_name: string | null
+  assigned_agent: number | null
+  assigned_agent_name: string | null
   status: TicketStatus
   priority: TicketPriority
   created_at: string
@@ -24,7 +26,9 @@ export type Ticket = {
  * status-changing UI (TKT-4 owns it) — the server default (`open`) is what
  * every created ticket gets, and there is no form field to send anything
  * else. `category` is nullable — a ticket may be uncategorized; the form
- * always sends this key explicitly (`null` to clear), never omits it. */
+ * always sends this key explicitly (`null` to clear), never omits it.
+ * `assigned_agent` is absent — it is written only through
+ * `POST /tickets/<id>/assign/`, never through this create/edit form. */
 export type TicketInput = {
   subject: string
   description: string

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { assignTicket } from './assignTicket'
 import { createTicket } from './createTicket'
 import { deleteTicket } from './deleteTicket'
 import { ticketKeys } from './ticketKeys'
@@ -32,6 +33,14 @@ export function useDeleteTicket() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => deleteTicket(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
+  })
+}
+
+export function useAssignTicket(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (assignedAgent: number | null) => assignTicket(id, assignedAgent),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
   })
 }

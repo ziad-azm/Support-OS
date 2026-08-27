@@ -1,9 +1,12 @@
 from django.utils.translation import gettext_lazy as _
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 
 from apps.core.permissions import Permissions
 from apps.core.views import BaseModelViewSet
 
+from .assignment import assignable_agents
 from .models import Category, Ticket
 from .serializers import CategorySerializer, TicketSerializer
 
@@ -34,7 +37,7 @@ class CategoryViewSet(BaseModelViewSet):
 class TicketViewSet(BaseModelViewSet):
     """Ticket CRUD. The second consumer of `BaseModelViewSet`, after Customer."""
 
-    queryset = Ticket.objects.select_related("customer", "category").all()
+    queryset = Ticket.objects.select_related("customer", "category", "assigned_agent").all()
     serializer_class = TicketSerializer
 
     permission_map = {
@@ -44,13 +47,18 @@ class TicketViewSet(BaseModelViewSet):
         "update": Permissions.TICKETS_MANAGE,
         "partial_update": Permissions.TICKETS_MANAGE,
         "destroy": Permissions.TICKETS_MANAGE,
+        # Both keyed by the @action's own method name (verified in Story 20).
+        # A missing entry does NOT deny — it falls through to
+        # authenticated-only. See Story 22 `## Migration / Rollback`.
+        "assign": Permissions.TICKETS_MANAGE,
+        "assignable_agents": Permissions.TICKETS_VIEW,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
-    # like `CustomerViewSet`. `customer`/`customer_name`/`category_name` are
-    # deliberately absent — see Story 12 `## Story Goal` for why
-    # `customer_name` is not sortable, the same choice this story makes for
-    # `category_name`.
+    # like `CustomerViewSet`. `customer`/`customer_name`/`category_name`/
+    # `assigned_agent_name` are deliberately absent — see Story 12
+    # `## Story Goal` for why `customer_name` is not sortable, the same
+    # choice this story makes for `category_name`/`assigned_agent_name`.
     ordering_fields = ("subject", "status", "priority", "created_at")
     search_fields = ("subject", "description", "customer__name")
 
@@ -77,4 +85,64 @@ class TicketViewSet(BaseModelViewSet):
                 raise ValidationError({"priority": [_("Must be a valid priority.")]})
             queryset = queryset.filter(priority=priority)
 
+        # Scoped by request.user, never by a client-supplied id — "my
+        # tickets" means the caller's own queue. Same optional-filter
+        # contract as `category`/`priority` above: absent means no filter.
+        # Only the exact string "true" enables it, so a typo'd value is an
+        # explicit 400 rather than a silently-unfiltered list.
+        assigned_to_me = self.request.query_params.get("assigned_to_me")
+        if assigned_to_me:
+            if assigned_to_me != "true":
+                raise ValidationError({"assigned_to_me": [_('Must be "true" if present.')]})
+            queryset = queryset.filter(assigned_agent=self.request.user)
+
         return queryset
+
+    @action(detail=False, methods=["get"], url_path="assignable-agents")
+    def assignable_agents(self, request):
+        """Users a ticket can be assigned to — TKT-3. A narrow, read-only
+        list, NOT a user-management API (`SEC-1` owns that). Gated on
+        `tickets.view`: picking an assignee is part of working tickets, not
+        of administering users, which is why this needs no `users.view`.
+
+        `/api/tickets/assignable-agents/` does not shadow
+        `/api/tickets/<pk>/` — the router registers detail=False dynamic
+        routes first (verified, see Story 22 `## Prerequisites`).
+        """
+        agents = [{"id": agent.id, "name": agent.get_full_name()} for agent in assignable_agents()]
+        return Response(agents)
+
+    @action(detail=True, methods=["post"], url_path="assign")
+    def assign(self, request, pk=None):
+        """Assign, reassign, or unassign a ticket — TKT-3.
+
+        `assigned_agent` must be present in the body: an id to assign, or
+        an explicit `null` to unassign. An omitted key is a 400, not an
+        unassign — the same explicit-`null`-never-omission rule §23
+        records for every nullable field in this project.
+
+        A non-assignable id is rejected against the SAME queryset the
+        options endpoint serves (`assignment.assignable_agents`), so a
+        hand-crafted POST cannot assign a ticket to someone who has no
+        `tickets.manage`. See Story 22 `## Prerequisites`.
+        """
+        if "assigned_agent" not in request.data:
+            raise ValidationError({"assigned_agent": [_("This field is required.")]})
+
+        agent_id = request.data.get("assigned_agent")
+        agent = None
+        if agent_id is not None:
+            try:
+                agent_id = int(agent_id)
+            except (TypeError, ValueError):
+                raise ValidationError({"assigned_agent": [_("Must be a valid user id.")]}) from None
+            agent = assignable_agents().filter(pk=agent_id).first()
+            if agent is None:
+                raise ValidationError(
+                    {"assigned_agent": [_("That user cannot be assigned tickets.")]}
+                )
+
+        ticket = self.get_object()
+        ticket.assigned_agent = agent
+        ticket.save(update_fields=["assigned_agent", "updated_at"])
+        return Response(self.get_serializer(ticket).data)

@@ -25,8 +25,16 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ("subject", "customer", "category", "status", "priority", "created_at")
-    list_filter = ("status", "priority", "category")
+    list_display = (
+        "subject",
+        "customer",
+        "category",
+        "assigned_agent",
+        "status",
+        "priority",
+        "created_at",
+    )
+    list_filter = ("status", "priority", "category", "assigned_agent")
     search_fields = ("subject", "description", "customer__name")
     readonly_fields = ("created_at", "updated_at")
     inlines = (MessageInline,)

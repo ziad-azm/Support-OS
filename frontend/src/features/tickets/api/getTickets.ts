@@ -8,6 +8,7 @@ export type TicketListParams = ServerTableParams & {
   search?: string
   category?: string
   priority?: TicketPriority
+  assigned_to_me?: 'true'
 }
 
 export function getTickets(params: TicketListParams): Promise<Page<Ticket>> {

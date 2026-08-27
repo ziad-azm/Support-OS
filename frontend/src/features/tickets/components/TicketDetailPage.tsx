@@ -12,6 +12,7 @@ import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 
 import { useDeleteTicket } from '../api/useTicketMutations'
 import { useTicket } from '../api/useTicket'
+import { TicketAssigneeControl } from './TicketAssigneeControl'
 import { TicketConversation } from './TicketConversation'
 
 export function TicketDetailPage() {
@@ -66,6 +67,24 @@ export function TicketDetailPage() {
                     <div>
                       <dt className="text-sm text-muted-foreground">{t('fields.category')}</dt>
                       <dd>{ticket.category_name ?? t('fields.noCategory')}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.assignedAgent')}</dt>
+                      <dd>
+                        {/* Everyone with `tickets.view` sees WHO owns the
+                            ticket; only `tickets.manage` can change it —
+                            the same split the edit/delete buttons below
+                            already use. */}
+                        <Can
+                          permission="tickets.manage"
+                          fallback={ticket.assigned_agent_name ?? t('fields.unassigned')}
+                        >
+                          <TicketAssigneeControl
+                            ticketId={ticket.id}
+                            assignedAgent={ticket.assigned_agent}
+                          />
+                        </Can>
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-sm text-muted-foreground">{t('fields.status')}</dt>

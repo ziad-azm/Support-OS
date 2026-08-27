@@ -13,6 +13,8 @@
     "customer": "Customer",
     "category": "Category",
     "noCategory": "No category",
+    "assignedAgent": "Assignee",
+    "unassigned": "Unassigned",
     "status": "Status",
     "priority": "Priority",
     "createdAt": "Created"
@@ -33,7 +35,8 @@
     "category": "Filter by category",
     "priority": "Filter by priority",
     "allCategories": "All categories",
-    "allPriorities": "All priorities"
+    "allPriorities": "All priorities",
+    "onlyMine": "Only my tickets"
   },
   "actions": {
     "save": "Save",
@@ -43,6 +46,10 @@
   "delete": {
     "title": "Delete this ticket?",
     "description": "This permanently removes the ticket. This cannot be undone."
+  },
+  "assign": {
+    "label": "Change assignee",
+    "updated": "Assignee updated."
   },
   "created": "Ticket created.",
   "updated": "Ticket updated.",
