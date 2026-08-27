@@ -140,3 +140,44 @@ class AssignmentRule(TimeStampedModel):
     def __str__(self) -> str:
         scope = self.category.name if self.category else str(_("all categories"))
         return f"{self.get_strategy_display()} / {scope}"
+
+
+class EscalationRule(TimeStampedModel):
+    """Automatic escalation criteria — SLA-3. Two independent triggers,
+    each opt-in: an `at_risk` rule escalates a ticket whose response or
+    resolution deadline (per `apps/sla/policy.py::compute_sla_status`,
+    SLA-1) is within `threshold_minutes` and still pending; an `idle` rule
+    escalates a ticket with no activity for `threshold_minutes`,
+    independent of any SLA policy. Unlike `SLAPolicy`/`AssignmentRule`,
+    deliberately not scoped by category — the intake asks for at-risk/idle
+    criteria, not per-category variants of them. See Story 30
+    `## Prerequisites`.
+    """
+
+    class Kind(models.TextChoices):
+        AT_RISK = "at_risk", _("At risk of SLA breach")
+        IDLE = "idle", _("Idle (no recent activity)")
+
+    kind = models.CharField(_("kind"), max_length=20, choices=Kind.choices)
+    threshold_minutes = models.PositiveIntegerField(
+        _("threshold (minutes)"),
+        help_text=_(
+            "For 'at risk': minutes before an SLA deadline that counts as at-risk. "
+            "For 'idle': minutes of no activity that counts as idle."
+        ),
+    )
+    # No unique constraint on `kind`: multiple enabled rules of the same
+    # kind are allowed (if redundant) rather than blocked — see Story 30
+    # `## Prerequisites` for why evaluating "any enabled rule of this kind
+    # matches" is equivalent to just using the largest threshold among
+    # them, so this never needs a specificity/precedence rule the way
+    # `SLAPolicy`/`AssignmentRule`'s category scoping does.
+    enabled = models.BooleanField(_("enabled"), default=True)
+
+    class Meta:
+        verbose_name = _("escalation rule")
+        verbose_name_plural = _("escalation rules")
+        ordering = ("kind", "threshold_minutes")
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} ({self.threshold_minutes}m)"

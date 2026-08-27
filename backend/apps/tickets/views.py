@@ -1,6 +1,5 @@
 import logging
 
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -13,6 +12,7 @@ from apps.sla.tasks import auto_assign_ticket
 
 from .assignment import apply_assignment, assignable_agents
 from .context import build_ticket_context
+from .escalation import apply_escalation
 from .history import build_history
 from .models import Category, Ticket, TicketActivity
 from .serializers import CategorySerializer, TicketSerializer
@@ -225,8 +225,10 @@ class TicketViewSet(BaseModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="escalate")
     def escalate(self, request, pk=None):
-        """Escalate or de-escalate a ticket — TKT-4. A manual flag, not
-        SLA-3's future automatic escalation — see Story 23 `## Prerequisites`.
+        """Escalate or de-escalate a ticket — TKT-4. A manual action; SLA-3's
+        automatic evaluation job (`apps.sla.tasks.evaluate_escalations`)
+        shares this action's `apply_escalation` helper but can only ever
+        escalate, never de-escalate — see Story 30 `## Prerequisites`.
 
         `escalated` must be present and a real boolean — an omitted key or a
         truthy-but-not-boolean value (e.g. the string `"true"`) is a 400.
@@ -240,12 +242,8 @@ class TicketViewSet(BaseModelViewSet):
             raise ValidationError({"escalated": [_("Must be true or false.")]})
 
         ticket = self.get_object()
-        if escalated == ticket.escalated:
+        if not apply_escalation(ticket, escalated):
             raise ValidationError({"escalated": [_("Ticket already has this escalation state.")]})
-
-        ticket.escalated = escalated
-        ticket.escalated_at = timezone.now() if escalated else None
-        ticket.save(update_fields=["escalated", "escalated_at", "updated_at"])
         return Response(self.get_serializer(ticket).data)
 
     @action(detail=True, methods=["get"], url_path="history")

@@ -1308,3 +1308,14 @@ deploy — the same "vocabulary is code, mapping is data" split
 `fork()`) — `celery -A config worker --pool=solo` is required there;
 macOS/Linux use the default pool. Any story documenting a Celery command
 for local dev must carry this caveat, the same way `README.md` § 6 does.
+
+**`SLA-3` is the first story to actually use the "data migration" option
+this section already named for adding a `PeriodicTask` row.**
+`apps/sla/migrations/0004_seed_escalation_schedule.py` seeds an
+`IntervalSchedule` (every 5 minutes) and an enabled `PeriodicTask`
+pointing at `apps.sla.tasks.evaluate_escalations`, so the job is live the
+moment this story ships — no manual `/admin/` step is required before it
+can even start looking for at-risk/idle tickets. What it finds (or
+whether it finds anything at all) stays entirely config-driven through
+`EscalationRule` (`EscalationRuleAdmin`, § 23) — the schedule existing and
+the criteria being configured are two independent opt-ins, not one.
