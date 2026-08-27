@@ -26,6 +26,12 @@ If you are unsure between an app and `core`, put it in the app. Moving code
 into `core` later is easy; untangling `core` after it becomes a dumping ground
 is not.
 
+Project-wide bootstrapping/wiring (the ASGI/WSGI entrypoints, URL roots, the
+Celery application instance) lives in `config/`, not in any app — it answers
+"how does the process start," not "which business area owns this," so the
+list above does not apply to it. `config/celery.py` (Story 27, `SLA-0`) is
+the newest example, alongside the existing `config/asgi.py`/`wsgi.py`.
+
 ## What `core` is for
 
 `apps/core` holds cross-cutting machinery that every app depends on:

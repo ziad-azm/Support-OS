@@ -47,6 +47,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
     "channels",
+    "django_celery_beat",
 ]
 
 # Domain apps: one per business area. See backend/apps/README.md for the rule
@@ -343,8 +344,10 @@ WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")
 
 # --- Live Chat / Channels (COMM-3) ------------------------------------------
 # Django Channels' ASGI entrypoint and channel layer. InMemoryChannelLayer is
-# single-process only — a deliberate scope limit, no Redis dependency in this
-# project. See Story 16 `## Prerequisites`.
+# single-process only — a deliberate scope limit, unrelated to Celery's own
+# Redis broker (below, SLA-0): Redis entered this project through Celery,
+# and CHANNEL_LAYERS does not (yet) reuse it. See Story 16 `## Prerequisites`
+# and Story 27 `## Prerequisites`.
 ASGI_APPLICATION = "config.asgi.application"
 CHANNEL_LAYERS = {
     "default": {
@@ -367,3 +370,21 @@ SMS_FROM_NUMBER = env("SMS_FROM_NUMBER", default="")
 # algorithm signs the URL it was told to POST to, and a proxy/tunnel
 # rewriting Host would otherwise break every signature check silently.
 SMS_WEBHOOK_URL = env("SMS_WEBHOOK_URL", default="")
+
+# --- Background jobs (SLA-0) -------------------------------------------------
+# The shared async/scheduled-job foundation SLA, escalation, notifications,
+# AI, and integrations all build on (SupportOs backlog.MD:460). Redis is
+# both broker and result backend — one new locally-installed service,
+# documented in README § 6 exactly like PostgreSQL (§ 1), never Docker.
+CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = env("REDIS_URL", default="redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+# django-celery-beat: the periodic-task schedule lives in the database,
+# editable via /admin/ (PeriodicTask, IntervalSchedule, CrontabSchedule —
+# all registered by the package itself, no admin code to write here), not a
+# hardcoded `beat_schedule` dict — so a future scheduled job (e.g. SLA-3's
+# escalation evaluation) is configured without a settings deploy.
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"

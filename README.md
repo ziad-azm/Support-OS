@@ -259,6 +259,59 @@ restarting the Vite dev server.
 
 ---
 
+## 6. Run Celery (optional, SLA-0)
+
+Nothing in this project dispatches a real background task yet — skip this
+section until a feature needs it. `config.celery.debug_task` exists purely
+as a wiring smoke test.
+
+### Install and start Redis locally
+
+**Windows** — install [Memurai Developer](https://www.memurai.com/get-memurai)
+(a free, Redis-protocol-compatible Windows service) or install Redis itself
+inside WSL2 and follow the Debian/Ubuntu instructions below. Either way, you
+end up with something answering on `localhost:6379`.
+
+**macOS**
+
+```bash
+brew install redis
+brew services start redis
+```
+
+**Debian / Ubuntu**
+
+```bash
+sudo apt install redis-server
+sudo systemctl enable --now redis-server
+```
+
+Confirm it answers before moving on:
+
+```powershell
+redis-cli ping   # expect PONG
+```
+
+### Run the worker and the scheduler
+
+Two more terminals, backend venv active in both, from `backend/`:
+
+| Terminal | Command | Purpose |
+|---|---|---|
+| Worker | `celery -A config worker -l info` | Executes tasks. **Windows:** append `--pool=solo` — Celery's default `prefork` pool needs `fork()`, which Windows does not have; the worker otherwise hangs or errors on startup. |
+| Beat | `celery -A config beat -l info` | Dispatches scheduled/periodic tasks, read from the database (`django-celery-beat`). Starts cleanly with an empty schedule — nothing is scheduled yet. |
+
+Prove the whole chain works:
+
+```powershell
+python manage.py shell -c "from config.celery import debug_task; debug_task.delay()"
+```
+
+The worker terminal should log the task being received and executed within a
+second or two.
+
+---
+
 ## Languages
 
 SupportOS supports **English** and **Arabic**. Switch languages with the selector rendered at
@@ -461,6 +514,7 @@ developer discovers it.
 | `POSTGRES_HOST` | no | `localhost` | Database host — local install by default. |
 | `POSTGRES_PORT` | no | `5432` | Database port. |
 | `POSTGRES_CONN_MAX_AGE` | no | `0` | Seconds to reuse a connection. `0` closes it after each request. |
+| `REDIS_URL` | no | `redis://localhost:6379/0` | Redis connection string — Celery's broker and result backend (SLA-0). |
 | `JWT_SIGNING_KEY` | no | `DJANGO_SECRET_KEY` | JWT signing key. Read now, consumed once JWT auth lands. |
 | `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` | no | `15` | Access-token lifetime. |
 | `JWT_REFRESH_TOKEN_LIFETIME_DAYS` | no | `7` | Refresh-token lifetime. |
@@ -575,6 +629,15 @@ under the `apps` package it must be `name = "apps.customers"`. See `backend/apps
 `corsheaders.middleware.CorsMiddleware` must be the **first** entry in `MIDDLEWARE`. Below
 `CommonMiddleware` it still boots and still passes the backend tests, then fails only in a real
 browser. Add the calling origin to `CORS_ALLOWED_ORIGINS` if it is not `localhost:5173`.
+
+**The Celery worker hangs or exits immediately on Windows**
+Missing `--pool=solo`. Celery's default `prefork` pool requires `fork()`,
+which Windows does not provide. See [§ 6](#6-run-celery-optional-sla-0).
+
+**`redis.exceptions.ConnectionError: Error connecting to localhost:6379`**
+Redis is not installed or not running locally. See
+[§ 6](#6-run-celery-optional-sla-0) — confirm `redis-cli ping` answers `PONG`
+first.
 
 **An `/api/` request returns HTML instead of JSON**
 Unmatched paths under `/api/` are routed through `ApiNotFoundView` and answer with an enveloped

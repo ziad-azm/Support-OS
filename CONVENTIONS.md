@@ -1231,3 +1231,35 @@ two-column/side-panel page layout uses the same arbitrary-value
 `grid-cols-[...]` syntax already present in this codebase's own UI
 primitives** (`alert.tsx`, `card.tsx`) — `TicketDetailPage`'s new grid is
 that idiom's first use at the page level, not a new pattern.
+
+---
+
+## 24. Background jobs (Celery, SLA-0)
+
+The shared Celery application instance is `config/celery.py` — project
+bootstrapping/wiring, the same category as `config/asgi.py`/`wsgi.py`, not a
+domain app (`apps/README.md`'s "needed by two or more apps → `apps/core`"
+rule governs business logic, not process wiring). A feature story that
+needs a background task adds `apps/<app>/tasks.py` with `@shared_task`
+functions — `app.autodiscover_tasks()` (`config/celery.py`) finds it with no
+further wiring.
+
+**Redis is the broker and result backend, installed as a local service —
+never Docker, never a hardcoded default that silently degrades.**
+`REDIS_URL` is read the same way every other environment-differing value
+in this project is (`env(...)`, `README.md` § "Environment variables"), and
+Redis is installed locally exactly like PostgreSQL (`README.md` § 1 vs § 6)
+— this project's `Docker (optional, future)` stance extends to Celery's
+infrastructure too, not just the web/database stack.
+
+**The periodic-task schedule lives in the database
+(`django-celery-beat`'s `DatabaseScheduler`), never a hardcoded
+`beat_schedule` dict.** A new scheduled job is a `PeriodicTask` row (added
+via `/admin/`, a data migration, or a management command), not a settings
+deploy — the same "vocabulary is code, mapping is data" split
+`CONVENTIONS.md` § 22 already establishes for permissions.
+
+**Celery's default worker pool does not run on native Windows** (no
+`fork()`) — `celery -A config worker --pool=solo` is required there;
+macOS/Linux use the default pool. Any story documenting a Celery command
+for local dev must carry this caveat, the same way `README.md` § 6 does.
