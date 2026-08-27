@@ -8,8 +8,9 @@ from apps.tickets.models import Ticket
 class Message(TimeStampedModel):
     """A single message in a ticket's conversation — the reusable spine
     every channel (COMM-1 Email, COMM-2 WhatsApp, COMM-3 Live Chat, COMM-4
-    SMS) attaches to via `ChannelAdapter` (`adapters.py`). No channel has a
-    bespoke model — everything is a `Message`. See Story 13 `## Story Goal`.
+    SMS, COMM-5 Web Form) attaches to via `ChannelAdapter` (`adapters.py`).
+    No channel has a bespoke model — everything is a `Message`. See Story 13
+    `## Story Goal`.
     """
 
     class Direction(models.TextChoices):

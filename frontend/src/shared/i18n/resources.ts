@@ -8,6 +8,8 @@ import liveChatAr from '@/features/live-chat/locales/ar.json'
 import liveChatEn from '@/features/live-chat/locales/en.json'
 import ticketsAr from '@/features/tickets/locales/ar.json'
 import ticketsEn from '@/features/tickets/locales/en.json'
+import webFormAr from '@/features/web-form/locales/ar.json'
+import webFormEn from '@/features/web-form/locales/en.json'
 
 import arCommon from './locales/ar/common.json'
 import arErrors from './locales/ar/errors.json'
@@ -34,6 +36,7 @@ export const resources = {
     customers: customersEn,
     tickets: ticketsEn,
     liveChat: liveChatEn,
+    webForm: webFormEn,
   },
   ar: {
     common: arCommon,
@@ -44,6 +47,7 @@ export const resources = {
     customers: customersAr,
     tickets: ticketsAr,
     liveChat: liveChatAr,
+    webForm: webFormAr,
   },
 } as const
 

@@ -13,6 +13,8 @@ from rest_framework.views import APIView
 from apps.core.permissions import Permissions
 from apps.core.renderers import PlainTextRenderer
 from apps.core.views import BaseModelViewSet
+from apps.tickets.models import Category
+from apps.tickets.serializers import CategorySerializer
 
 from .adapters import get_adapter
 from .email_adapter import EmailAdapter
@@ -21,6 +23,7 @@ from .models import Message
 from .serializers import MessageSerializer
 from .sms_adapter import SMSAdapter
 from .sms_adapter import verify_signature as verify_sms_signature
+from .web_form_adapter import WebFormAdapter
 from .whatsapp_adapter import WhatsAppAdapter, extract_text_message, verify_signature
 
 logger = logging.getLogger(__name__)
@@ -220,3 +223,62 @@ class LiveChatStartView(APIView):
         return Response(
             {"ticket_id": ticket.id, "session_token": token}, status=status.HTTP_201_CREATED
         )
+
+
+class WebFormCategoriesView(APIView):
+    """Public, read-only category list for the anonymous web form —
+    `Category` (TKT-2, Story 18) is otherwise gated behind `tickets.view`
+    via `CategoryViewSet`, which an anonymous visitor never holds. See
+    Story 19 `## Prerequisites`.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        categories = Category.objects.all()
+        return Response(CategorySerializer(categories, many=True).data)
+
+
+class WebFormSubmissionView(APIView):
+    """Creates a Customer (find-or-create by email) + a brand-new Ticket +
+    the first inbound Message from a public web-form submission. Public —
+    same `authentication_classes`/`permission_classes` shape as
+    `LiveChatStartView` (Story 16); no session token, since a submission has
+    no follow-up interaction to resume. See Story 19 `## Prerequisites`.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        name = (request.data.get("name") or "").strip()
+        if not name:
+            raise ValidationError({"name": [_("This field is required.")]})
+        subject = (request.data.get("subject") or "").strip()
+        if not subject:
+            raise ValidationError({"subject": [_("This field is required.")]})
+        description = (request.data.get("description") or "").strip()
+        if not description:
+            raise ValidationError({"description": [_("This field is required.")]})
+        email = (request.data.get("email") or "").strip() or None
+
+        category_id = request.data.get("category")
+        if category_id is not None:
+            try:
+                category_id = int(category_id)
+            except (TypeError, ValueError):
+                raise ValidationError({"category": [_("Must be a valid category id.")]}) from None
+            if not Category.objects.filter(id=category_id).exists():
+                raise ValidationError({"category": [_("Must be a valid category id.")]})
+
+        message = WebFormAdapter().receive(
+            {
+                "name": name,
+                "email": email,
+                "subject": subject,
+                "description": description,
+                "category": category_id,
+            }
+        )
+        return Response({"ticket_id": message.ticket_id}, status=status.HTTP_201_CREATED)

@@ -1076,3 +1076,20 @@ opposite: silently skip filtering when the param is absent, but still raise
 `category`, an unrecognised `priority`) — a list screen's default
 (unfiltered) view must keep working, but garbage input should not silently
 do nothing either.
+
+**A channel with no outbound delivery mechanism still implements
+`ChannelAdapter.send()` — by always raising.** `WebFormAdapter.send()`
+(Story 19, `COMM-5`) unconditionally raises `ValueError`, caught and logged
+by `MessageViewSet.perform_create`'s existing `except Exception` (Story 14)
+— the same "record now, deliver best-effort" contract every channel's own
+failure path already has, not a special case. **A resource that must stay
+permission-gated for authenticated use can still have a separate, narrower
+public view over the same model** — `WebFormCategoriesView` (Story 19)
+reads the same `Category` table `CategoryViewSet` (Story 18) does, without
+loosening `CategoryViewSet`'s own `tickets.view` gate; add a second,
+explicitly public view rather than widen an existing authenticated one.
+**Not every channel routes a new inbound message into the customer's most
+recent open ticket** — that rule (Email/WhatsApp/SMS/Live Chat) assumes an
+ongoing conversation; a one-shot structured intake (a web form) should
+always start a new ticket instead, because there is no "conversation" for a
+later message to continue.

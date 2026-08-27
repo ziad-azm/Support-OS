@@ -6,6 +6,8 @@ from .views import (
     LiveChatStartView,
     MessageViewSet,
     SMSInboundWebhookView,
+    WebFormCategoriesView,
+    WebFormSubmissionView,
     WhatsAppInboundWebhookView,
 )
 
@@ -29,5 +31,7 @@ urlpatterns = [
     ),
     path("webhooks/sms/inbound/", SMSInboundWebhookView.as_view(), name="sms-inbound-webhook"),
     path("live-chat/start/", LiveChatStartView.as_view(), name="live-chat-start"),
+    path("web-form/categories/", WebFormCategoriesView.as_view(), name="web-form-categories"),
+    path("web-form/submit/", WebFormSubmissionView.as_view(), name="web-form-submit"),
     *router.urls,
 ]

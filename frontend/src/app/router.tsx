@@ -25,6 +25,13 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: 'contact',
+        lazy: async () => {
+          const { WebFormPage } = await import('@/features/web-form/components/WebFormPage')
+          return { element: <WebFormPage /> }
+        },
+      },
+      {
         element: <RequireAuth />,
         children: [
           {

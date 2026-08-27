@@ -10,5 +10,6 @@ class CommunicationsConfig(AppConfig):
             email_adapter,
             live_chat_adapter,
             sms_adapter,
+            web_form_adapter,
             whatsapp_adapter,
         )

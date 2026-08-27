@@ -1,0 +1,16 @@
+{
+  "title": "Submit a request",
+  "fields": {
+    "name": "Your name",
+    "email": "Email (optional)",
+    "subject": "Subject",
+    "description": "Description",
+    "category": "Category",
+    "noCategory": "No category"
+  },
+  "action": "Submit",
+  "success": {
+    "title": "Request submitted",
+    "description": "Thanks — your request (#{{id}}) has been submitted. We'll be in touch."
+  }
+}
