@@ -27,6 +27,9 @@ export function RootLayout() {
               <Button asChild variant="ghost" size="sm">
                 <Link to="/tickets">{t('tickets:title')}</Link>
               </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/tickets/my-tickets">{t('tickets:myQueue.title')}</Link>
+              </Button>
             </Can>
           </nav>
           <div className="ms-auto flex items-center gap-2">

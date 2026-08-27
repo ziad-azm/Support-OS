@@ -94,6 +94,12 @@ class TicketViewSet(BaseModelViewSet):
                 raise ValidationError({"priority": [_("Must be a valid priority.")]})
             queryset = queryset.filter(priority=priority)
 
+        status = self.request.query_params.get("status")
+        if status:
+            if status not in Ticket.Status.values:
+                raise ValidationError({"status": [_("Must be a valid status.")]})
+            queryset = queryset.filter(status=status)
+
         # Scoped by request.user, never by a client-supplied id — "my
         # tickets" means the caller's own queue. Same optional-filter
         # contract as `category`/`priority` above: absent means no filter.

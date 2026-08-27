@@ -10,3 +10,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | customer-management | [customer-management/00-overview.md](customer-management/00-overview.md) | 10–11, 20–21 (EPIC 3 fully planned) |
 | ticket-management | [ticket-management/00-overview.md](ticket-management/00-overview.md) | 12, 18, 22–24 (EPIC 4 fully planned) |
 | communication-channels | [communication-channels/00-overview.md](communication-channels/00-overview.md) | 13–17, 19 (EPIC 5 fully planned) |
+| agent-workspace | [agent-workspace/00-overview.md](agent-workspace/00-overview.md) | 25 |

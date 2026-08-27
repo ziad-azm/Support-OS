@@ -2,11 +2,12 @@ import { api } from '@/shared/lib/api/client'
 import type { Page } from '@/shared/lib/api/types'
 import type { ServerTableParams } from '@/shared/ui/data-table/useServerTable'
 
-import type { Ticket, TicketPriority } from '../types/ticket'
+import type { Ticket, TicketPriority, TicketStatus } from '../types/ticket'
 
 export type TicketListParams = ServerTableParams & {
   search?: string
   category?: string
+  status?: TicketStatus
   priority?: TicketPriority
   assigned_to_me?: 'true'
 }

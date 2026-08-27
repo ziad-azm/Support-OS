@@ -34,8 +34,10 @@
   },
   "filters": {
     "category": "تصفية حسب الفئة",
+    "status": "تصفية حسب الحالة",
     "priority": "تصفية حسب الأولوية",
     "allCategories": "كل الفئات",
+    "allStatuses": "كل الحالات",
     "allPriorities": "كل الأولويات",
     "onlyMine": "تذاكري فقط"
   },
@@ -51,6 +53,11 @@
   "assign": {
     "label": "تغيير المسؤول",
     "updated": "تم تحديث المسؤول."
+  },
+  "myQueue": {
+    "title": "تذاكري",
+    "empty": "لا توجد تذاكر معيّنة لك",
+    "emptyDescription": "ستظهر هنا التذاكر المعيّنة لك."
   },
   "status": {
     "updated": "تم تحديث الحالة."

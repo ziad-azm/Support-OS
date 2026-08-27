@@ -34,8 +34,10 @@
   },
   "filters": {
     "category": "Filter by category",
+    "status": "Filter by status",
     "priority": "Filter by priority",
     "allCategories": "All categories",
+    "allStatuses": "All statuses",
     "allPriorities": "All priorities",
     "onlyMine": "Only my tickets"
   },
@@ -51,6 +53,11 @@
   "assign": {
     "label": "Change assignee",
     "updated": "Assignee updated."
+  },
+  "myQueue": {
+    "title": "My Tickets",
+    "empty": "No tickets assigned to you",
+    "emptyDescription": "Tickets assigned to you will appear here."
   },
   "status": {
     "updated": "Status updated."

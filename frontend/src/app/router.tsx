@@ -101,6 +101,15 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                // Must stay before `tickets/:id`, same reason as `tickets/new`.
+                path: 'tickets/my-tickets',
+                lazy: async () => {
+                  const { MyTicketsPage } =
+                    await import('@/features/tickets/components/MyTicketsPage')
+                  return { element: <MyTicketsPage /> }
+                },
+              },
+              {
                 path: 'tickets/:id',
                 lazy: async () => {
                   const { TicketDetailPage } =
