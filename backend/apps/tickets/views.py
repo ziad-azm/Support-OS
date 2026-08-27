@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from apps.core.permissions import Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
+from apps.sla.policy import compute_sla_status
 
 from .assignment import assignable_agents
 from .context import build_ticket_context
@@ -63,6 +64,7 @@ class TicketViewSet(BaseModelViewSet):
         "escalate": Permissions.TICKETS_MANAGE,
         "history": Permissions.TICKETS_VIEW,
         "context": Permissions.TICKETS_VIEW,
+        "sla": Permissions.TICKETS_VIEW,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -266,3 +268,15 @@ class TicketViewSet(BaseModelViewSet):
             raise PermissionDenied()
         ticket = self.get_object()
         return Response(build_ticket_context(ticket))
+
+    @action(detail=True, methods=["get"], url_path="sla")
+    def sla(self, request, pk=None):
+        """This ticket's SLA status — SLA-1. Gated `tickets.view` alone,
+        the same reasoning `history` uses (Story 24) — no separate SLA
+        permission exists. Returns `null` when no `SLAPolicy` applies to
+        this ticket's priority/category, which is a normal outcome (SLA
+        tracking is opt-in per priority), not an error.
+        """
+        ticket = self.get_object()
+        sla_status = compute_sla_status(ticket)
+        return Response(sla_status)

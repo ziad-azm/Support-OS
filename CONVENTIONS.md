@@ -1232,6 +1232,31 @@ two-column/side-panel page layout uses the same arbitrary-value
 primitives** (`alert.tsx`, `card.tsx`) — `TicketDetailPage`'s new grid is
 that idiom's first use at the page level, not a new pattern.
 
+**A derived status with a real deadline is computed fresh on every read,
+never cached or persisted, when nothing forces otherwise.**
+`apps/sla/policy.py::compute_sla_status` (Story 28, `SLA-1`) derives a
+ticket's response/resolution due times and `met`/`breached`/`pending`
+status entirely from `SLAPolicy` + `Ticket.created_at` + `Message`/
+`TicketActivity` — no new `Ticket` field, no migration, no state that can
+drift from reality. A "pending" ticket becomes "breached" automatically
+the moment real time passes its deadline, with nothing to update — the
+same reason this project prefers computing over caching wherever the read
+is cheap enough to redo. **The event log is the source of truth for "when
+did X first happen," never a row's own `updated_at`.**
+`compute_sla_status` reads the first matching `TicketActivity` row for
+"when was this ticket resolved," not `Ticket.updated_at`, which bumps on
+any later save (an escalate call, a reassignment) and would silently
+misreport how long resolution actually took — the same lesson
+`TicketActivity` (Story 24) exists to generalize. **A reverse cross-app
+import can run in either direction depending on which side owns the
+*question*.** `apps/tickets/context.py` (Story 26) reads *from*
+`apps.customers` because "what is this ticket's customer context" is
+framed from the ticket; `apps/sla/policy.py` is read *by*
+`apps.tickets.views` because "what is this ticket's SLA status" is framed
+from SLA policy data. Both are safe for the identical reason: neither
+app's `models.py` imports back into the other, so only a one-way
+leaf-module dependency exists either way.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

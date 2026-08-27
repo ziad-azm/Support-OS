@@ -119,5 +119,16 @@
     "statusChanged": "Status changed from {{from}} to {{to}}",
     "assigneeChanged": "Assignee changed from {{from}} to {{to}}",
     "by": "by {{actor}}"
+  },
+  "sla": {
+    "title": "SLA Status",
+    "noPolicy": "No SLA policy configured for this ticket's priority.",
+    "response": "Response",
+    "resolution": "Resolution",
+    "statuses": {
+      "met": "Met",
+      "breached": "Breached",
+      "pending": "Pending"
+    }
   }
 }

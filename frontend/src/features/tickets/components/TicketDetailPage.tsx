@@ -17,6 +17,7 @@ import { CustomerContextPanel } from './CustomerContextPanel'
 import { TicketAssigneeControl } from './TicketAssigneeControl'
 import { TicketConversation } from './TicketConversation'
 import { TicketHistorySection } from './TicketHistorySection'
+import { TicketSlaSection } from './TicketSlaSection'
 import { TicketStatusControl } from './TicketStatusControl'
 
 export function TicketDetailPage() {
@@ -182,6 +183,7 @@ export function TicketDetailPage() {
                     </Can>
                   </CardContent>
                 </Card>
+                <TicketSlaSection ticketId={ticket.id} />
                 <TicketConversation ticketId={ticket.id} />
                 <TicketHistorySection ticketId={ticket.id} />
               </div>
