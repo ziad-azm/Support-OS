@@ -13,6 +13,8 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q, QuerySet
 
 from apps.core.permissions import Permissions
+from apps.notifications.models import Notification
+from apps.notifications.services import notify
 
 from .models import TicketActivity
 
@@ -60,4 +62,12 @@ def apply_assignment(ticket, agent, actor) -> bool:
         from_value=old_agent.get_full_name() if old_agent else "",
         to_value=agent.get_full_name() if agent else "",
     )
+    if agent is not None:
+        notify(
+            agent,
+            Notification.Kind.TICKET_ASSIGNED,
+            ticket=ticket,
+            title=f"Ticket #{ticket.id} assigned to you",
+            body=ticket.subject,
+        )
     return True

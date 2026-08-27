@@ -14,6 +14,7 @@ urlpatterns = [
     path("", include("apps.customers.urls")),
     path("", include("apps.tickets.urls")),
     path("", include("apps.communications.urls")),
+    path("", include("apps.notifications.urls")),
     # Must stay last: turns an unmatched /api/ path into an enveloped 404
     # instead of Django's HTML 404 page.
     re_path(r"^", ApiNotFoundView.as_view()),

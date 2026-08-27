@@ -1,0 +1,11 @@
+{
+  "bell": {
+    "label": "الإشعارات"
+  },
+  "empty": "لا توجد إشعارات بعد",
+  "markAllRead": "تحديد الكل كمقروء",
+  "kinds": {
+    "ticket_assigned": "تم إسناد التذكرة",
+    "ticket_escalated": "تم تصعيد التذكرة"
+  }
+}

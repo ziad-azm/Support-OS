@@ -1042,6 +1042,18 @@ anonymous identity that does not warrant a real customer account — reach for
 it before adding a session/account model for a single-conversation
 credential.
 
+**A viewset with no create/update/destroy surface and no domain permission to
+gate does not extend `BaseModelViewSet`.** `apps/notifications/views.py::NotificationViewSet`
+(Story 31, `SLA-4`) is the first such case: `Notification` rows are created
+only by `apps.notifications.services.notify`, and every action is scoped to
+`request.user`'s own rows rather than a `tickets.manage`-style permission
+string. It extends `mixins.ListModelMixin, mixins.RetrieveModelMixin,
+viewsets.GenericViewSet` directly, with `permission_classes = [IsAuthenticated]`
+and no `permission_map`. Reach for this shape only when both conditions
+hold — a domain resource that is merely read-only but still permission-gated
+would still extend `BaseModelViewSet` with a `permission_map` naming only its
+`view` permission.
+
 **A webhook signature scheme can depend on more than the raw request body —
 verify what it actually signs before choosing how to check it.** Meta's
 `X-Hub-Signature-256` (Story 15, `COMM-2`) is computed over raw request
@@ -1319,3 +1331,9 @@ can even start looking for at-risk/idle tickets. What it finds (or
 whether it finds anything at all) stays entirely config-driven through
 `EscalationRule` (`EscalationRuleAdmin`, § 23) — the schedule existing and
 the criteria being configured are two independent opt-ins, not one.
+
+**`SLA-4` is the second feature to add its own `tasks.py` module**
+(`apps/notifications/tasks.py::send_notification_email`, after
+`apps/sla/tasks.py`, Stories 29-30) — confirming `app.autodiscover_tasks()`
+needs no per-app registration; any `apps/<app>/tasks.py` is picked up
+automatically.

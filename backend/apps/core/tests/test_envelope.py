@@ -18,6 +18,7 @@ EXPECTED_LABELS = [
     "communications",
     "agents",
     "sla",
+    "notifications",
     "knowledge_base",
     "portal",
     "reports",

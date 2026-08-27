@@ -8,6 +8,9 @@ for `apply_assignment` (Story 29).
 
 from django.utils import timezone
 
+from apps.notifications.models import Notification
+from apps.notifications.services import notify
+
 
 def apply_escalation(ticket, escalated: bool) -> bool:
     """Sets `ticket.escalated`/`escalated_at`, returning `False` (no-op)
@@ -24,4 +27,12 @@ def apply_escalation(ticket, escalated: bool) -> bool:
     ticket.escalated = escalated
     ticket.escalated_at = timezone.now() if escalated else None
     ticket.save(update_fields=["escalated", "escalated_at", "updated_at"])
+    if escalated and ticket.assigned_agent is not None:
+        notify(
+            ticket.assigned_agent,
+            Notification.Kind.TICKET_ESCALATED,
+            ticket=ticket,
+            title=f"Ticket #{ticket.id} escalated",
+            body=ticket.subject,
+        )
     return True

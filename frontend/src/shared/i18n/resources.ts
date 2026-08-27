@@ -6,6 +6,8 @@ import healthAr from '@/features/health/locales/ar.json'
 import healthEn from '@/features/health/locales/en.json'
 import liveChatAr from '@/features/live-chat/locales/ar.json'
 import liveChatEn from '@/features/live-chat/locales/en.json'
+import notificationsAr from '@/features/notifications/locales/ar.json'
+import notificationsEn from '@/features/notifications/locales/en.json'
 import ticketsAr from '@/features/tickets/locales/ar.json'
 import ticketsEn from '@/features/tickets/locales/en.json'
 import webFormAr from '@/features/web-form/locales/ar.json'
@@ -37,6 +39,7 @@ export const resources = {
     tickets: ticketsEn,
     liveChat: liveChatEn,
     webForm: webFormEn,
+    notifications: notificationsEn,
   },
   ar: {
     common: arCommon,
@@ -48,6 +51,7 @@ export const resources = {
     tickets: ticketsAr,
     liveChat: liveChatAr,
     webForm: webFormAr,
+    notifications: notificationsAr,
   },
 } as const
 

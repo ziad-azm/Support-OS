@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
 
+import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 import { Can, useAuth } from '@/shared/auth'
 import { Button } from '@/shared/ui/primitives/button'
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
@@ -35,6 +36,7 @@ export function RootLayout() {
           <div className="ms-auto flex items-center gap-2">
             {user ? (
               <>
+                <NotificationBell />
                 <span className="text-sm text-muted-foreground">{user.email}</span>
                 <Button variant="ghost" size="sm" onClick={() => void logout()}>
                   {t('actions.logout')}

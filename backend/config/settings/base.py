@@ -61,6 +61,7 @@ LOCAL_APPS = [
     "apps.communications",
     "apps.agents",
     "apps.sla",
+    "apps.notifications",
     "apps.knowledge_base",
     "apps.portal",
     "apps.reports",
