@@ -1,3 +1,5 @@
+import logging
+
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
@@ -7,13 +9,16 @@ from rest_framework.response import Response
 from apps.core.permissions import Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
 from apps.sla.policy import compute_sla_status
+from apps.sla.tasks import auto_assign_ticket
 
-from .assignment import assignable_agents
+from .assignment import apply_assignment, assignable_agents
 from .context import build_ticket_context
 from .history import build_history
 from .models import Category, Ticket, TicketActivity
 from .serializers import CategorySerializer, TicketSerializer
 from .status import is_valid_transition
+
+logger = logging.getLogger(__name__)
 
 
 class CategoryViewSet(BaseModelViewSet):
@@ -74,6 +79,18 @@ class TicketViewSet(BaseModelViewSet):
     # choice this story makes for `category_name`/`assigned_agent_name`.
     ordering_fields = ("subject", "status", "priority", "created_at")
     search_fields = ("subject", "description", "customer__name")
+
+    def perform_create(self, serializer):
+        ticket = serializer.save()
+        try:
+            auto_assign_ticket.delay(ticket.id)
+        except Exception:
+            # The Ticket row is already committed — creation must succeed
+            # regardless of whether the auto-assignment task could even be
+            # queued (e.g. Redis unreachable). Same resilience pattern
+            # `MessageViewSet.perform_create` already uses for
+            # `adapter.send()` (Story 14). See Story 29 `## Prerequisites`.
+            logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -162,17 +179,7 @@ class TicketViewSet(BaseModelViewSet):
                 )
 
         ticket = self.get_object()
-        old_agent = ticket.assigned_agent
-        ticket.assigned_agent = agent
-        ticket.save(update_fields=["assigned_agent", "updated_at"])
-        if agent != old_agent:
-            TicketActivity.objects.create(
-                ticket=ticket,
-                actor=request.user,
-                kind=TicketActivity.Kind.ASSIGNED,
-                from_value=old_agent.get_full_name() if old_agent else "",
-                to_value=agent.get_full_name() if agent else "",
-            )
+        apply_assignment(ticket, agent, actor=request.user)
         return Response(self.get_serializer(ticket).data)
 
     @action(detail=True, methods=["post"], url_path="status")

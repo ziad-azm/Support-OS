@@ -1257,6 +1257,26 @@ from SLA policy data. Both are safe for the identical reason: neither
 app's `models.py` imports back into the other, so only a one-way
 leaf-module dependency exists either way.
 
+**A helper shared by a manual write path and an automatic one lives where
+the manual path already put it, not duplicated for the automatic
+caller.** `apps/tickets/assignment.py::apply_assignment` (Story 29,
+`SLA-2`) is called by both `TicketViewSet.assign` (a human `actor`) and
+`auto_assign_ticket` (`actor=None`, a system action) — one function
+decides what "an assignment changed" means and how it gets logged, so a
+future third caller inherits the same correctness rather than a fresh
+chance to drift. **A background task fired from inside a request's
+`perform_create`/`perform_update` must not be allowed to fail that
+request.** `TicketViewSet.perform_create`'s `try/except Exception:
+logger.exception(...)` around `auto_assign_ticket.delay(...)` is the same
+shape `MessageViewSet.perform_create` (Story 14) already established for
+`adapter.send()` — the record the request is about is already committed,
+so a failure in triggering the *next* step (an outbound send, a queued
+task) is logged, never returned as an error to a caller who already got
+what they asked for. **`apps/<app>/tasks.py` (§24) is where a story's
+first real `@shared_task` goes, with no additional Celery wiring** —
+`app.autodiscover_tasks()` (Story 27, `config/celery.py`) already finds it
+by that filename inside any installed app.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

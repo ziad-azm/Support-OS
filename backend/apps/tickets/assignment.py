@@ -14,6 +14,8 @@ from django.db.models import Q, QuerySet
 
 from apps.core.permissions import Permissions
 
+from .models import TicketActivity
+
 
 def assignable_agents() -> QuerySet:
     """Active users who actually hold `tickets.manage`.
@@ -36,3 +38,26 @@ def assignable_agents() -> QuerySet:
         .select_related("role")
         .order_by("first_name", "last_name", "email")
     )
+
+
+def apply_assignment(ticket, agent, actor) -> bool:
+    """Assigns `ticket` to `agent` (or unassigns via `agent=None`),
+    logging a `TicketActivity` only when the assignee actually changes.
+    Shared by `TicketViewSet.assign` (Story 22, a human `actor`) and
+    SLA-2's `auto_assign_ticket` task (`actor=None`, a system action) —
+    one code path, so both can never drift on logging behaviour. Returns
+    `True` if a change was made.
+    """
+    old_agent = ticket.assigned_agent
+    if agent == old_agent:
+        return False
+    ticket.assigned_agent = agent
+    ticket.save(update_fields=["assigned_agent", "updated_at"])
+    TicketActivity.objects.create(
+        ticket=ticket,
+        actor=actor,
+        kind=TicketActivity.Kind.ASSIGNED,
+        from_value=old_agent.get_full_name() if old_agent else "",
+        to_value=agent.get_full_name() if agent else "",
+    )
+    return True
