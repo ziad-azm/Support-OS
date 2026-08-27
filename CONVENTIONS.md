@@ -1158,3 +1158,23 @@ is not a form** — § 20's `useAppForm`-is-the-only-entry-point rule governs
 forms with a submit step and client-side validation; a lone `Select` that
 saves on change uses the plain primitive, like `LanguageSwitcher` and the
 ticket list's filters.
+
+**A finite set of valid state changes is a hand-authored graph in a small
+helper module, not inline `if`-chains in the view.**
+`apps/tickets/status.py::VALID_TRANSITIONS`/`is_valid_transition` (Story 23,
+`TKT-4`) is the same shape `apps/tickets/assignment.py` (Story 22)
+established for a different business rule: a pure function, imported by the
+viewset, easy to unit-reason-about and to extend without touching
+request-handling code. **Re-stating a resource's current state is rejected,
+not treated as a no-op success** — `TicketViewSet.set_status`/`escalate`
+both compare the requested value against the current one before consulting
+the transition graph, so "change status to what it already is" and
+"escalate an already-escalated ticket" are both a `400`, consistent with
+this project's preference for explicit, intentional writes over
+silently-accepted no-ops. **A frontend picker that mirrors a backend
+validation graph duplicates it as a plain data structure with a comment
+pointing at the source of truth** — `TICKET_STATUS_TRANSITIONS`
+(`frontend/src/features/tickets/types/ticket.ts`) is the same duplication
+`TICKET_STATUSES` already makes of `Ticket.Status` (§3), narrowing what the
+UI *offers* while the backend remains the sole enforcer of what it
+*accepts*.

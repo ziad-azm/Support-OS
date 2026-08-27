@@ -9,17 +9,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { Empty } from '@/shared/ui/Empty'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
+import { useToast } from '@/shared/ui/toast/useToast'
 
-import { useDeleteTicket } from '../api/useTicketMutations'
+import { useDeleteTicket, useEscalateTicket } from '../api/useTicketMutations'
 import { useTicket } from '../api/useTicket'
 import { TicketAssigneeControl } from './TicketAssigneeControl'
 import { TicketConversation } from './TicketConversation'
+import { TicketStatusControl } from './TicketStatusControl'
 
 export function TicketDetailPage() {
   const { t } = useTranslation('tickets')
   const { date } = useFormatters()
   const navigate = useNavigate()
   const { confirm } = useConfirm()
+  const { toast } = useToast()
   const { id: idParam } = useParams()
   const id = Number(idParam)
   const isValidId = !Number.isNaN(id)
@@ -29,6 +32,7 @@ export function TicketDetailPage() {
   // one even though `tickets/new` is declared before `tickets/:id`.
   const query = useTicket(id, { enabled: isValidId })
   const deleteMutation = useDeleteTicket()
+  const escalateMutation = useEscalateTicket(id)
 
   async function handleDelete() {
     const confirmed = await confirm({
@@ -39,6 +43,25 @@ export function TicketDetailPage() {
     if (!confirmed) return
     await deleteMutation.mutateAsync(id)
     navigate('/tickets')
+  }
+
+  async function handleToggleEscalation(currentlyEscalated: boolean) {
+    const confirmed = await confirm({
+      title: t(
+        currentlyEscalated
+          ? 'escalation.deEscalateConfirmTitle'
+          : 'escalation.escalateConfirmTitle',
+      ),
+      description: t(
+        currentlyEscalated
+          ? 'escalation.deEscalateConfirmDescription'
+          : 'escalation.escalateConfirmDescription',
+      ),
+    })
+    if (!confirmed) return
+    escalateMutation.mutate(!currentlyEscalated, {
+      onSuccess: () => toast({ tone: 'success', message: t('escalation.updated') }),
+    })
   }
 
   return (
@@ -89,7 +112,35 @@ export function TicketDetailPage() {
                     <div>
                       <dt className="text-sm text-muted-foreground">{t('fields.status')}</dt>
                       <dd>
-                        <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>
+                        <Can
+                          permission="tickets.manage"
+                          fallback={
+                            <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>
+                          }
+                        >
+                          <TicketStatusControl ticketId={ticket.id} status={ticket.status} />
+                        </Can>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{t('fields.escalation')}</dt>
+                      <dd className="flex items-center gap-2">
+                        {ticket.escalated ? (
+                          <Badge variant="destructive">{t('escalation.escalated')}</Badge>
+                        ) : (
+                          <Badge variant="secondary">{t('escalation.notEscalated')}</Badge>
+                        )}
+                        <Can permission="tickets.manage">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={escalateMutation.isPending}
+                            onClick={() => void handleToggleEscalation(ticket.escalated)}
+                          >
+                            {t(ticket.escalated ? 'escalation.deEscalate' : 'escalation.escalate')}
+                          </Button>
+                        </Can>
                       </dd>
                     </div>
                     <div>

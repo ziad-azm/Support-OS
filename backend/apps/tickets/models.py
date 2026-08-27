@@ -26,10 +26,9 @@ class Category(TimeStampedModel):
 class Ticket(TimeStampedModel):
     """A support ticket — the core record EPIC 4's sibling stories extend.
 
-    `priority`/`category` (Story 18, TKT-2) and `assigned_agent` (Story 22,
-    TKT-3) are real. `status` is still a placeholder pending TKT-4
-    (status-transition validation, escalation); TKT-5 owns activity history.
-    Neither is pre-empted here.
+    `priority`/`category` (Story 18, TKT-2), `assigned_agent` (Story 22,
+    TKT-3), and `status`/`escalated` (Story 23, TKT-4) are all real now.
+    Only TKT-5's activity history remains unimplemented.
     """
 
     class Status(models.TextChoices):
@@ -91,6 +90,16 @@ class Ticket(TimeStampedModel):
     priority = models.CharField(
         _("priority"), max_length=20, choices=Priority.choices, default=Priority.MEDIUM
     )
+    # A manual signal, not the automatic rule-driven escalation SLA-3 will
+    # add later (SupportOs backlog.MD:476-481) — that story depends on a
+    # Celery foundation (SLA-0) that does not exist yet, and can drive this
+    # SAME field once it does. A flag, not a tier/level: the intake's UI
+    # task says "escalate action" (one button), not "choose a level". See
+    # Story 23 `## Prerequisites`.
+    escalated = models.BooleanField(_("escalated"), default=False)
+    # Set when `escalated` becomes True, cleared to None when it becomes
+    # False — written only through `TicketViewSet.escalate`, never directly.
+    escalated_at = models.DateTimeField(_("escalated at"), null=True, blank=True)
 
     class Meta:
         verbose_name = _("ticket")

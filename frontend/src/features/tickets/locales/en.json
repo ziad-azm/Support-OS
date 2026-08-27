@@ -17,7 +17,8 @@
     "unassigned": "Unassigned",
     "status": "Status",
     "priority": "Priority",
-    "createdAt": "Created"
+    "createdAt": "Created",
+    "escalation": "Escalation"
   },
   "statuses": {
     "open": "Open",
@@ -50,6 +51,20 @@
   "assign": {
     "label": "Change assignee",
     "updated": "Assignee updated."
+  },
+  "status": {
+    "updated": "Status updated."
+  },
+  "escalation": {
+    "escalated": "Escalated",
+    "notEscalated": "Not escalated",
+    "escalate": "Escalate",
+    "deEscalate": "De-escalate",
+    "escalateConfirmTitle": "Escalate this ticket?",
+    "escalateConfirmDescription": "This flags the ticket for prioritized attention.",
+    "deEscalateConfirmTitle": "De-escalate this ticket?",
+    "deEscalateConfirmDescription": "This clears the escalation flag.",
+    "updated": "Escalation updated."
   },
   "created": "Ticket created.",
   "updated": "Ticket updated.",

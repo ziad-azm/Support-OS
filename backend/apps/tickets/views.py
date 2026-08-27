@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -9,6 +10,7 @@ from apps.core.views import BaseModelViewSet
 from .assignment import assignable_agents
 from .models import Category, Ticket
 from .serializers import CategorySerializer, TicketSerializer
+from .status import is_valid_transition
 
 
 class CategoryViewSet(BaseModelViewSet):
@@ -52,6 +54,11 @@ class TicketViewSet(BaseModelViewSet):
         # authenticated-only. See Story 22 `## Migration / Rollback`.
         "assign": Permissions.TICKETS_MANAGE,
         "assignable_agents": Permissions.TICKETS_VIEW,
+        # Both keyed by the @action's own method name (verified in Story 20,
+        # reused in Story 22). A missing entry does NOT deny — it falls
+        # through to authenticated-only. See Story 23 `## Migration / Rollback`.
+        "set_status": Permissions.TICKETS_MANAGE,
+        "escalate": Permissions.TICKETS_MANAGE,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -145,4 +152,62 @@ class TicketViewSet(BaseModelViewSet):
         ticket = self.get_object()
         ticket.assigned_agent = agent
         ticket.save(update_fields=["assigned_agent", "updated_at"])
+        return Response(self.get_serializer(ticket).data)
+
+    @action(detail=True, methods=["post"], url_path="status")
+    def set_status(self, request, pk=None):
+        """Change a ticket's status along a valid transition — TKT-4.
+
+        `status` must be present in the body — an omitted key is a 400, the
+        same explicit-value rule §23 uses for `assign`'s `assigned_agent`.
+        Re-sending the ticket's current status is also a 400: "no-op" is not
+        a transition. See `apps/tickets/status.py` for the graph.
+        """
+        if "status" not in request.data:
+            raise ValidationError({"status": [_("This field is required.")]})
+
+        new_status = request.data.get("status")
+        if new_status not in Ticket.Status.values:
+            raise ValidationError({"status": [_("Must be a valid status.")]})
+
+        ticket = self.get_object()
+        if new_status == ticket.status:
+            raise ValidationError({"status": [_("Ticket is already in this status.")]})
+        if not is_valid_transition(ticket.status, new_status):
+            raise ValidationError(
+                {
+                    "status": [
+                        _("Cannot change status from %(current)s to %(new)s.")
+                        % {"current": ticket.status, "new": new_status}
+                    ]
+                }
+            )
+
+        ticket.status = new_status
+        ticket.save(update_fields=["status", "updated_at"])
+        return Response(self.get_serializer(ticket).data)
+
+    @action(detail=True, methods=["post"], url_path="escalate")
+    def escalate(self, request, pk=None):
+        """Escalate or de-escalate a ticket — TKT-4. A manual flag, not
+        SLA-3's future automatic escalation — see Story 23 `## Prerequisites`.
+
+        `escalated` must be present and a real boolean — an omitted key or a
+        truthy-but-not-boolean value (e.g. the string `"true"`) is a 400.
+        Re-sending the ticket's current escalation state is also a 400.
+        """
+        if "escalated" not in request.data:
+            raise ValidationError({"escalated": [_("This field is required.")]})
+
+        escalated = request.data.get("escalated")
+        if not isinstance(escalated, bool):
+            raise ValidationError({"escalated": [_("Must be true or false.")]})
+
+        ticket = self.get_object()
+        if escalated == ticket.escalated:
+            raise ValidationError({"escalated": [_("Ticket already has this escalation state.")]})
+
+        ticket.escalated = escalated
+        ticket.escalated_at = timezone.now() if escalated else None
+        ticket.save(update_fields=["escalated", "escalated_at", "updated_at"])
         return Response(self.get_serializer(ticket).data)

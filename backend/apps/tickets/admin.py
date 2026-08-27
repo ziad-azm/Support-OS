@@ -32,9 +32,10 @@ class TicketAdmin(admin.ModelAdmin):
         "assigned_agent",
         "status",
         "priority",
+        "escalated",
         "created_at",
     )
-    list_filter = ("status", "priority", "category", "assigned_agent")
+    list_filter = ("status", "priority", "category", "assigned_agent", "escalated")
     search_fields = ("subject", "description", "customer__name")
     readonly_fields = ("created_at", "updated_at")
     inlines = (MessageInline,)

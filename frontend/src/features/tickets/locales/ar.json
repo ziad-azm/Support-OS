@@ -17,7 +17,8 @@
     "unassigned": "غير مُعيَّن",
     "status": "الحالة",
     "priority": "الأولوية",
-    "createdAt": "تاريخ الإنشاء"
+    "createdAt": "تاريخ الإنشاء",
+    "escalation": "التصعيد"
   },
   "statuses": {
     "open": "مفتوحة",
@@ -50,6 +51,20 @@
   "assign": {
     "label": "تغيير المسؤول",
     "updated": "تم تحديث المسؤول."
+  },
+  "status": {
+    "updated": "تم تحديث الحالة."
+  },
+  "escalation": {
+    "escalated": "مُصعَّدة",
+    "notEscalated": "غير مُصعَّدة",
+    "escalate": "تصعيد",
+    "deEscalate": "إلغاء التصعيد",
+    "escalateConfirmTitle": "هل تريد تصعيد هذه التذكرة؟",
+    "escalateConfirmDescription": "سيؤدي هذا إلى تمييز التذكرة لإعطائها أولوية اهتمام.",
+    "deEscalateConfirmTitle": "هل تريد إلغاء تصعيد هذه التذكرة؟",
+    "deEscalateConfirmDescription": "سيؤدي هذا إلى إزالة علامة التصعيد.",
+    "updated": "تم تحديث حالة التصعيد."
   },
   "created": "تم إنشاء التذكرة.",
   "updated": "تم تحديث التذكرة.",

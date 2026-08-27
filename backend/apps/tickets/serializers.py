@@ -48,11 +48,19 @@ class TicketSerializer(BaseModelSerializer):
             "assigned_agent_name",
             "status",
             "priority",
+            "escalated",
+            "escalated_at",
             "created_at",
             "updated_at",
         )
-        # assigned_agent is written ONLY through `TicketViewSet.assign`.
-        # Read-only here so a full-payload PATCH from the edit form can
-        # never unassign a ticket as a side effect. See Story 22
+        # status/escalated/escalated_at are written ONLY through
+        # TicketViewSet.set_status/escalate. Read-only here for the same
+        # reason assigned_agent is (Story 22): a full-payload PATCH from the
+        # edit form must never change them as a side effect. See Story 23
         # `## Prerequisites`.
-        read_only_fields = BaseModelSerializer.Meta.read_only_fields + ("assigned_agent",)
+        read_only_fields = BaseModelSerializer.Meta.read_only_fields + (
+            "assigned_agent",
+            "status",
+            "escalated",
+            "escalated_at",
+        )
