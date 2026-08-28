@@ -52,7 +52,9 @@ function StartForm({ onStarted }: { onStarted: (session: LiveChatSession) => voi
   return (
     <Card className="mx-auto mt-10 max-w-sm">
       <CardHeader>
-        <CardTitle>{t('start.title')}</CardTitle>
+        <CardTitle asChild>
+          <h1>{t('start.title')}</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -95,7 +97,9 @@ function ChatPane({ session }: { session: LiveChatSession }) {
   return (
     <Card className="mx-auto mt-10 flex max-w-sm flex-col" style={{ height: '32rem' }}>
       <CardHeader>
-        <CardTitle>{t('chat.title')}</CardTitle>
+        <CardTitle asChild>
+          <h1>{t('chat.title')}</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-3 overflow-hidden">
         <ul className="flex flex-1 flex-col gap-2 overflow-y-auto">

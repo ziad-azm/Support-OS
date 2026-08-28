@@ -27,7 +27,9 @@ export function TicketSlaSection({ ticketId }: { ticketId: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('sla.title')}</CardTitle>
+        <CardTitle asChild className="text-lg">
+          <h2>{t('sla.title')}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <QueryBoundary query={query}>

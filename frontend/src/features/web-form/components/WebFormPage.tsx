@@ -34,7 +34,9 @@ export function WebFormPage() {
     return (
       <Card className="mx-auto mt-10 max-w-lg">
         <CardHeader>
-          <CardTitle>{t('success.title')}</CardTitle>
+          <CardTitle asChild>
+            <h1>{t('success.title')}</h1>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p>{t('success.description', { id: ticketId })}</p>
@@ -80,7 +82,9 @@ function WebForm({ onSubmitted }: { onSubmitted: (ticketId: number) => void }) {
   return (
     <Card className="mx-auto mt-10 max-w-lg">
       <CardHeader>
-        <CardTitle>{t('title')}</CardTitle>
+        <CardTitle asChild>
+          <h1>{t('title')}</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>

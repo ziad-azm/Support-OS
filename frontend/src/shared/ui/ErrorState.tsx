@@ -22,7 +22,7 @@ export function ErrorState({ error, onRetry }: { error: ApiRequestError; onRetry
 
   return (
     <Alert variant="destructive">
-      <AlertTitle>{message}</AlertTitle>
+      <AlertTitle title={message}>{message}</AlertTitle>
       <AlertDescription>
         {onRetry ? (
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>

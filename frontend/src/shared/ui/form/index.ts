@@ -1,4 +1,5 @@
 export { useAppForm } from './useAppForm'
+export { FormErrorSummary } from './FormErrorSummary'
 export { TextField } from './TextField'
 export { TextareaField } from './TextareaField'
 export { SelectField } from './SelectField'

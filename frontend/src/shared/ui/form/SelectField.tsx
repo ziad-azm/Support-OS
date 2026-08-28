@@ -42,27 +42,30 @@ export function SelectField<TFieldValues extends FieldValues>({
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
-          <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder={placeholder} />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {description ? <FormDescription>{description}</FormDescription> : null}
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        const selectedLabel = options.find((option) => option.value === field.value)?.label
+        return (
+          <FormItem>
+            <FormLabel>{label}</FormLabel>
+            <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
+              <FormControl>
+                <SelectTrigger title={selectedLabel}>
+                  <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {options.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {description ? <FormDescription>{description}</FormDescription> : null}
+            <FormMessage />
+          </FormItem>
+        )
+      }}
     />
   )
 }

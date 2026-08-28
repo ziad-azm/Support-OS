@@ -80,7 +80,9 @@ export function TicketDetailPage() {
               <div className="flex flex-col gap-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">{ticket.subject}</CardTitle>
+                    <CardTitle asChild className="text-lg">
+                      <h1>{ticket.subject}</h1>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
                     <dl className="grid grid-cols-2 gap-4">

@@ -142,4 +142,17 @@
   html[lang='ar'] body {
     font-family: var(--font-arabic);
   }
+
+  /* Dialog/AlertDialog/Select/DropdownMenu entrance-exit animations
+     (tw-animate-css's animate-in / animate-out / fade-in / fade-out /
+     zoom-in / zoom-out classes) are the only non-essential motion in this
+     app — collapse them for users who ask for reduced motion.
+     animate-spin/animate-pulse (loading feedback) are deliberately NOT
+     touched. See CONVENTIONS.md §25, Story 37. */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-in,
+    .animate-out {
+      animation-duration: 0.01ms !important;
+    }
+  }
 }

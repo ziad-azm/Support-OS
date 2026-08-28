@@ -1451,28 +1451,60 @@ lines 9-46, never customized since Story 06.
 
 ### UX & accessibility guidance (from `design-system/supportos/MASTER.md` and the `ux-guidelines.csv` catalog)
 
-Applied by `DSN-2` (`SupportOs backlog.MD:514`, UX Guidelines & Accessibility
-Audit) against already-built screens — nothing here is applied yet:
+Audited and applied by `DSN-2` (Story 37, `SupportOs backlog.MD:514`) against
+every already-built screen:
 
 - **Contrast:** minimum 4.5:1 for normal text (MASTER.md Pre-Delivery
-  Checklist; `ux-guidelines.csv` "Color Contrast", severity High) — e.g.
-  `#333` on white (7:1) passes, `#999` on white (2.8:1) fails.
+  Checklist; `ux-guidelines.csv` "Color Contrast", severity High) — verified
+  in Story 36 for the tokens it changed; untouched shadcn defaults were
+  already compliant.
 - **Error messages must be announced, not shown by color alone**
-  (`ux-guidelines.csv` "Error Messages", severity High) — `role="alert"` or
-  `aria-live`, never a red border as the only signal.
+  (`ux-guidelines.csv` "Error Messages", severity High) — **fixed**: 11
+  duplicated unattached-error `<p>` blocks replaced by
+  `shared/ui/form/FormErrorSummary.tsx` (`role="alert"`); toast error tone
+  now `role="alert"`/`aria-live="assertive"` instead of sharing `status`/
+  `polite` with success toasts. Per-field `FormMessage` deliberately left
+  as-is — already discoverable via `aria-describedby` + focus-on-error, and
+  adding `role="alert"` there risks re-announcing on every keystroke during
+  re-validation.
 - **Focus states visible for keyboard navigation**, `prefers-reduced-motion`
-  respected, no emoji used as icons (SVG icon set only) — MASTER.md
-  Pre-Delivery Checklist.
-- **Wide tables get a horizontal-scroll wrapper or card layout on mobile**,
-  never an overflowing fixed-width table (`ux-guidelines.csv` "Table
-  Handling", severity Medium) — directly relevant to this project's ticket
-  list/data-table screens.
-- **Bulk row actions** (checkbox column + action bar) over repeated
-  per-row actions where a screen already lists many similar rows
-  (`ux-guidelines.csv` "Bulk Actions", severity Low).
+  respected, no emoji used as icons (SVG icon set only) — focus states
+  already shadcn-default-compliant across all primitives (unaudited change);
+  **fixed**: reduced-motion now respected for dialog/alert-dialog/select
+  entrance-exit animations (`index.css`); loading spinners/skeletons
+  deliberately keep animating (`ux-guidelines.csv` "Continuous Animation").
+- **Wide tables get a horizontal-scroll wrapper or card layout on mobile** —
+  **confirmed already compliant**, `shared/ui/primitives/table.tsx:10`.
+- **Bulk row actions** (checkbox column + action bar) — **not implemented**,
+  Low severity; a feature addition, not a fix — out of scope for this story.
 - **Anti-patterns to avoid:** poor navigation, no search entry point, missing
   `cursor: pointer` on clickable elements, instant (non-transitioned) state
-  changes, layout-shifting hover transforms.
+  changes, layout-shifting hover transforms — **fixed**: `cursor-pointer`
+  added to the shared `Button` base classes (Tailwind v4 Preflight no longer
+  sets this by default); the rest were already compliant.
+
+**Also audited and fixed, beyond the original bullet list above:**
+- **Heading hierarchy** — `CardTitle` (`shared/ui/primitives/card.tsx`) now
+  supports `asChild`; `TicketDetailPage` and `CustomerProfilePage` (and
+  10 more section-level titles) render real `<h1>`/`<h2>` elements instead
+  of a styled `<div>`.
+- **Accessible authentication** (WCAG 2.2, `ux-guidelines.csv` row 107,
+  Critical) — login form now sets `autoComplete="email"`/
+  `"current-password"`; paste was already not blocked.
+- **Truncated text with no full-value access** — `AlertTitle` (via
+  `ErrorState`), `SelectField`'s `SelectTrigger`, and
+  `CustomerContextPanel`'s timeline entry body now carry a `title` attribute.
+  6 standalone `SelectTrigger` usages outside `SelectField` (ticket
+  assignee/status controls, list-page filters, the quick-reply picker) are
+  **not** covered — noted as a follow-up, `TicketAssigneeControl.tsx` being
+  the one with real unbounded text (agent names).
+
+**Also confirmed already compliant, no change needed:** alt text (no `<img>`
+anywhere), icon-only buttons (all 5 already have `aria-label`), no bare
+`div`/`span onClick` anywhere, RTL (`check-rtl.mjs`, CI-wired, zero
+violations), sortable table headers (`DataTable.tsx`, already a model
+implementation), field `aria-describedby`/`aria-invalid` wiring, and
+touch target size (`icon-xs` = 24px, meets WCAG 2.2's minimum exactly).
 
 ### Chart-type guidance (for `RPT-0`)
 

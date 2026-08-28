@@ -9,7 +9,7 @@ import { email, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
-import { TextField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, TextField, useAppForm } from '@/shared/ui/form'
 
 const schema = z.object({
   email: email(),
@@ -51,16 +51,21 @@ export function LoginPage() {
           onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
           className="flex flex-col gap-4"
         >
-          <TextField control={form.control} name="email" label={t('login.email')} type="email" />
+          <TextField
+            control={form.control}
+            name="email"
+            label={t('login.email')}
+            type="email"
+            autoComplete="email"
+          />
           <TextField
             control={form.control}
             name="password"
             label={t('login.password')}
             type="password"
+            autoComplete="current-password"
           />
-          {formErrors.length > 0 ? (
-            <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-          ) : null}
+          <FormErrorSummary errors={formErrors} />
           <Button type="submit" disabled={mutation.isPending}>
             {t('login.submit')}
           </Button>

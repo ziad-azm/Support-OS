@@ -11,7 +11,7 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Checkbox } from '@/shared/ui/primitives/checkbox'
 import { Form } from '@/shared/ui/primitives/form'
-import { TextareaField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, TextareaField, useAppForm } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -35,7 +35,9 @@ export function InternalNotesSection({ ticketId }: { ticketId: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('internalNotes.title')}</CardTitle>
+        <CardTitle asChild className="text-lg">
+          <h2>{t('internalNotes.title')}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <QueryBoundary
@@ -192,9 +194,7 @@ function NoteAddForm({ ticketId }: { ticketId: number }) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3 border-t pt-4">
         <TextareaField control={form.control} name="body" label={t('internalNotes.fields.body')} />
         <MentionPicker selectedIds={mentionedIds} onChange={setMentionedIds} />
-        {formErrors.length > 0 ? (
-          <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-        ) : null}
+        <FormErrorSummary errors={formErrors} />
         <Button type="submit" disabled={mutation.isPending} className="self-start">
           {t('internalNotes.actions.add')}
         </Button>
@@ -244,9 +244,7 @@ function NoteEditForm({
             label={t('internalNotes.fields.body')}
           />
           <MentionPicker selectedIds={mentionedIds} onChange={setMentionedIds} />
-          {formErrors.length > 0 ? (
-            <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-          ) : null}
+          <FormErrorSummary errors={formErrors} />
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={mutation.isPending}>
               {t('internalNotes.actions.save')}

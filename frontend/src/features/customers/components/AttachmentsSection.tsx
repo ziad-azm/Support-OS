@@ -45,7 +45,9 @@ export function AttachmentsSection({ customerId }: { customerId: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('attachments.title')}</CardTitle>
+        <CardTitle asChild className="text-lg">
+          <h2>{t('attachments.title')}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <QueryBoundary

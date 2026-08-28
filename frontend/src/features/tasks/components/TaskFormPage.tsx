@@ -7,7 +7,13 @@ import { optionalString, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
-import { SelectField, TextField, TextareaField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SelectField,
+  TextField,
+  TextareaField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { Loading } from '@/shared/ui/Loading'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -156,9 +162,7 @@ function TaskForm({ mode, id, task }: { mode: 'create' | 'edit'; id?: number; ta
               label={t('fields.ticket')}
               options={[{ value: TICKET_NONE, label: t('fields.noTicket') }, ...ticketOptions]}
             />
-            {formErrors.length > 0 ? (
-              <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-            ) : null}
+            <FormErrorSummary errors={formErrors} />
             <Button type="submit" disabled={mutation.isPending}>
               {t('actions.save')}
             </Button>

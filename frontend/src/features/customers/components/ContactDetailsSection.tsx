@@ -10,7 +10,7 @@ import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { SelectField, TextField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SelectField, TextField, useAppForm } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -63,7 +63,9 @@ export function ContactDetailsSection({ customerId }: { customerId: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('contacts.title')}</CardTitle>
+        <CardTitle asChild className="text-lg">
+          <h2>{t('contacts.title')}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <QueryBoundary
@@ -178,9 +180,7 @@ function ContactDetailAddForm({ customerId }: { customerId: number }) {
           />
           <TextField control={form.control} name="value" label={t('contacts.fields.value')} />
         </div>
-        {formErrors.length > 0 ? (
-          <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-        ) : null}
+        <FormErrorSummary errors={formErrors} />
         <Button type="submit" disabled={mutation.isPending} className="self-start">
           {t('contacts.actions.add')}
         </Button>
@@ -232,9 +232,7 @@ function ContactDetailEditForm({
             />
             <TextField control={form.control} name="value" label={t('contacts.fields.value')} />
           </div>
-          {formErrors.length > 0 ? (
-            <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-          ) : null}
+          <FormErrorSummary errors={formErrors} />
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={mutation.isPending}>
               {t('contacts.actions.save')}

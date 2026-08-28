@@ -53,7 +53,9 @@ export function CustomerProfilePage() {
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">{customer.name}</CardTitle>
+                  <CardTitle asChild className="text-lg">
+                    <h1>{customer.name}</h1>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                   <dl className="grid grid-cols-2 gap-4">

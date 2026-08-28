@@ -30,7 +30,9 @@ export function CustomerContextPanel({ ticketId }: { ticketId: number }) {
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{t('context.customerTitle')}</CardTitle>
+              <CardTitle asChild className="text-lg">
+                <h2>{t('context.customerTitle')}</h2>
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <Link
@@ -57,7 +59,9 @@ export function CustomerContextPanel({ ticketId }: { ticketId: number }) {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{t('context.historyTitle')}</CardTitle>
+              <CardTitle asChild className="text-lg">
+                <h2>{t('context.historyTitle')}</h2>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {context.recent_history.length === 0 ? (
@@ -121,7 +125,9 @@ function ContextMessageRow({ entry }: { entry: TicketContextMessageEntry }) {
           render in this feature uses: free-form prose that may itself be
           Arabic. `line-clamp-2` (already used, `shared/ui/primitives
           /alert.tsx`) keeps a long reply from dominating the narrow panel. */}
-      <p className="line-clamp-2 whitespace-pre-wrap">{entry.body}</p>
+      <p className="line-clamp-2 whitespace-pre-wrap" title={entry.body}>
+        {entry.body}
+      </p>
     </li>
   )
 }

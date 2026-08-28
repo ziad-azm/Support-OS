@@ -27,7 +27,9 @@ export function InteractionTimelineSection({ customerId }: { customerId: number 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('timeline.title')}</CardTitle>
+        <CardTitle asChild className="text-lg">
+          <h2>{t('timeline.title')}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <QueryBoundary

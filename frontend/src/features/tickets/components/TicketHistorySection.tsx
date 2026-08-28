@@ -29,7 +29,9 @@ export function TicketHistorySection({ ticketId }: { ticketId: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('history.title')}</CardTitle>
+        <CardTitle asChild className="text-lg">
+          <h2>{t('history.title')}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <QueryBoundary

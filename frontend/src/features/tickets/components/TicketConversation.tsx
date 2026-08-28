@@ -10,7 +10,7 @@ import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { SelectField, TextareaField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SelectField, TextareaField, useAppForm } from '@/shared/ui/form'
 import {
   Select,
   SelectContent,
@@ -52,7 +52,9 @@ export function TicketConversation({ ticketId }: { ticketId: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('conversation.title')}</CardTitle>
+        <CardTitle asChild className="text-lg">
+          <h2>{t('conversation.title')}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <QueryBoundary
@@ -166,9 +168,7 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
           }))}
         />
         <TextareaField control={form.control} name="body" label={t('conversation.fields.body')} />
-        {formErrors.length > 0 ? (
-          <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-        ) : null}
+        <FormErrorSummary errors={formErrors} />
         <Button type="submit" disabled={mutation.isPending} className="self-start">
           {t('conversation.actions.send')}
         </Button>

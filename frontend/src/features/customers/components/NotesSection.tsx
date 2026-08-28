@@ -9,7 +9,7 @@ import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { TextareaField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, TextareaField, useAppForm } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -28,7 +28,9 @@ export function NotesSection({ customerId }: { customerId: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('notes.title')}</CardTitle>
+        <CardTitle asChild className="text-lg">
+          <h2>{t('notes.title')}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <QueryBoundary
@@ -130,9 +132,7 @@ function NoteAddForm({ customerId }: { customerId: number }) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3 border-t pt-4">
         <TextareaField control={form.control} name="body" label={t('notes.fields.body')} />
-        {formErrors.length > 0 ? (
-          <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-        ) : null}
+        <FormErrorSummary errors={formErrors} />
         <Button type="submit" disabled={mutation.isPending} className="self-start">
           {t('notes.actions.add')}
         </Button>
@@ -173,9 +173,7 @@ function NoteEditForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-2">
           <TextareaField control={form.control} name="body" label={t('notes.fields.body')} />
-          {formErrors.length > 0 ? (
-            <p className="text-sm text-destructive">{formErrors.join(' ')}</p>
-          ) : null}
+          <FormErrorSummary errors={formErrors} />
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={mutation.isPending}>
               {t('notes.actions.save')}
