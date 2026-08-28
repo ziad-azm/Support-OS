@@ -22,11 +22,16 @@ export function FaqBrowsePage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold">{t('title')}</h1>
-        <Can permission="knowledge_base.manage">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/knowledge-base/manage">{t('manage.title')}</Link>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/knowledge-base/articles">{t('articles.title')}</Link>
           </Button>
-        </Can>
+          <Can permission="knowledge_base.manage">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/knowledge-base/manage">{t('manage.title')}</Link>
+            </Button>
+          </Can>
+        </div>
       </div>
       <QueryBoundary
         query={query}

@@ -128,19 +128,6 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RequirePermission permission="knowledge_base.view" />,
-            children: [
-              {
-                path: 'knowledge-base',
-                lazy: async () => {
-                  const { FaqBrowsePage } =
-                    await import('@/features/knowledge-base/components/FaqBrowsePage')
-                  return { element: <FaqBrowsePage /> }
-                },
-              },
-            ],
-          },
-          {
             element: <RequirePermission permission="knowledge_base.manage" />,
             children: [
               {
@@ -165,6 +152,62 @@ export const router = createBrowserRouter([
                   const { FaqFormPage } =
                     await import('@/features/knowledge-base/components/FaqFormPage')
                   return { element: <FaqFormPage /> }
+                },
+              },
+              {
+                // Must stay before `knowledge-base/articles/:id` (in the
+                // sibling knowledge_base.view block below) — a literal
+                // "manage" would otherwise be read as the `:id` param.
+                path: 'knowledge-base/articles/manage',
+                lazy: async () => {
+                  const { ArticleListPage } =
+                    await import('@/features/knowledge-base/components/ArticleListPage')
+                  return { element: <ArticleListPage /> }
+                },
+              },
+              {
+                path: 'knowledge-base/articles/manage/new',
+                lazy: async () => {
+                  const { ArticleFormPage } =
+                    await import('@/features/knowledge-base/components/ArticleFormPage')
+                  return { element: <ArticleFormPage /> }
+                },
+              },
+              {
+                path: 'knowledge-base/articles/manage/:id/edit',
+                lazy: async () => {
+                  const { ArticleFormPage } =
+                    await import('@/features/knowledge-base/components/ArticleFormPage')
+                  return { element: <ArticleFormPage /> }
+                },
+              },
+            ],
+          },
+          {
+            element: <RequirePermission permission="knowledge_base.view" />,
+            children: [
+              {
+                path: 'knowledge-base',
+                lazy: async () => {
+                  const { FaqBrowsePage } =
+                    await import('@/features/knowledge-base/components/FaqBrowsePage')
+                  return { element: <FaqBrowsePage /> }
+                },
+              },
+              {
+                path: 'knowledge-base/articles',
+                lazy: async () => {
+                  const { ArticleBrowsePage } =
+                    await import('@/features/knowledge-base/components/ArticleBrowsePage')
+                  return { element: <ArticleBrowsePage /> }
+                },
+              },
+              {
+                path: 'knowledge-base/articles/:id',
+                lazy: async () => {
+                  const { ArticleReaderPage } =
+                    await import('@/features/knowledge-base/components/ArticleReaderPage')
+                  return { element: <ArticleReaderPage /> }
                 },
               },
             ],

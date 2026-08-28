@@ -988,6 +988,29 @@ genuinely worked row by row — the deciding factor is whether a table is the
 right reading shape at all, not whether the resource has an admin/non-admin
 split in permissions (every feature already has that).
 
+**A resource with its own draft/published split filters `get_queryset` by
+whether the caller holds the resource's `manage` permission, not by action
+name.** `ArticleViewSet.get_queryset` (Story 40, `KB-2`) returns every row
+when the caller holds `knowledge_base.manage`, and only `status="published"`
+rows otherwise — for `list` **and** `retrieve` alike, so a view-only caller
+gets a 404, not a 403, on a draft's direct id (its existence is not
+confirmed to someone who cannot manage it). Contrast
+`TicketViewSet.get_queryset`'s `category`/`priority`/`assigned_to_me`
+filters (Story 18/22/29), which narrow the same visible set identically for
+every caller — this is the project's first queryset filter keyed on the
+caller's permission level rather than a request parameter.
+
+**A bilingual CONTENT field is returned in both languages by the API, and
+the reader picks which one to render by `i18n.language` client-side, never
+by `Accept-Language` server-side content negotiation.** `Article`
+(Story 40, `KB-2`) is the first model with genuinely translated content —
+every prior model's content is single-language, with only its surrounding
+UI chrome translated (`Customer.name` is never translated). Returning both
+`title_en`/`title_ar` and `body_en`/`body_ar` together means an editor sees
+and edits both language sections on one screen regardless of their own UI
+language, and a reader's language switch re-renders instantly with no
+refetch.
+
 **Two features may independently call the same backend endpoint.** This is
 not the code duplication `frontend/src/README.md`'s "a feature never imports
 from another feature" rule targets — each feature's `api/` layer owns exactly

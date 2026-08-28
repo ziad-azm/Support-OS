@@ -25,3 +25,64 @@ class FAQ(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.question
+
+
+class Category(TimeStampedModel):
+    """An article classification tag, scoped to `apps.knowledge_base` —
+    deliberately a second, separate model from `apps.tickets.models.Category`
+    (different domain, different app, different table). Copies that
+    model's exact shape. See Story 40 `## Prerequisites`.
+    """
+
+    name = models.CharField(_("name"), max_length=100, unique=True)
+
+    class Meta:
+        verbose_name = _("category")
+        verbose_name_plural = _("categories")
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Article(TimeStampedModel):
+    """A bilingual, Markdown-authored help article — KB-2. The first model
+    in this project with genuinely translated CONTENT (not just UI chrome
+    translated around a single-language value). See Story 40
+    `## Story Goal`.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", _("Draft")
+        PUBLISHED = "published", _("Published")
+
+    title_en = models.CharField(_("title (English)"), max_length=200)
+    title_ar = models.CharField(_("title (Arabic)"), max_length=200)
+    # Markdown source, rendered client-side via react-markdown — never
+    # dangerouslySetInnerHTML. No max_length: matches QuickReply.body
+    # (apps/agents/models.py) — a long-form text column, deliberately
+    # uncapped. See Story 40 `## Prerequisites`.
+    body_en = models.TextField(_("body (English)"))
+    body_ar = models.TextField(_("body (Arabic)"))
+    # SET_NULL, nullable: the same classification-tag reasoning
+    # `Ticket.category` already uses (Story 18) — deleting a category must
+    # not delete or hide the articles that had it.
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="articles",
+        verbose_name=_("category"),
+    )
+    status = models.CharField(
+        _("status"), max_length=20, choices=Status.choices, default=Status.DRAFT
+    )
+
+    class Meta:
+        verbose_name = _("article")
+        verbose_name_plural = _("articles")
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return self.title_en

@@ -1,8 +1,8 @@
-from apps.core.permissions import Permissions
+from apps.core.permissions import Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
 
-from .models import FAQ
-from .serializers import FAQSerializer
+from .models import FAQ, Article, Category
+from .serializers import ArticleSerializer, CategorySerializer, FAQSerializer
 
 
 class FAQViewSet(BaseModelViewSet):
@@ -28,3 +28,57 @@ class FAQViewSet(BaseModelViewSet):
     # feature's `ordering_fields` contract (CONVENTIONS.md §23).
     ordering_fields = ("order", "question", "created_at")
     search_fields = ("question", "answer")
+
+
+class CategoryViewSet(BaseModelViewSet):
+    """Article-category CRUD. Reuses `knowledge_base.*` — a category is
+    part of the knowledge-base domain, not a separate permission concern,
+    mirroring `apps.tickets.views.CategoryViewSet`'s identical reuse of
+    `tickets.*`. See Story 40 `## Story Goal`.
+    """
+
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+    permission_map = {
+        "list": Permissions.KNOWLEDGE_BASE_VIEW,
+        "retrieve": Permissions.KNOWLEDGE_BASE_VIEW,
+        "create": Permissions.KNOWLEDGE_BASE_MANAGE,
+        "update": Permissions.KNOWLEDGE_BASE_MANAGE,
+        "partial_update": Permissions.KNOWLEDGE_BASE_MANAGE,
+        "destroy": Permissions.KNOWLEDGE_BASE_MANAGE,
+    }
+
+    ordering_fields = ("name", "created_at")
+    search_fields = ("name",)
+
+
+class ArticleViewSet(BaseModelViewSet):
+    """Article CRUD, with a draft/published visibility split. See Story 40
+    `## Story Goal` for why `get_queryset` branches on the caller's own
+    `knowledge_base.manage` permission rather than on the action name.
+    """
+
+    queryset = Article.objects.select_related("category").all()
+    serializer_class = ArticleSerializer
+
+    permission_map = {
+        "list": Permissions.KNOWLEDGE_BASE_VIEW,
+        "retrieve": Permissions.KNOWLEDGE_BASE_VIEW,
+        "create": Permissions.KNOWLEDGE_BASE_MANAGE,
+        "update": Permissions.KNOWLEDGE_BASE_MANAGE,
+        "partial_update": Permissions.KNOWLEDGE_BASE_MANAGE,
+        "destroy": Permissions.KNOWLEDGE_BASE_MANAGE,
+    }
+
+    ordering_fields = ("title_en", "status", "created_at")
+    search_fields = ("title_en", "title_ar", "body_en", "body_ar")
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if Permissions.KNOWLEDGE_BASE_MANAGE in permissions_for(self.request.user):
+            return queryset
+        # A view-only caller sees only published rows on BOTH list and
+        # retrieve — a draft's direct id returns 404, not 403, so its
+        # existence is not confirmed to a caller who cannot manage it.
+        return queryset.filter(status=Article.Status.PUBLISHED)
