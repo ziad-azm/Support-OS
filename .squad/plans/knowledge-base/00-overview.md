@@ -9,6 +9,7 @@ order by their `NN` prefix.
 |----|------|-------|------------|------------|
 | 39 | [39-story-faqs-SUPPORTOS-51.md](39-story-faqs-SUPPORTOS-51.md) | FAQs (KB-1) | SUPPORTOS-51 | EPIC 0–8 (foundations, `AUTHZ`, `DSN`) |
 | 40 | [40-story-help-articles-guides-SUPPORTOS-53.md](40-story-help-articles-guides-SUPPORTOS-53.md) | Help Articles & Guides (KB-2) | SUPPORTOS-53 | Story 39 (reuses `knowledge_base.*` permissions, the FAQ admin/display route-tree pattern) |
+| 41 | [41-story-knowledge-base-search-SUPPORTOS-54.md](41-story-knowledge-base-search-SUPPORTOS-54.md) | Knowledge Base Search (KB-3) | SUPPORTOS-54 | Stories 39 and 40 (searches `FAQ` and `Article` together; no new model, permission, or migration) |
 
 ## Dependency notes
 
@@ -29,11 +30,18 @@ order by their `NN` prefix.
   its first genuinely bilingual content fields (`title_en`/`title_ar`,
   `body_en`/`body_ar` — picked by `i18n.language` client-side, not
   server-side content negotiation).
-- **KB-3 (Knowledge Base Search)** depends on both KB-1 and KB-2: Postgres
-  full-text search across FAQs and articles together, plus a search UI. This
-  is what replaces both features' current basic `SearchFilter` substring
-  match — and KB-1's `FaqBrowsePage`'s fixed `page_size=100` read — with
-  real ranked retrieval.
+- **KB-3 (Story 41)** is a read-only aggregation over the two existing
+  models — no new Django model, permission, or migration.
+  `apps/knowledge_base/search.py::search_knowledge_base` is the 🔑 reusable
+  piece (a plain function, not a view) that the still-unplanned `AI-0`
+  story will call directly for KB grounding
+  (`SupportOs backlog.MD:646`). It replaces neither `FAQViewSet`/
+  `ArticleViewSet`'s existing basic `SearchFilter` (still used by their own
+  manage-table search boxes) nor KB-1's `FaqBrowsePage` `page_size=100`
+  read — those are unrelated to the new `/api/search/` endpoint, which adds
+  Postgres full-text ranking/stemming on top rather than replacing anything.
+  `SearchPage` (`/knowledge-base/search`) completes the three-way cross-link
+  Story 40 started between just `FaqBrowsePage`/`ArticleBrowsePage`.
 - **`PORTAL-4` (Access FAQs, EPIC 10)** depends on KB-1/KB-2 and reuses this
   feature's API for the customer-facing portal — out of scope for this
   feature's own stories, which are all agent-facing (`RequireAuth`).

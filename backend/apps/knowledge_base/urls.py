@@ -1,6 +1,7 @@
+from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import ArticleViewSet, CategoryViewSet, FAQViewSet
+from .views import ArticleViewSet, CategoryViewSet, FAQViewSet, KnowledgeBaseSearchView
 
 app_name = "knowledge_base"
 
@@ -15,4 +16,6 @@ router.register("articles", ArticleViewSet, basename="article")
 # there would shadow it. See Story 40 `## Prerequisites`.
 router.register("article-categories", CategoryViewSet, basename="article-category")
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+    path("search/", KnowledgeBaseSearchView.as_view(), name="search"),
+]

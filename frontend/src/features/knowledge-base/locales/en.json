@@ -81,5 +81,16 @@
       "backToList": "Back to help articles",
       "notFound": "That article could not be found."
     }
+  },
+  "search": {
+    "title": "Search knowledge base",
+    "placeholder": "Search FAQs and articles…",
+    "prompt": "Type at least 2 characters to search.",
+    "empty": "No results",
+    "emptyDescription": "Try a different search term.",
+    "kinds": {
+      "faq": "FAQ",
+      "article": "Article"
+    }
   }
 }

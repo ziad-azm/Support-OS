@@ -42,6 +42,9 @@ export function RootLayout() {
               <Button asChild variant="ghost" size="sm">
                 <Link to="/knowledge-base/articles">{t('knowledgeBase:articles.title')}</Link>
               </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/knowledge-base/search">{t('knowledgeBase:search.title')}</Link>
+              </Button>
             </Can>
           </nav>
           <div className="ms-auto flex items-center gap-2">

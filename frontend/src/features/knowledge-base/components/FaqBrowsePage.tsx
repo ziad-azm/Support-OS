@@ -26,6 +26,9 @@ export function FaqBrowsePage() {
           <Button asChild variant="ghost" size="sm">
             <Link to="/knowledge-base/articles">{t('articles.title')}</Link>
           </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/knowledge-base/search">{t('search.title')}</Link>
+          </Button>
           <Can permission="knowledge_base.manage">
             <Button asChild variant="outline" size="sm">
               <Link to="/knowledge-base/manage">{t('manage.title')}</Link>

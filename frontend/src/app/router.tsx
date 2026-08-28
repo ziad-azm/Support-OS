@@ -210,6 +210,14 @@ export const router = createBrowserRouter([
                   return { element: <ArticleReaderPage /> }
                 },
               },
+              {
+                path: 'knowledge-base/search',
+                lazy: async () => {
+                  const { SearchPage } =
+                    await import('@/features/knowledge-base/components/SearchPage')
+                  return { element: <SearchPage /> }
+                },
+              },
             ],
           },
           {

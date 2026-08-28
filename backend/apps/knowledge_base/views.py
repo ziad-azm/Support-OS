@@ -1,7 +1,14 @@
-from apps.core.permissions import Permissions, permissions_for
+from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.core.permissions import HasPermission, Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
 
 from .models import FAQ, Article, Category
+from .search import search_knowledge_base
 from .serializers import ArticleSerializer, CategorySerializer, FAQSerializer
 
 
@@ -82,3 +89,22 @@ class ArticleViewSet(BaseModelViewSet):
         # retrieve — a draft's direct id returns 404, not 403, so its
         # existence is not confirmed to a caller who cannot manage it.
         return queryset.filter(status=Article.Status.PUBLISHED)
+
+
+class KnowledgeBaseSearchView(APIView):
+    """Ranked full-text search across FAQs and articles — KB-3. The first
+    plain `APIView` in this project whose `permission_map` is keyed by HTTP
+    method rather than DRF `action` — `HasPermission`'s own docstring
+    already documents this fallback (`apps/core/permissions.py:84-86`) but
+    had no real caller before this story.
+    """
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {"get": Permissions.KNOWLEDGE_BASE_VIEW}
+
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+        if len(query) < 2:
+            raise ValidationError({"q": [_("Must be at least 2 characters.")]})
+        include_drafts = Permissions.KNOWLEDGE_BASE_MANAGE in permissions_for(request.user)
+        return Response(search_knowledge_base(query, include_drafts=include_drafts))
