@@ -343,6 +343,11 @@ localised through an i18next namespace backed by Zod's own translated locale as 
 form reads like product copy in both English and Arabic rather than Zod's developer-facing
 defaults. See `CONVENTIONS.md` § 20 for the full rules and a worked example.
 
+`DSN` — an AI-generated design system tailored to SupportOS's own product description, produced
+by the `ui-ux-pro-max` Claude Code skill (`.claude/skills/ui-ux-pro-max/`) — lives at
+`design-system/supportos/MASTER.md`, with the token-by-token reconciliation against the `UI`
+tokens above in `CONVENTIONS.md` § 25.
+
 ---
 
 ## API conventions
