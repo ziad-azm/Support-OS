@@ -1,0 +1,38 @@
+{
+  "title": "Tasks",
+  "new": "New task",
+  "edit": "Edit task",
+  "empty": "No tasks",
+  "emptyDescription": "Create a task to get a reminder before it's due.",
+  "fields": {
+    "title": "Title",
+    "description": "Description",
+    "dueAt": "Due",
+    "ticket": "Linked ticket",
+    "noTicket": "No linked ticket",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "statuses": {
+    "pending": "Pending",
+    "completed": "Completed"
+  },
+  "filters": {
+    "completed": "Filter by status",
+    "pending": "Pending",
+    "completedOnly": "Completed",
+    "all": "All"
+  },
+  "actions": {
+    "save": "Save",
+    "complete": "Complete",
+    "reopen": "Reopen",
+    "delete": "Delete"
+  },
+  "delete": {
+    "title": "Delete this task?",
+    "description": "This permanently removes the task. This cannot be undone."
+  },
+  "created": "Task created.",
+  "updated": "Task updated."
+}

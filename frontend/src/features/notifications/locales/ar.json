@@ -6,6 +6,7 @@
   "markAllRead": "تحديد الكل كمقروء",
   "kinds": {
     "ticket_assigned": "تم إسناد التذكرة",
-    "ticket_escalated": "تم تصعيد التذكرة"
+    "ticket_escalated": "تم تصعيد التذكرة",
+    "task_due": "موعد مهمة"
   }
 }

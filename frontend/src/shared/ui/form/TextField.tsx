@@ -13,7 +13,7 @@ import {
 import type { FieldProps } from './types'
 
 type TextFieldProps<TFieldValues extends FieldValues> = FieldProps<TFieldValues> & {
-  type?: 'text' | 'email' | 'password' | 'number'
+  type?: 'text' | 'email' | 'password' | 'number' | 'datetime-local'
 }
 
 /**

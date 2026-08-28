@@ -127,6 +127,29 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          {
+            path: 'tasks',
+            lazy: async () => {
+              const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')
+              return { element: <TaskListPage /> }
+            },
+          },
+          {
+            // Must stay before `tasks/:id/edit`, same reason
+            // `tickets/new` is declared before `tickets/:id`.
+            path: 'tasks/new',
+            lazy: async () => {
+              const { TaskFormPage } = await import('@/features/tasks/components/TaskFormPage')
+              return { element: <TaskFormPage /> }
+            },
+          },
+          {
+            path: 'tasks/:id/edit',
+            lazy: async () => {
+              const { TaskFormPage } = await import('@/features/tasks/components/TaskFormPage')
+              return { element: <TaskFormPage /> }
+            },
+          },
         ],
       },
       {

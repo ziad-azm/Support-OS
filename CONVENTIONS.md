@@ -1289,6 +1289,23 @@ first real `@shared_task` goes, with no additional Celery wiring** —
 `app.autodiscover_tasks()` (Story 27, `config/celery.py`) already finds it
 by that filename inside any installed app.
 
+**A second owner-scoped personal resource, this time full CRUD.**
+`TaskViewSet` (Story 32, `AGENT-3`) follows `NotificationViewSet`'s (Story
+31, `SLA-4`) precedent of skipping `BaseModelViewSet`/`permission_map`
+entirely for a resource with no domain-permission concept — every action
+is scoped to `request.user`'s own rows via `get_queryset`, and
+`IsAuthenticated` alone is the gate. Unlike `NotificationViewSet`
+(list/retrieve-only, system-managed rows), `TaskViewSet` is a full
+`viewsets.ModelViewSet`, so its serializer must mark any action-only field
+(`completed_at`, mirroring `Notification.read_at`) explicitly
+`read_only_fields` — `NotificationViewSet` never needed this because it
+has no create/update action to bypass through in the first place.
+**`TextField` (`shared/ui/form/TextField.tsx`) now also accepts
+`type="datetime-local"`** — the first form field in this project editing a
+date+time value; converting between its timezone-less input value and the
+server's UTC-offset ISO string uses the browser's own `Date` local
+getters/`toISOString()`, no new dependency.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

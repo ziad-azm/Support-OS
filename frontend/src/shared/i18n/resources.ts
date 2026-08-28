@@ -8,6 +8,8 @@ import liveChatAr from '@/features/live-chat/locales/ar.json'
 import liveChatEn from '@/features/live-chat/locales/en.json'
 import notificationsAr from '@/features/notifications/locales/ar.json'
 import notificationsEn from '@/features/notifications/locales/en.json'
+import tasksAr from '@/features/tasks/locales/ar.json'
+import tasksEn from '@/features/tasks/locales/en.json'
 import ticketsAr from '@/features/tickets/locales/ar.json'
 import ticketsEn from '@/features/tickets/locales/en.json'
 import webFormAr from '@/features/web-form/locales/ar.json'
@@ -40,6 +42,7 @@ export const resources = {
     liveChat: liveChatEn,
     webForm: webFormEn,
     notifications: notificationsEn,
+    tasks: tasksEn,
   },
   ar: {
     common: arCommon,
@@ -52,6 +55,7 @@ export const resources = {
     liveChat: liveChatAr,
     webForm: webFormAr,
     notifications: notificationsAr,
+    tasks: tasksAr,
   },
 } as const
 

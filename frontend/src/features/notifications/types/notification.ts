@@ -1,4 +1,4 @@
-export const NOTIFICATION_KINDS = ['ticket_assigned', 'ticket_escalated'] as const
+export const NOTIFICATION_KINDS = ['ticket_assigned', 'ticket_escalated', 'task_due'] as const
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number]
 
 /** Mirrors `apps.notifications.serializers.NotificationSerializer` verbatim. */

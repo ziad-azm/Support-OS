@@ -6,6 +6,7 @@
   "markAllRead": "Mark all as read",
   "kinds": {
     "ticket_assigned": "Ticket assigned",
-    "ticket_escalated": "Ticket escalated"
+    "ticket_escalated": "Ticket escalated",
+    "task_due": "Task due"
   }
 }

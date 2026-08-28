@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/shared/ui/ThemeToggle'
 /** Story 06 owns layout: a header with the language and theme controls, and
  * a main content area for the routed page. */
 export function RootLayout() {
-  const { t } = useTranslation(['common', 'customers', 'tickets'])
+  const { t } = useTranslation(['common', 'customers', 'tickets', 'tasks'])
   const { user, logout } = useAuth()
 
   return (
@@ -32,6 +32,9 @@ export function RootLayout() {
                 <Link to="/tickets/my-tickets">{t('tickets:myQueue.title')}</Link>
               </Button>
             </Can>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/tasks">{t('tasks:title')}</Link>
+            </Button>
           </nav>
           <div className="ms-auto flex items-center gap-2">
             {user ? (
