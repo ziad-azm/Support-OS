@@ -1,8 +1,9 @@
 from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
+from apps.tickets.assignment import assignable_agents
 
-from .models import QuickReply, Task
+from .models import InternalNote, QuickReply, Task
 
 
 class TaskSerializer(BaseModelSerializer):
@@ -42,3 +43,40 @@ class QuickReplySerializer(BaseModelSerializer):
     class Meta(BaseModelSerializer.Meta):
         model = QuickReply
         fields = ("id", "title", "body", "created_at", "updated_at")
+
+
+class InternalNoteSerializer(BaseModelSerializer):
+    # Mirrors `NoteSerializer.author_name` exactly — `allow_null=True`
+    # covers a deleted author (SET_NULL).
+    author_name = serializers.CharField(
+        source="author.get_full_name", read_only=True, allow_null=True
+    )
+    # A SerializerMethodField, not a `source=` trick — that shortcut only
+    # works for a single FK (see `author_name`, above), not a many-relation.
+    mentioned_user_names = serializers.SerializerMethodField()
+    # Explicit `queryset=`, not DRF's auto-generated `User.objects.all()`:
+    # validates against the same candidate pool `TicketViewSet.assign`
+    # already validates assignment against, so a hand-crafted request
+    # cannot mention (and notify) an agent who holds no `tickets.manage`.
+    # See Story 34 `## Prerequisites`.
+    mentioned_users = serializers.PrimaryKeyRelatedField(
+        many=True, required=False, queryset=assignable_agents()
+    )
+
+    class Meta(BaseModelSerializer.Meta):
+        model = InternalNote
+        fields = (
+            "id",
+            "ticket",
+            "author",
+            "author_name",
+            "body",
+            "mentioned_users",
+            "mentioned_user_names",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = BaseModelSerializer.Meta.read_only_fields + ("author",)
+
+    def get_mentioned_user_names(self, obj) -> list[str]:
+        return [user.get_full_name() for user in obj.mentioned_users.all()]

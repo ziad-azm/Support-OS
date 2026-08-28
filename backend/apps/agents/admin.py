@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import QuickReply, Task
+from .models import InternalNote, QuickReply, Task
 
 
 @admin.register(Task)
@@ -29,4 +29,18 @@ class QuickReplyAdmin(admin.ModelAdmin):
 
     list_display = ("title", "created_at", "updated_at")
     search_fields = ("title", "body")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(InternalNote)
+class InternalNoteAdmin(admin.ModelAdmin):
+    """Read-only ops visibility, not a config UI — follows `TaskAdmin`'s
+    precedent, not `NoteAdmin`'s (`apps.customers`, predates this
+    distinction): an `InternalNote` is authored and edited by its author
+    through the app's own `InternalNotesSection`, not through `/admin/`.
+    See Story 34 `## Prerequisites`.
+    """
+
+    list_display = ("ticket", "author", "created_at", "updated_at")
+    search_fields = ("body", "author__email")
     readonly_fields = ("created_at", "updated_at")

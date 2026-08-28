@@ -7,6 +7,7 @@
   "kinds": {
     "ticket_assigned": "Ticket assigned",
     "ticket_escalated": "Ticket escalated",
-    "task_due": "Task due"
+    "task_due": "Task due",
+    "mentioned": "Mentioned"
   }
 }

@@ -134,5 +134,27 @@
       "breached": "Breached",
       "pending": "Pending"
     }
+  },
+  "internalNotes": {
+    "title": "Internal Notes",
+    "empty": "No internal notes yet.",
+    "unknownAuthor": "Unknown",
+    "fields": {
+      "body": "Note",
+      "mention": "Mention teammates"
+    },
+    "actions": {
+      "add": "Add note",
+      "edit": "Edit",
+      "remove": "Remove",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "delete": {
+      "title": "Delete this note?",
+      "description": "This permanently removes the note. This cannot be undone."
+    },
+    "created": "Note added.",
+    "updated": "Note updated."
   }
 }

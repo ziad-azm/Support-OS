@@ -81,3 +81,50 @@ class QuickReply(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.title
+
+
+class InternalNote(TimeStampedModel):
+    """A private, ticket-scoped collaboration note — AGENT-5. Never
+    customer-visible. Reuses `apps.customers.models.Note`'s exact shape
+    one level over (a ticket instead of a customer), plus an explicit
+    set of mentioned users. See Story 34 `## Prerequisites`.
+    """
+
+    # CASCADE: a note has no existence independent of its ticket, the
+    # same reasoning `Note.customer` and `Message.ticket` already use.
+    ticket = models.ForeignKey(
+        Ticket,
+        on_delete=models.CASCADE,
+        related_name="internal_notes",
+        verbose_name=_("ticket"),
+    )
+    # SET_NULL: content survives its author's account being removed, the
+    # same reasoning `Note.author`/`Task.owner`'s siblings already use.
+    author = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="authored_internal_notes",
+        verbose_name=_("author"),
+    )
+    body = models.TextField(_("body"))
+    # The @mentions themselves: an explicit set, not free-text parsing of
+    # `body` — see Story 34 `## Prerequisites`. Blank-allowed: a private
+    # note need not mention anyone.
+    mentioned_users = models.ManyToManyField(
+        "accounts.User",
+        related_name="mentioned_in_notes",
+        blank=True,
+        verbose_name=_("mentioned users"),
+    )
+
+    class Meta:
+        verbose_name = _("internal note")
+        verbose_name_plural = _("internal notes")
+        # Newest-first, matching `Note.Meta.ordering` — a running log of
+        # context reads best with the most recent entry on top.
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"Note on ticket #{self.ticket_id}"

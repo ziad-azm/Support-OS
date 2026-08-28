@@ -19,6 +19,7 @@ class Notification(TimeStampedModel):
         TICKET_ASSIGNED = "ticket_assigned", _("Ticket assigned")
         TICKET_ESCALATED = "ticket_escalated", _("Ticket escalated")
         TASK_DUE = "task_due", _("Task due")
+        MENTIONED = "mentioned", _("Mentioned")
 
     # CASCADE, not SET_NULL: unlike Ticket.assigned_agent (which keeps the
     # ticket when its agent is removed), a Notification exists *for* its

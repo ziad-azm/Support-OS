@@ -1322,6 +1322,25 @@ configuration list gets a real API (for whatever needs to read it) plus an
 editable admin, not a bespoke management page, until a story's own intake
 actually asks for one.
 
+**A third resource in `apps.agents`, and the third instance of the
+admin-editability split.** `InternalNote` (Story 34, `AGENT-5`) reuses
+`apps.customers.models.Note`'s exact shape (Story 21) one app over — a
+ticket-scoped, author-tracked, editable free-text note — plus an explicit
+`mentioned_users` set, validated against the same `assignable_agents()`
+queryset `TicketViewSet.assign` already validates assignment against, so a
+hand-crafted request cannot notify an agent ineligible to work the ticket.
+`InternalNoteAdmin` follows `TaskAdmin`'s (Story 32) "read-only ops
+visibility" precedent, not `NoteAdmin`'s (Story 21, predates the
+distinction) fully-editable one — the deciding factor is always whether the
+resource has a real frontend management surface (it does,
+`InternalNotesSection`), not whether it is shaped like a note. **A
+`notify(...)` call's `body` argument must fit `Notification.body`'s
+`CharField(max_length=500)`** — every prior caller passed an already-bounded
+string (`Ticket.subject`); `InternalNote.body` is the first unconstrained
+source text, truncated (`note.body[:500]`) at the call site before reaching
+`notify(...)`, since a longer string would fail as a database-level
+constraint violation on Postgres, not just a Python-level oversight.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

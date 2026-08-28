@@ -14,6 +14,7 @@ import { useToast } from '@/shared/ui/toast/useToast'
 import { useDeleteTicket, useEscalateTicket } from '../api/useTicketMutations'
 import { useTicket } from '../api/useTicket'
 import { CustomerContextPanel } from './CustomerContextPanel'
+import { InternalNotesSection } from './InternalNotesSection'
 import { TicketAssigneeControl } from './TicketAssigneeControl'
 import { TicketConversation } from './TicketConversation'
 import { TicketHistorySection } from './TicketHistorySection'
@@ -186,6 +187,7 @@ export function TicketDetailPage() {
                 <TicketSlaSection ticketId={ticket.id} />
                 <TicketConversation ticketId={ticket.id} />
                 <TicketHistorySection ticketId={ticket.id} />
+                <InternalNotesSection ticketId={ticket.id} />
               </div>
               <CustomerContextPanel ticketId={ticket.id} />
             </div>
