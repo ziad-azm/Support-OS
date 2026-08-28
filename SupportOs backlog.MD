@@ -21,6 +21,7 @@
   - `I18N` — i18n/RTL foundation (EPIC 1)
   - `UI` — design system: Tailwind + shadcn shared primitives & states (EPIC 1)
   - `FORM` — form + validation conventions: RHF + Zod (EPIC 1)
+  - `DSN` — AI-generated design intelligence: palette, typography, UI patterns, UX/accessibility guidelines, chart guidance (EPIC 8, extends `UI`)
 
 - **Token-efficiency rule for every implementation task (applies globally — do not repeat in each task):**
   1. **Inspect before modify:** read the relevant existing files and the referenced Shared Specs first; reuse existing code/abstractions; change only what's necessary.
@@ -492,10 +493,44 @@
 
 ---
 
-# EPIC 8 — Knowledge Base
+# EPIC 8 — Design Intelligence & UI/UX System
 
-**Description:** FAQs, help articles/guides, and search — powering self-service and AI suggestions later.
-**Depends on:** foundations, AUTH-2.
+**Description:** Applies AI-driven design intelligence (via the `ui-ux-pro-max` skill) to generate and codify a tailored design system — palette, typography, UI patterns, accessibility/UX guidelines, and chart guidance — layered on top of `UI` (EPIC 1) and retrofitted across already-built screens (EPIC 0-7) before Knowledge Base and later features add more UI.
+**Depends on:** Internationalization & Design System (`UI`, `I18N`), Agent Workspace (existing built screens).
+
+### STORY (DSN-0) — Design Intelligence Foundation
+
+**As a developer, I want an AI-generated design system tailored to a customer-support SaaS product, so that all future UI work reuses a consistent, justified set of design decisions instead of ad-hoc choices.**
+
+- **Task: Generate tailored design system via `ui-ux-pro-max` skill** 🔑 (reused by Knowledge Base, Portal, Reports charts, Branding) — Run the skill against SupportOS's product type (B2B customer-support platform) to produce a recommended UI style, color palette, typography pairing, layout patterns, and anti-patterns to avoid. Codify the output as the `DSN` shared spec, extending `UI` (does not replace it). Outcome: one authoritative, reusable design-system spec.
+- **Task: Reconcile `DSN` with existing `UI` tokens** — Map the generated palette/typography onto the existing Tailwind/shadcn tokens from EPIC 1; document any deltas and how they're resolved. Constraints: no visual regression without an explicit decision. Outcome: `DSN` and `UI` stay in sync, not competing sources of truth.
+
+### STORY (DSN-1) — Design System Refresh Across Built Screens
+
+**Dependencies:** DSN-0.
+
+- **Task: Apply refreshed tokens to existing screens** — Retrofit already-built screens (EPICs 0-7) with `DSN`'s palette/typography via `UI` primitives only. Constraints: token/style updates only, no re-architecture of existing components. Outcome: visually consistent app before new features add more surface.
+
+### STORY (DSN-2) — UX Guidelines & Accessibility Audit
+
+**Dependencies:** DSN-0.
+
+- **Task: Run UX/anti-pattern + accessibility checklist** — Apply the skill's UX guidelines and pre-delivery accessibility checklist across built screens; log and fix flagged issues (contrast, text resilience, focus states, RTL per `I18N`). Outcome: accessibility/UX debt cleared before it compounds.
+
+### STORY (DSN-3) — Dashboard Chart Design Guidance
+
+**Dependencies:** DSN-0.
+
+- **Task: Capture chart-type guidance for future dashboards** 🔑 (reused by Reports & Analytics `RPT-0`) — Record the skill's chart-type recommendations (by data shape/use case) as part of `DSN`, for the shared chart wrapper built later in Reports & Analytics. Outcome: chart choices are justified up front, not picked ad hoc when `RPT-0` is built.
+
+---
+
+---
+
+# EPIC 9 — Knowledge Base
+
+**Description:** FAQs, help articles/guides, and search — powering self-service and AI suggestions later. Built on the `DSN` design system from EPIC 8.
+**Depends on:** foundations, AUTH-2, Design Intelligence (`DSN`).
 
 ### STORY (KB-1) — FAQs
 
@@ -518,7 +553,7 @@
 
 ---
 
-# EPIC 9 — Customer Portal
+# EPIC 10 — Customer Portal
 
 **Description:** Self-service portal — submit/track tickets, history, FAQs, feedback. Reuses ticket, KB, and messaging foundations with customer-scoped access.
 **Depends on:** Ticket Management, Knowledge Base, AUTH-2.
@@ -562,7 +597,7 @@
 
 ---
 
-# EPIC 10 — Reports & Analytics
+# EPIC 11 — Reports & Analytics
 
 **Description:** Ticket, SLA, agent, and CSAT reporting plus management dashboards — built on a shared reporting/aggregation foundation.
 **Depends on:** Ticket Management, SLA, Portal (CSAT).
@@ -601,7 +636,7 @@
 
 ---
 
-# EPIC 11 — AI Features
+# EPIC 12 — AI Features
 
 **Description:** AI assistance — ticket summaries, suggested replies, auto-categorization, suggested solutions, and a customer chatbot. Built on a shared AI-service foundation grounded in the knowledge base.
 **Depends on:** Ticket Management, Knowledge Base, Communication Channels.
@@ -643,7 +678,7 @@
 
 ---
 
-# EPIC 12 — Integrations
+# EPIC 13 — Integrations
 
 **Description:** Public API, ERP, messaging-provider config, and outbound webhooks — reusing existing endpoints and provider config patterns.
 **Depends on:** foundations, relevant domains.
@@ -674,7 +709,7 @@
 
 ---
 
-# EPIC 13 — Security & Administration
+# EPIC 14 — Security & Administration
 
 **Description:** User/role administration UI, permission management, audit logs, and system configuration. Builds admin surfaces on the `AUTHZ` foundation and the reusable activity-log pattern.
 **Depends on:** EPIC 2.
@@ -701,7 +736,7 @@
 
 ---
 
-# EPIC 14 — Multi-Department / Multi-Branch / Branding
+# EPIC 15 — Multi-Department / Multi-Branch / Branding
 
 **Description:** Organizational scoping (departments, branches) and custom branding. Scoping is a cross-cutting concern applied via a shared pattern; branding builds on system configuration.
 **Depends on:** Ticket Management, SEC-4.
@@ -728,7 +763,7 @@
 
 ---
 
-# EPIC 15 — Production Readiness
+# EPIC 16 — Production Readiness
 
 **Description:** Hardening for deployment — observability, performance, security review, and optional Docker packaging (future-ready, still not required for local dev).
 **Depends on:** all prior epics.
@@ -758,9 +793,10 @@
 - `AUTHZ` → EPIC 2
 - Messaging core (Message + adapter + conversation UI) → EPIC 5 (COMM-0)
 - Background jobs (SLA-0), Notifications (SLA-4) → EPIC 7
-- KB search retrieval (KB-3) → EPIC 8
-- Reporting foundation (RPT-0) → EPIC 10
-- AI service foundation (AI-0) → EPIC 11
-- Org scoping pattern (ORG-1), System config (SEC-4) → EPIC 13/14
+- `DSN` design system + chart guidance (DSN-0, DSN-3) → EPIC 8
+- KB search retrieval (KB-3) → EPIC 9
+- Reporting foundation (RPT-0) → EPIC 11
+- AI service foundation (AI-0) → EPIC 12
+- Org scoping pattern (ORG-1), System config (SEC-4) → EPIC 14/15
 
 **Rule for every later task:** consume these foundations by reference; never re-implement them.
