@@ -128,6 +128,48 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="knowledge_base.view" />,
+            children: [
+              {
+                path: 'knowledge-base',
+                lazy: async () => {
+                  const { FaqBrowsePage } =
+                    await import('@/features/knowledge-base/components/FaqBrowsePage')
+                  return { element: <FaqBrowsePage /> }
+                },
+              },
+            ],
+          },
+          {
+            element: <RequirePermission permission="knowledge_base.manage" />,
+            children: [
+              {
+                path: 'knowledge-base/manage',
+                lazy: async () => {
+                  const { FaqListPage } =
+                    await import('@/features/knowledge-base/components/FaqListPage')
+                  return { element: <FaqListPage /> }
+                },
+              },
+              {
+                path: 'knowledge-base/manage/new',
+                lazy: async () => {
+                  const { FaqFormPage } =
+                    await import('@/features/knowledge-base/components/FaqFormPage')
+                  return { element: <FaqFormPage /> }
+                },
+              },
+              {
+                path: 'knowledge-base/manage/:id/edit',
+                lazy: async () => {
+                  const { FaqFormPage } =
+                    await import('@/features/knowledge-base/components/FaqFormPage')
+                  return { element: <FaqFormPage /> }
+                },
+              },
+            ],
+          },
+          {
             path: 'tasks',
             lazy: async () => {
               const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')

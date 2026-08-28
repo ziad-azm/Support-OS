@@ -1,0 +1,31 @@
+{
+  "title": "Knowledge base",
+  "manage": {
+    "title": "Manage FAQs",
+    "new": "New FAQ",
+    "edit": "Edit FAQ",
+    "empty": "No FAQs yet",
+    "emptyDescription": "Create the first FAQ to get started.",
+    "fields": {
+      "question": "Question",
+      "answer": "Answer",
+      "order": "Order",
+      "actions": "Actions"
+    },
+    "actions": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete this FAQ?",
+      "description": "This permanently removes the FAQ. This cannot be undone."
+    },
+    "created": "FAQ created.",
+    "updated": "FAQ updated.",
+    "deleted": "FAQ deleted."
+  },
+  "browse": {
+    "empty": "No FAQs yet",
+    "emptyDescription": "Check back later."
+  }
+}

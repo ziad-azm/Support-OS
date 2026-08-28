@@ -976,6 +976,18 @@ endpoint against a row that is actually protected before shipping the new FK
 — `Ticket.customer` (Story 12, `TKT-1`) is the worked example, verified live
 against `accounts.Role`/`User.role`, the only precedent before it.
 
+**A resource that is read as a whole (not worked from row to row) splits
+into two independently permission-gated route trees, not one gated-button
+list page.** `FAQ` (Story 39, `KB-1`) is the first such case: `FaqBrowsePage`
+(`knowledge_base.view`) is a fixed, unpaginated read of every row, and
+`FaqListPage`/`FaqFormPage` (`knowledge_base.manage`, under
+`/knowledge-base/manage`) are the `DataTable`-based CRUD surface every prior
+feature already has. Contrast `CustomerListPage`/`TaskListPage`, where the
+same table serves both browsing and management because the resource is
+genuinely worked row by row — the deciding factor is whether a table is the
+right reading shape at all, not whether the resource has an admin/non-admin
+split in permissions (every feature already has that).
+
 **Two features may independently call the same backend endpoint.** This is
 not the code duplication `frontend/src/README.md`'s "a feature never imports
 from another feature" rule targets — each feature's `api/` layer owns exactly

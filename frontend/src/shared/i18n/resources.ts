@@ -4,6 +4,8 @@ import customersAr from '@/features/customers/locales/ar.json'
 import customersEn from '@/features/customers/locales/en.json'
 import healthAr from '@/features/health/locales/ar.json'
 import healthEn from '@/features/health/locales/en.json'
+import knowledgeBaseAr from '@/features/knowledge-base/locales/ar.json'
+import knowledgeBaseEn from '@/features/knowledge-base/locales/en.json'
 import liveChatAr from '@/features/live-chat/locales/ar.json'
 import liveChatEn from '@/features/live-chat/locales/en.json'
 import notificationsAr from '@/features/notifications/locales/ar.json'
@@ -43,6 +45,7 @@ export const resources = {
     webForm: webFormEn,
     notifications: notificationsEn,
     tasks: tasksEn,
+    knowledgeBase: knowledgeBaseEn,
   },
   ar: {
     common: arCommon,
@@ -56,6 +59,7 @@ export const resources = {
     webForm: webFormAr,
     notifications: notificationsAr,
     tasks: tasksAr,
+    knowledgeBase: knowledgeBaseAr,
   },
 } as const
 

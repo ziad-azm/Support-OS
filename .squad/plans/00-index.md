@@ -13,3 +13,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | agent-workspace | [agent-workspace/00-overview.md](agent-workspace/00-overview.md) | 25–26, 32–34 (EPIC 6 fully planned) |
 | sla-automation | [sla-automation/00-overview.md](sla-automation/00-overview.md) | 27–31 (EPIC 7 fully planned) |
 | design-intelligence-ui-ux-system | [design-intelligence-ui-ux-system/00-overview.md](design-intelligence-ui-ux-system/00-overview.md) | 35–38 (EPIC 8 fully planned and implemented, DSN-0/1/2/3) |
+| knowledge-base | [knowledge-base/00-overview.md](knowledge-base/00-overview.md) | 39– (EPIC 9, KB-1 planned) |
