@@ -1306,6 +1306,22 @@ date+time value; converting between its timezone-less input value and the
 server's UTC-offset ISO string uses the browser's own `Date` local
 getters/`toISOString()`, no new dependency.
 
+**A shared resource in an owner-scoped app follows the shape of what it
+*is*, not the shape of its siblings.** `QuickReply` (Story 33, `AGENT-4`)
+lives in `apps.agents` beside `Task` (Story 32) and `Notification` lives in
+`apps.notifications`, but unlike either — both owner-scoped, no domain
+permission — `QuickReplyViewSet` extends `BaseModelViewSet` and reuses
+`Permissions.TICKETS_VIEW`/`TICKETS_MANAGE`, the same call `CategoryViewSet`
+already made for the identical reason: a quick reply is part of the
+ticket-reply permission domain, not a separate one, regardless of which
+Python app its model lives in. **`QuickReplyAdmin` is this project's fifth
+"admin is the de facto config UI, no frontend CRUD screen" resource**, after
+`Category`, `SLAPolicy`, `AssignmentRule`, and `EscalationRule` — the
+pattern now clearly established: a shared, infrequently-edited
+configuration list gets a real API (for whatever needs to read it) plus an
+editable admin, not a bespoke management page, until a story's own intake
+actually asks for one.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

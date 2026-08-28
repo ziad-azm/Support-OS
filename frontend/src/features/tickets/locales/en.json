@@ -104,6 +104,10 @@
       "channel": "Channel",
       "body": "Message"
     },
+    "quickReply": {
+      "label": "Quick reply",
+      "placeholder": "Insert a quick reply…"
+    },
     "actions": {
       "send": "Send"
     },

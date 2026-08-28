@@ -104,6 +104,10 @@
       "channel": "القناة",
       "body": "الرسالة"
     },
+    "quickReply": {
+      "label": "رد سريع",
+      "placeholder": "إدراج رد سريع…"
+    },
     "actions": {
       "send": "إرسال"
     },

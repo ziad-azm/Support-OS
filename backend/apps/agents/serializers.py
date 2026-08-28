@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
 
-from .models import Task
+from .models import QuickReply, Task
 
 
 class TaskSerializer(BaseModelSerializer):
@@ -36,3 +36,9 @@ class TaskSerializer(BaseModelSerializer):
             "completed_at",
             "reminder_sent_at",
         )
+
+
+class QuickReplySerializer(BaseModelSerializer):
+    class Meta(BaseModelSerializer.Meta):
+        model = QuickReply
+        fields = ("id", "title", "body", "created_at", "updated_at")

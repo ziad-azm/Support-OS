@@ -11,11 +11,19 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
 import { SelectField, TextareaField, useAppForm } from '@/shared/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/primitives/select'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useCreateMessage } from '../api/useMessageMutations'
 import { useMessages } from '../api/useMessages'
+import { useQuickReplies } from '../api/useQuickReplies'
 import { useTicketChatSocket } from '../api/useTicketChatSocket'
 import { MESSAGE_CHANNELS } from '../types/message'
 import type { Message, MessageInput } from '../types/message'
@@ -95,6 +103,22 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
   const [formErrors, setFormErrors] = useState<string[]>([])
   const form = useAppForm({ schema: replySchema, defaultValues: EMPTY_REPLY })
   const mutation = useCreateMessage(ticketId)
+  const quickRepliesQuery = useQuickReplies()
+
+  // Not a submitted field — a "fill" action. Resets to '' after each pick
+  // so the trigger falls back to its placeholder rather than staying
+  // stuck on the last-chosen template's title. Overwrites `body` outright
+  // (does not append/merge) — see Story 33 `## Prerequisites`.
+  const [selectedQuickReplyId, setSelectedQuickReplyId] = useState('')
+  const quickReplies = quickRepliesQuery.data?.items ?? []
+
+  function handleQuickReplySelect(value: string) {
+    const reply = quickReplies.find((candidate) => String(candidate.id) === value)
+    if (reply) {
+      form.setValue('body', reply.body, { shouldValidate: true, shouldDirty: true })
+    }
+    setSelectedQuickReplyId('')
+  }
 
   function onSubmit(values: ReplyFormValues) {
     mutation.mutate(toMessageInput(ticketId, values), {
@@ -114,6 +138,24 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3 border-t pt-4">
+        {quickReplies.length > 0 ? (
+          <Select value={selectedQuickReplyId} onValueChange={handleQuickReplySelect}>
+            <SelectTrigger
+              size="sm"
+              className="self-start"
+              aria-label={t('conversation.quickReply.label')}
+            >
+              <SelectValue placeholder={t('conversation.quickReply.placeholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              {quickReplies.map((reply) => (
+                <SelectItem key={reply.id} value={String(reply.id)}>
+                  {reply.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
         <SelectField
           control={form.control}
           name="channel"

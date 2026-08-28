@@ -6,8 +6,11 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Task
-from .serializers import TaskSerializer
+from apps.core.permissions import Permissions
+from apps.core.views import BaseModelViewSet
+
+from .models import QuickReply, Task
+from .serializers import QuickReplySerializer, TaskSerializer
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -55,3 +58,26 @@ class TaskViewSet(viewsets.ModelViewSet):
             task.completed_at = None
             task.save(update_fields=["completed_at", "updated_at"])
         return Response(self.get_serializer(task).data)
+
+
+class QuickReplyViewSet(BaseModelViewSet):
+    """Reply-template CRUD — AGENT-4. Reuses `tickets.*`, the same call
+    `CategoryViewSet` (`apps/tickets/views.py`) already made: a quick
+    reply is part of the ticket-reply permission domain, not a separate
+    one. See Story 33 `## Prerequisites`.
+    """
+
+    queryset = QuickReply.objects.all()
+    serializer_class = QuickReplySerializer
+
+    permission_map = {
+        "list": Permissions.TICKETS_VIEW,
+        "retrieve": Permissions.TICKETS_VIEW,
+        "create": Permissions.TICKETS_MANAGE,
+        "update": Permissions.TICKETS_MANAGE,
+        "partial_update": Permissions.TICKETS_MANAGE,
+        "destroy": Permissions.TICKETS_MANAGE,
+    }
+
+    ordering_fields = ("title", "created_at")
+    search_fields = ("title", "body")

@@ -57,3 +57,27 @@ class Task(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.title
+
+
+class QuickReply(TimeStampedModel):
+    """A reusable reply template — AGENT-4. Shared across every agent, the
+    opposite shape from `Task`, above: no `owner`, visible to and usable
+    by anyone who can reach `ReplyForm` (`tickets.manage`). See Story 33
+    `## Prerequisites`.
+    """
+
+    title = models.CharField(_("title"), max_length=200)
+    # TextField, no max_length — matches `apps.communications.models.Message.body`,
+    # since a template's text becomes a message body verbatim.
+    body = models.TextField(_("body"))
+
+    class Meta:
+        verbose_name = _("quick reply")
+        verbose_name_plural = _("quick replies")
+        # Alphabetical — a template library is browsed, not read as a
+        # feed. Contrast `Task.Meta.ordering` (due-soonest) and
+        # `TicketActivity.Meta.ordering` (newest-first).
+        ordering = ("title",)
+
+    def __str__(self) -> str:
+        return self.title
