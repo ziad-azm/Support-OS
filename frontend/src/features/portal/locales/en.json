@@ -4,9 +4,21 @@
   },
   "home": {
     "title": "Welcome",
-    "placeholder": "There is nothing here yet — check back soon."
+    "intro": "Need help? Submit a new ticket and our team will get back to you."
   },
   "nav": {
-    "home": "Home"
+    "home": "Home",
+    "newTicket": "New ticket"
+  },
+  "tickets": {
+    "new": "Submit a ticket",
+    "fields": {
+      "subject": "Subject",
+      "description": "Description"
+    },
+    "actions": {
+      "submit": "Submit"
+    },
+    "created": "Your ticket has been submitted."
   }
 }

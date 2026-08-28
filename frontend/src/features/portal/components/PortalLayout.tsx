@@ -30,6 +30,9 @@ export function PortalLayout() {
             <Button asChild variant="ghost" size="sm">
               <Link to="/portal">{t('nav.home')}</Link>
             </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/portal/tickets/new">{t('nav.newTicket')}</Link>
+            </Button>
           </nav>
           <div className="ms-auto flex items-center gap-2">
             {user ? (

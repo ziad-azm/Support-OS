@@ -14,4 +14,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | sla-automation | [sla-automation/00-overview.md](sla-automation/00-overview.md) | 27–31 (EPIC 7 fully planned) |
 | design-intelligence-ui-ux-system | [design-intelligence-ui-ux-system/00-overview.md](design-intelligence-ui-ux-system/00-overview.md) | 35–38 (EPIC 8 fully planned and implemented, DSN-0/1/2/3) |
 | knowledge-base | [knowledge-base/00-overview.md](knowledge-base/00-overview.md) | 39–41 (EPIC 9 fully planned, KB-1/KB-2/KB-3) |
-| customer-portal | [customer-portal/00-overview.md](customer-portal/00-overview.md) | 42 (EPIC 10 — PORTAL-0 planned; PORTAL-1..5 not yet planned) |
+| customer-portal | [customer-portal/00-overview.md](customer-portal/00-overview.md) | 42–43 (EPIC 10 — PORTAL-0/PORTAL-1 planned; PORTAL-2..5 not yet planned) |

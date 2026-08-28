@@ -279,6 +279,14 @@ export const router = createBrowserRouter([
                   return { element: <PortalHomePage /> }
                 },
               },
+              {
+                path: 'tickets/new',
+                lazy: async () => {
+                  const { PortalTicketFormPage } =
+                    await import('@/features/portal/components/PortalTicketFormPage')
+                  return { element: <PortalTicketFormPage /> }
+                },
+              },
             ],
           },
         ],
