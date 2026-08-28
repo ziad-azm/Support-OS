@@ -1444,7 +1444,7 @@ lines 9-46, never customized since Story 06.
 | `--secondary` (line 19) / `--secondary-foreground` (line 20) | `oklch(0.97 0 0)` (light grey) / `oklch(0.205 0 0)` (near-black) | Conflicting spec: color table gives `#64748B`/`#FFFFFF` (filled slate), but the same file's `.btn-secondary` sample is an **outline** button in `#475569` text/border on transparent | **Adopted (Story 36) — filled treatment** | Resolved by reading `button.tsx`: this codebase already has a separate `outline` variant distinct from `secondary` (line 15-16), so MASTER.md's outline `.btn-secondary` sample describes that variant, not this token — the color-table pairing (`#64748B`/`#FFFFFF`) applies cleanly to `--secondary`/`--secondary-foreground` with no conflict. Shipped as `oklch(0.554 0.041 257.417)` / `oklch(1 0 0)`, same value in both themes. |
 | `--accent` (line 23) / `--accent-foreground` (line 24) | `oklch(0.97 0 0)` / `oklch(0.205 0 0)` (subtle hover surface) | *(none — DSN's palette has no separate "subtle hover surface" role; its "Accent/CTA" was already consumed by `--primary` above)* | **Keep current** | Reusing `#2563EB` a second time for hover/highlight backgrounds would give one hex two different UI meanings (CTA button vs. subtle surface) in the same interface. |
 | `--destructive` (line 25) | `oklch(0.577 0.245 27.325)` (red) | `#DC2626` (MASTER.md "Destructive") | **Adopted (Story 36)** | Same role, same color family, no conflict; also satisfies MASTER.md's own pre-delivery checklist item on text contrast. Shipped as `oklch(0.577 0.215 27.325)` in both `:root` and `.dark` — verified 9.46:1 white-text contrast against the existing `dark:bg-destructive/60` treatment (`button.tsx` line 14). |
-| `--chart-1` … `--chart-5` (lines 29-33) | five achromatic-to-hued shadcn defaults | Not in MASTER.md — chart *type* guidance only (see "Chart-type guidance" below); no fixed 5-color chart palette was generated | **Defer to DSN-3** | `DSN-3`'s own task is picking chart types per report first (line/bar/bullet, below); assigning `--chart-1..5` hex values is that story's job, not a generic guess here. |
+| `--chart-1` … `--chart-5` (lines 29-33) | five achromatic-to-hued shadcn defaults | Not in MASTER.md — no fixed 5-color chart palette exists anywhere in `DSN` (confirmed by `DSN-3`, Story 38) | **Resolved (Story 38) — keep current** | Already a mutually-distinguishable five-hue qualitative palette, untouched by Story 36's retint; no `DSN`-sourced alternative exists to adopt instead. See "Chart-type guidance" below for the separate, bounded status-zone colors (`#FFCDD2`/`#FFF9C4`/`#C8E6C9`) Bullet/Gauge charts need, which are not `--chart-1..5` slots. |
 | `--font-sans` (line 44) | `system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` | Atkinson Hyperlegible (Google Fonts, `@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap')`) | **Adopted (Story 36), English UI only** | An accessibility/dyslexia-friendly font fits MASTER.md's own "Enterprise apps... professional tools" framing and its Pre-Delivery Checklist's contrast/a11y emphasis. Loaded via `<link>` in `frontend/index.html` (not a CSS `@import`), first in the `--font-sans` fallback chain. |
 | `--font-arabic` (line 45) | `'Segoe UI', Tahoma, 'Noto Naskh Arabic', system-ui, sans-serif` | *(same Atkinson Hyperlegible pairing — MASTER.md does not distinguish a bilingual/Arabic typeface)* | **Keep current** | Atkinson Hyperlegible is a Latin-only accessibility font with no Arabic glyph coverage; `CONVENTIONS.md` § 18 requires a font stack that renders Arabic, which the generated pairing does not provide. The skill's query did not mention bilingual/RTL requirements. |
 | `--radius` (line 10) | `0.625rem` (one value, `sm`/`md`/`lg`/`xl` derived via `calc()`, § "@theme inline" lines 115-118) | MASTER.md's component CSS uses differentiated per-component radii: `8px` (buttons/inputs), `12px` (cards), `16px` (modals) | **Resolved (Story 36) — component-level, not token-scale** | `card.tsx` (`rounded-xl`, 14px) and `input.tsx` (`rounded-md`, 8px) already land within 2px / exactly on MASTER.md's 12px/8px targets — no change. `dialog.tsx` and `alert-dialog.tsx` moved from `rounded-lg` (10px) to `rounded-xl` (14px), within 2px of the 16px modal target. The single derived `--radius` scale is unchanged; only which Tailwind radius utility two primitives use was adjusted. |
@@ -1508,19 +1508,35 @@ touch target size (`icon-xs` = 24px, meets WCAG 2.2's minimum exactly).
 
 ### Chart-type guidance (for `RPT-0`)
 
-Queried against `charts.csv` for this project's actual report shapes
-(`SupportOs backlog.MD:797` Foundation Map: `RPT-0` feeds `RPT-1`/`RPT-2`/CSAT
-reporting). `DSN-3` (`SupportOs backlog.MD:520`) records the final
-per-report chart choice; these are the catalog's own recommendations to pick
-from:
+Recorded by `DSN-3` (Story 38, `SupportOs backlog.MD:520`) against each
+`RPT-*` report's actual data shape (`SupportOs backlog.MD:600-633`), queried
+fresh from `charts.csv` — not a generic chart-type list. `RPT-0`
+(Reporting Foundation, unplanned) implements its shared chart wrapper
+against this table; no chart library, component, or token exists yet.
 
-| Report shape | Best chart type | When to use | Color guidance |
-|---|---|---|---|
-| Ticket volume/trends over time (`RPT-1`) | Line Chart (Chart.js/Recharts/ApexCharts) | Time axis, continuous rise/fall; ≤6 series before visual noise | Primary `#0080FF`; multiple series need distinct colors **and** distinct line styles, never hue alone |
-| Compare categories/channels/agents (`RPT-1`) | Bar Chart, horizontal or vertical (Chart.js/Recharts/D3.js) | Discrete categories ranked by magnitude, ≤15 categories | One distinct color per bar; always sort descending by value |
-| SLA performance vs. target (`RPT-2`) | Bullet Chart in a grid for 3+ KPIs, Gauge Chart for a single KPI (D3.js/ApexCharts/Custom SVG) | Dashboard KPIs measured against a defined target/threshold | Red→yellow→green must be paired with a text label and target marker — never color alone |
-| CSAT satisfied-vs-total proportion (`PORTAL-5`/CSAT reporting) | Waffle Chart, ≤5 categories (D3.js/Custom CSS Grid) | Part-to-whole percentage, small category count | Distinct accessible color pair per category, always labeled with percentage text |
+| Report | Data shape | Chart type | Library options | Color guidance |
+|---|---|---|---|---|
+| `RPT-1` Ticket Reports — trend over time | Trend Over Time | Line Chart (Area as secondary) | Chart.js, Recharts, ApexCharts | Primary `#0080FF`; multi-series needs distinct color **and** distinct line style (solid/dashed/dotted), never hue alone |
+| `RPT-1` Ticket Reports — by status/category/channel | Compare Categories | Bar Chart, horizontal or vertical | Chart.js, Recharts, D3.js | One distinct color per bar (from `--chart-1..5`, see below); always sort descending by value |
+| `RPT-2` SLA Performance — response/resolution time trend | Trend Over Time | Line Chart | Chart.js, Recharts, ApexCharts | Same as `RPT-1`'s trend row |
+| `RPT-2` SLA Performance — breach rate vs. target | Performance vs Target | Gauge Chart (single KPI) or Bullet Chart (3+ KPIs in a grid) | D3.js, ApexCharts, Custom SVG | Qualitative zones `#FFCDD2`/`#FFF9C4`/`#C8E6C9` (bad/ok/good); performance bar `#1976D2`; target marker a black 3px line — zones must carry a text label, never color alone |
+| `RPT-3` Agent Performance — handled/resolution/CSAT per agent | Compare Categories (ranked) | Horizontal Bar Chart | Chart.js, Recharts, D3.js | Same as `RPT-1`'s category row; ≤15 agents before switching to a paginated table |
+| `RPT-4` Customer Satisfaction — trend over time | Trend Over Time | Line Chart | Chart.js, Recharts, ApexCharts | Same as `RPT-1`'s trend row |
+| `RPT-4` Customer Satisfaction — satisfied/neutral/dissatisfied breakdown | Part-to-Whole (≤5 categories) | Waffle Chart — **not** Pie/Donut (`charts.csv` rates Pie/Donut `risk:high` for accessibility vs. Waffle's `risk:low` for the same use case) | D3.js, React-Waffle, Custom CSS Grid | Distinct accessible color pair per category, always labeled with percentage text; 10×10 grid standard |
+| `RPT-5` Management Dashboards — combined KPIs (open tickets, SLA health, CSAT, agent load) | Performance vs Target (Compact), 4 KPIs | Bullet Chart grid (`charts.csv`'s own "ideal for 3-10 bullet charts in a grid" range) | D3.js, Plotly, Custom SVG | Same qualitative-zone + target-marker colors as `RPT-2`'s breach-rate row — `RPT-5` reuses `RPT-0`'s charts (`SupportOs backlog.MD:633`), not a new chart type |
 
-All four share the same accessibility floor (MASTER.md/`charts.csv`): a
-visible data table or summary fallback, and color is always paired with a
-text label or distinct shape/line-style — never the sole signal.
+**Accessibility floor, every row (`charts.csv`, all `risk:low` except Waffle
+which is also `risk:low`):** a visible data table or text summary fallback;
+color always paired with a text label, distinct line style, or shape — never
+color alone. Keyboard: focus reveals the same detail hover does; sortable
+headers expose `aria-sort`.
+
+**`--chart-1`…`--chart-5` (`frontend/src/index.css` lines 29-33, 67-71):
+kept as the current shadcn defaults**, used for the Line/Bar rows' multi-series
+and multi-category color needs above. No `DSN`-sourced 5-swatch categorical
+palette exists to adopt instead (`design-system/supportos/MASTER.md` has none;
+no single `charts.csv` row supplies a general-purpose set). The Bullet/Gauge
+qualitative zones (`#FFCDD2`/`#FFF9C4`/`#C8E6C9`) and Waffle's category pairs
+are a **separate**, bounded, chart-specific color need — not `--chart-1..5`
+slots — and are recorded in the table above for `RPT-0` to name as its own
+tokens when it exists.
