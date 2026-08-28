@@ -254,4 +254,35 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  {
+    // Sibling of the `path: '/'` tree above, not nested inside it — a
+    // customer-facing shell must not render inside the staff `RootLayout`
+    // (staff nav, `NotificationBell`). See Story 42 `## Story Goal`.
+    path: 'portal',
+    lazy: async () => {
+      const { PortalLayout } = await import('@/features/portal/components/PortalLayout')
+      return { element: <PortalLayout /> }
+    },
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        element: <RequireAuth />,
+        children: [
+          {
+            element: <RequirePermission permission="portal.access" />,
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { PortalHomePage } =
+                    await import('@/features/portal/components/PortalHomePage')
+                  return { element: <PortalHomePage /> }
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ])

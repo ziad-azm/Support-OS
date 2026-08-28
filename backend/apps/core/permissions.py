@@ -32,6 +32,7 @@ class Permissions:
     TICKETS_MANAGE = "tickets.manage"
     KNOWLEDGE_BASE_VIEW = "knowledge_base.view"
     KNOWLEDGE_BASE_MANAGE = "knowledge_base.manage"
+    PORTAL_ACCESS = "portal.access"
 
 
 ALL_PERMISSIONS: frozenset[str] = frozenset(
@@ -91,6 +92,27 @@ class HasPermission(BasePermission):
         if required is None:
             return True
         return required in permissions_for(request.user)
+
+    def has_object_permission(self, request, view, obj) -> bool:
+        """Row-level half of the extension point CONVENTIONS.md §22 names.
+
+        A no-op for every existing (staff) viewset: it only tightens the
+        check when the caller is a portal customer, i.e. `request.user` has a
+        linked `Customer` row. `CustomerScopedModelViewSet.get_queryset()`
+        (apps/core/views.py) is the PRIMARY defence — DRF's own
+        `get_object()` filters through `get_queryset()` before this method
+        ever runs, so a mismatched pk already 404s, not 403s, for the
+        standard list/retrieve/update/destroy actions. This method exists for
+        the case that primary defence cannot cover: a custom `@action` that
+        fetches an object directly (e.g. `Model.objects.get(pk=...)`) instead
+        of through `self.get_object()`. Without it, such an action would leak
+        another customer's row with no gate at all.
+        """
+        customer = getattr(request.user, "customer_profile", None)
+        if customer is None:
+            return True
+        customer_field = getattr(view, "customer_field", "customer")
+        return getattr(obj, f"{customer_field}_id", None) == customer.id
 
     @staticmethod
     def _required_permission(request, view) -> str | None:

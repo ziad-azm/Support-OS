@@ -31,6 +31,37 @@ class BaseModelViewSet(viewsets.ModelViewSet):
     permission_map: dict[str, str] = {}
 
 
+class CustomerScopedModelViewSet(BaseModelViewSet):
+    """Base for every portal-facing viewset — the mechanism the intake's
+    "scoping rule... reused by all portal stories" refers to.
+
+    Filters the queryset to the caller's own `customers.Customer` row (via
+    `customer_profile`, the reverse side of `Customer.user`). A caller with
+    no linked Customer (every staff account today) sees an empty queryset,
+    not another customer's data and not a 500.
+
+    Declares NO `permission_map` of its own — per HasPermission's own
+    grant-on-omission rule (CONVENTIONS.md §22), a subclass that ships
+    without declaring one is authenticated-only, not closed. Every PORTAL-N
+    viewset must declare its own `permission_map` (typically
+    `{"list": Permissions.PORTAL_ACCESS, ...}`), the same as any other
+    `BaseModelViewSet` subclass.
+
+    `customer_field` names the FK from this viewset's model to `Customer` —
+    override it when the model's field is not literally named `customer`
+    (`tickets.Ticket.customer` is; see `backend/apps/tickets/models.py:56`).
+    """
+
+    customer_field = "customer"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        customer = getattr(self.request.user, "customer_profile", None)
+        if customer is None:
+            return queryset.none()
+        return queryset.filter(**{self.customer_field: customer})
+
+
 class HealthView(APIView):
     """Liveness probe. Reports database reachability, not just process health.
 

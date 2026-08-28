@@ -1,0 +1,12 @@
+{
+  "shell": {
+    "title": "Customer Portal"
+  },
+  "home": {
+    "title": "Welcome",
+    "placeholder": "There is nothing here yet — check back soon."
+  },
+  "nav": {
+    "home": "Home"
+  }
+}

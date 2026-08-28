@@ -29,6 +29,20 @@ class Customer(TimeStampedModel):
     # belongs to CUST-2.
     phone = models.CharField(_("phone"), max_length=40, blank=True)
     company = models.CharField(_("company"), max_length=200, blank=True)
+    # SET_NULL, not PROTECT: contrast `accounts.User.role` (PROTECT — many
+    # users share one role that must not vanish silently). This is a 1:1
+    # link; losing portal login access must not block deleting or keeping
+    # the underlying CRM identity. Nullable: most `Customer` rows have no
+    # portal login at all — this field is opt-in, set by a staff member
+    # through Django admin (see Story 42 task 5), not by a self-service flow.
+    user = models.OneToOneField(
+        "accounts.User",
+        verbose_name=_("linked user account"),
+        related_name="customer_profile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = _("customer")

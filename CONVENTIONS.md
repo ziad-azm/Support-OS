@@ -1575,3 +1575,68 @@ qualitative zones (`#FFCDD2`/`#FFF9C4`/`#C8E6C9`) and Waffle's category pairs
 are a **separate**, bounded, chart-specific color need — not `--chart-1..5`
 slots — and are recorded in the table above for `RPT-0` to name as its own
 tokens when it exists.
+
+---
+
+## 26. Customer portal identity & scoping
+
+`PORTAL-0` (Story 42). A customer's portal login is not a second identity or
+authorization system — it is `AUTHZ` (§ 13/§ 22), extended.
+
+**A customer is a `User` row, not a second identity system.**
+`customers.Customer.user` (nullable `OneToOneField` to `accounts.User`,
+`related_name="customer_profile"`) links a CRM identity to a login-capable
+account. A `Customer` with `user = None` — the default — cannot log in. There
+is no separate customer credential table and no separate JWT configuration.
+
+**The `customer` role carries exactly one permission, `portal.access`**
+(`apps/core/permissions.py`), seeded the same way `admin`/`manager`/`agent`
+are (`apps/accounts/migrations/0004_seed_customer_role.py`). Granting a
+customer more portal-facing permissions later is a new `Permissions` constant
+plus a role-permission grant migration — the same two-step pattern
+`apps/customers/migrations/0002_grant_customer_permissions.py` already used
+for staff roles.
+
+**`CustomerScopedModelViewSet` (`apps/core/views.py`) is the base for every
+portal viewset.** Its `get_queryset()` override — filtering to the caller's
+`customer_profile` via `customer_field` (default `"customer"`) — is the
+PRIMARY scoping mechanism: DRF's `get_object()` filters through
+`get_queryset()` before any per-object check runs, so `list`, `retrieve`,
+`update`, and `destroy` are all covered by this one override. `HasPermission`
+also gained `has_object_permission`, a secondary, defense-in-depth layer that
+only matters for a custom `@action` that fetches an object directly (e.g.
+`Model.objects.get(pk=...)`) instead of through `self.get_object()`. **A
+custom `@action` on a `CustomerScopedModelViewSet` subclass must route
+through `self.get_object()`/`self.get_queryset()` — never a raw manager
+query — or it bypasses the primary defence and leaves only the
+object-permission check to catch a leak.**
+
+**`CustomerScopedModelViewSet` declares no `permission_map` of its own.**
+Per `HasPermission`'s existing grant-on-omission rule, a subclass that ships
+without declaring one is authenticated-only, not closed — every `PORTAL-N`
+viewset must declare its own `permission_map` (typically
+`{"list": Permissions.PORTAL_ACCESS, ...}`), the same as any other
+`BaseModelViewSet` subclass.
+
+**The frontend gate is `RequirePermission permission="portal.access"` — no
+new guard component.** `AuthUser`, `useAuth()`, `RequireAuth`, and
+`RequirePermission` all work unmodified for a customer account, because a
+customer is simply a `User` row with a different `role`.
+
+**The portal route tree is a sibling of `RootLayout`'s, not nested inside
+it.** `frontend/src/app/router.tsx` has two top-level route objects: the
+existing `path: '/'` tree (`RootLayout`, staff nav, `NotificationBell`) and
+`path: 'portal'` (`PortalLayout`). Nesting the portal under `RootLayout`
+would wrap every customer-facing page in staff chrome — a customer must
+never see staff navigation or the agent notification bell. Both trees share
+one `AuthProvider`/`Direction.DirectionProvider`/`QueryClientProvider` stack
+(`frontend/src/app/providers.tsx`, wrapped around the single `RouterProvider`
+in `main.tsx`), so direction, i18n, and auth state all work identically in
+both — only the visual shell differs.
+
+**Provisioning is Django-admin-only, by design, until a later epic builds a
+screen.** A staff member creates a `User`, assigns it the `customer` role,
+then links it to a `Customer` row's `user` field — the same
+admin-first-until-SEC-1 pattern § 22 already documents for staff role
+assignment. There is no self-service registration and no combined
+create-and-link form.
