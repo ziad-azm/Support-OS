@@ -1525,6 +1525,8 @@ lines 9-46, never customized since Story 06.
 | `--font-sans` (line 44) | `system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` | Atkinson Hyperlegible (Google Fonts, `@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap')`) | **Adopted (Story 36), English UI only** | An accessibility/dyslexia-friendly font fits MASTER.md's own "Enterprise apps... professional tools" framing and its Pre-Delivery Checklist's contrast/a11y emphasis. Loaded via `<link>` in `frontend/index.html` (not a CSS `@import`), first in the `--font-sans` fallback chain. |
 | `--font-arabic` (line 45) | `'Segoe UI', Tahoma, 'Noto Naskh Arabic', system-ui, sans-serif` | *(same Atkinson Hyperlegible pairing — MASTER.md does not distinguish a bilingual/Arabic typeface)* | **Keep current** | Atkinson Hyperlegible is a Latin-only accessibility font with no Arabic glyph coverage; `CONVENTIONS.md` § 18 requires a font stack that renders Arabic, which the generated pairing does not provide. The skill's query did not mention bilingual/RTL requirements. |
 | `--success`/`--success-foreground`, `--warning`/`--warning-foreground`, `--info`/`--info-foreground` (new) | *(did not exist)* | *(none — `MASTER.md`'s Color Palette table has no semantic-status role)* | **Adopted (Story 50)** | No DSN source exists for badge semantics; `#16A34A`/`#D97706`/`#0284C7` sourced from the `ui-ux-pro-max` skill's own `colors.csv` (the most-repeated "success green" across the dataset; amber and a `--primary`-distinct blue chosen by hue-family convention, no exact hex available). All three pair with **black**, not white, text — verified 6.37:1/6.59:1/5.13:1; white text fails 4.5:1 on all three. |
+| `--background`/`--foreground`/`--card`/`--card-foreground`/`--muted`/`--muted-foreground`/`--border` (surface tokens), plus tied `--input`/`--popover` | shadcn's untouched greyscale defaults | `MASTER.md`'s Color Palette table, directly (light mode only — no dark-mode row exists in the generated output) | **Adopted (Story 51)** | Light-mode values are MASTER.md's own hexes, converted and contrast-verified (13.98:1–7.24:1 across all text pairs). Dark-mode values have no DSN source — independently derived at the same ~257° hue family, contrast-verified (17.02:1–5.88:1). `--input`/`--popover` follow `--border`/`--card` respectively, preserving an equality already present in the pre-Story-51 code. |
+| `--ring` (new) | shadcn default, `oklch(0.708 0 0)` / `oklch(0.556 0 0)` | `#475569` (MASTER.md's own "Ring" row — never adopted by any prior story) | **Adopted (Story 51), light only** | Verified 7.24:1 against the new light `--background` (WCAG 2.4.11 non-text minimum is 3:1). Dark `--ring` is unchanged — verified 4.03:1/3.57:1 against the new dark `--background`/`--card`, still clearing 3:1, so no dark-mode value was invented. |
 | `--radius` (line 10) | `0.625rem` (one value, `sm`/`md`/`lg`/`xl` derived via `calc()`, § "@theme inline" lines 115-118) | MASTER.md's component CSS uses differentiated per-component radii: `8px` (buttons/inputs), `12px` (cards), `16px` (modals) | **Resolved (Story 36) — component-level, not token-scale** | `card.tsx` (`rounded-xl`, 14px) and `input.tsx` (`rounded-md`, 8px) already land within 2px / exactly on MASTER.md's 12px/8px targets — no change. `dialog.tsx` and `alert-dialog.tsx` moved from `rounded-lg` (10px) to `rounded-xl` (14px), within 2px of the 16px modal target. The single derived `--radius` scale is unchanged; only which Tailwind radius utility two primitives use was adjusted. |
 
 ### UX & accessibility guidance (from `design-system/supportos/MASTER.md` and the `ux-guidelines.csv` catalog)
@@ -1653,6 +1655,32 @@ spacing was audited and found already exactly matching `MASTER.md`'s
 24px/8px spacing scale — no change. `table.tsx`'s cell padding moved from
 8px to 12px horizontal, a bounded judgment call — no DSN table spec exists
 to size against precisely.
+
+### App shell: sidebar navigation & primitive polish (`DSN-5`, Story 51)
+
+`RootLayout.tsx`'s top `<nav>` became `app/Sidebar.tsx` — a hand-built `<aside>`
+(not the official shadcn CLI `sidebar` component, which solves an SSR-cookie
+hydration problem this client-only SPA does not have), collapsible to an
+icon-only rail via `useState` + `localStorage`
+(`supportos.sidebar.collapsed`), positioned by plain DOM order in a `flex`
+row rather than a direction-branched class — flexbox already reverses
+visually under `dir="rtl"` with the sidebar first in markup. Every
+`<Can>`-gated link, `t(...)` key, and route from the prior top nav moved
+across unchanged. `PortalLayout.tsx` (the customer-facing shell) is
+untouched — a deliberately separate, simpler top nav since Story 42.
+
+`button.tsx`/`input.tsx`/`select.tsx` gained MASTER-guided polish:
+`font-semibold` and a `shadow-xs` + `-translate-y-px` hover lift (with an
+`active:translate-y-0` press-back, this story's own addition — MASTER
+defines no `:active` state) on the three filled button variants;
+`border-color` added to `input.tsx`/`select.tsx`'s transition-property list,
+fixing a real, verified "instant state change" on focus (the property was
+silently excluded before this story); `duration-200` added throughout,
+matching MASTER's 200ms. No height/padding/radius change — this project's
+existing button/input/select height-alignment invariant (`h-9` shared
+across all three) is verified compliant with MASTER's radius target already
+and takes precedence over MASTER's literal padding numbers, which would
+have broken that alignment.
 
 ---
 

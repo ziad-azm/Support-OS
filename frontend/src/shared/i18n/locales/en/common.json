@@ -38,5 +38,9 @@
     "pageOf": "Page {{page}} of {{total}}",
     "rowCount": "{{displayCount}} result",
     "rowCount_other": "{{displayCount}} results"
+  },
+  "sidebar": {
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   }
 }

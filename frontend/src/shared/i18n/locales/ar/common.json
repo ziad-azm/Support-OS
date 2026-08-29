@@ -42,5 +42,9 @@
     "rowCount_few": "{{displayCount}} نتائج",
     "rowCount_many": "{{displayCount}} نتيجة",
     "rowCount_other": "{{displayCount}} نتيجة"
+  },
+  "sidebar": {
+    "collapse": "طي الشريط الجانبي",
+    "expand": "توسيع الشريط الجانبي"
   }
 }
