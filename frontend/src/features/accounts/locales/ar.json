@@ -36,6 +36,7 @@
     "permissionCount_few": "{{count}} صلاحيات",
     "permissionCount_many": "{{count}} صلاحية",
     "permissionCount_other": "{{count}} صلاحية",
+    "permissionsHint": "تُطبَّق التغييرات فورًا على أي شخص يحمل هذا الدور.",
     "fields": {
       "name": "الاسم",
       "slug": "المعرّف",

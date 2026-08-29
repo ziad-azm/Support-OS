@@ -32,6 +32,7 @@
     "emptyDescription": "Create the first role to get started.",
     "permissionCount": "{{count}} permission",
     "permissionCount_other": "{{count}} permissions",
+    "permissionsHint": "Changes take effect immediately for anyone holding this role.",
     "fields": {
       "name": "Name",
       "slug": "Slug",

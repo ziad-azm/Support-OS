@@ -7,6 +7,7 @@ Entry point for the **security-administration** feature. Stories execute in orde
 | NN | File | Title | Tracker id | Depends on |
 |----|------|-------|------------|------------|
 | 48 | [48-story-users-roles-admin-SUPPORTOS-72.md](48-story-users-roles-admin-SUPPORTOS-72.md) | Users & Roles Admin | SUPPORTOS-72 | Story 09 (`AUTH-2`), Story 10 (feature-module template) |
+| 49 | [49-story-permissions-management-SUPPORTOS-73.md](49-story-permissions-management-SUPPORTOS-73.md) | Permissions Management | SUPPORTOS-73 | Story 48 (`SEC-1`) |
 
 ## Dependency notes
 
@@ -26,4 +27,13 @@ This feature maps to **EPIC 13 — Security & Administration** in the Jira works
 - **`RoleViewSet.list`/`retrieve` are gated on `users.view`, not `roles.manage`** — the user form's role picker needs to read the roles list under the same permission that already gates the user list, the same cross-feature reuse `TicketViewSet.assignable_agents` established for `tickets.view`. Only creating/renaming/deleting a role needs `roles.manage`.
 - **Four system roles are seeded, not three**: `admin`/`manager`/`agent` (Story 09) plus `customer` (Story 42, `apps/accounts/migrations/0004_seed_customer_role.py`, added between Story 09 and this one for portal access).
 
-**Known gap carried into Story 49:** `Role.permissions` stays read-only through every screen Story 48 builds — a role created via the new UI has zero permissions until an admin edits it via Django admin's raw JSON textarea, or until Story 49 ships the intended editing UI.
+**Verified findings that shaped Story 49:**
+
+- **No backend change was needed to `RoleViewSet` itself.** `update`/`partial_update` were already gated on `roles.manage` by Story 48 — Story 49 only had to stop `RoleAdminSerializer` from refusing the `permissions` field. The entire authorization mechanism (`HasPermission`, `permission_map`) is reused unmodified.
+- **`is_system` protects only `slug` and `destroy`, never `permissions`.** Editing a seeded role's (`admin`/`manager`/`agent`/`customer`) permission set is Story 49's whole purpose — locking it behind `is_system` would make the checklist non-functional on the four accounts that most need it.
+- **`permissions_for` (Story 09) has no server-side cache**, so a role's permission edit takes effect on an already-issued, still-valid access token's very next request — verified live (Story 49 Verification Step 7). This is what makes the query-cache forward constraint (`CONVENTIONS.md` §22) partly reachable for the first time: a role's *content* can now change with no Django admin step, though an already-signed-in affected user's in-memory `user.permissions` still needs a reload to pick it up.
+- **The permissions checklist is a new UI pattern** (many checkboxes bound to one `string[]` field via a hand-rolled `FormField` composition, not a new shared field component) — documented as a worked example in `CONVENTIONS.md` §23 for the next feature that needs a multi-select array field.
+
+**Known gap resolved by Story 49:** `Role.permissions` is no longer read-only — Story 48's interim state (new roles created empty, editable only via Django admin) is superseded.
+
+**Known gap carried forward:** the query-cache-not-permission-aware forward constraint (`CONVENTIONS.md` §22) is still not fixed — `queryClient.clear()`-on-role-change remains unbuilt. An already-signed-in user holding an edited role sees the change only after their next `/auth/me/` fetch (reload or re-login).

@@ -75,6 +75,12 @@ cleared field must round-trip as an explicit `null`; keep the optional pair
 for a value that is genuinely absent rather than empty. See `CONVENTIONS.md`
 § 23.
 
+`RoleFormPage`'s permissions checklist (Story 49, `SEC-2`) is the project's
+first form field bound to a `string[]` array — a hand-rolled `FormField`
+composition rather than one of the six shared field components, since no
+existing field expresses "many checkboxes, one array value." See
+`CONVENTIONS.md` § 23's entry on it.
+
 ## Authentication & authorization
 
 `src/shared/auth/` is the single source of auth state: `tokenStorage.ts`

@@ -794,9 +794,11 @@ superuser, who has every permission and no role at all.
 **`Role.clean()` guards forms, not programmatic writes.** Django runs
 `clean()` from `full_clean()`, which `ModelForm` (and so the admin) calls. A
 bare `Role.objects.create(permissions=["bogus"])` in a shell or a migration
-bypasses it entirely, and DRF serializers do not call model `clean()` either.
-A future `RoleSerializer` that **writes** `permissions` must validate them
-itself.
+bypasses it entirely, and DRF serializers do not call model `clean()`
+either. `RoleAdminSerializer.validate_permissions` (Story 49, `SEC-2`) is
+that independent check for the API path — it repeats `Role.clean()`'s
+logic rather than calling it, because the two paths (admin form, API
+serializer) have no shared validation entry point in DRF.
 
 **Renaming a permission's string value is a data migration, not a
 refactor.** `Role.permissions` stores the strings. Changing
@@ -823,11 +825,13 @@ login loop for an under-privileged user.
 
 **Forward constraint: the query cache is not permission-aware.** TanStack
 Query keys include neither the user nor their role, so if an account's role
-changes while the app is open, cached results computed under the old
-permissions persist until refetched — the same class of constraint § 18
-records for language. `queryClient.clear()` on a role-change event is the fix;
-it is not reachable today, because a role change requires Django admin plus a
-reload.
+— or a role's own permission set — changes while the app is open, cached
+results computed under the old permissions persist until refetched — the
+same class of constraint § 18 records for language. `queryClient.clear()`
+on such an event is the fix; it is not built. A role's permission content
+can now change through `RoleFormPage` (Story 49, `SEC-2`) with no Django
+admin involved, which makes the "plus a reload" half of this constraint the
+only thing still standing between an edit and a stale in-session user.
 
 ---
 
@@ -1402,6 +1406,17 @@ the actual grant of portal access; a role is just data an admin could
 otherwise leave stale. The same reasoning as `ArticleViewSet.get_queryset`
 filtering by the caller's *own* permission (Story 40) rather than by
 action name: filter on the fact that is actually true, not on a proxy for it.
+
+**A multi-select checklist bound to a `string[]` field composes `FormField`
+directly, not a new shared field component, when there is exactly one
+consumer.** `RoleFormPage`'s permissions checklist (Story 49, `SEC-2`) binds
+many `Checkbox` primitives to one `permissions: string[]` value via
+`FormField`'s own render prop — the same primitive `CheckboxField` (a
+single-boolean field) is built on, generalised for a list instead of
+extracted into a new `shared/ui/form/CheckboxListField.tsx`. The options
+themselves are grouped by a computed transform of a code identifier (the
+permission string's area prefix), not translated copy — the same category
+of content `RoleListPage`'s `slug` column already shows untranslated.
 
 ---
 

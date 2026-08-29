@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .permissions import HasPermission
+from .permissions import ALL_PERMISSIONS, HasPermission, Permissions
 
 
 class BaseModelViewSet(viewsets.ModelViewSet):
@@ -85,6 +85,30 @@ class HealthView(APIView):
         }
         code = status.HTTP_200_OK if database == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE
         return Response(payload, status=code)
+
+
+class PermissionCatalogView(APIView):
+    """The full permission vocabulary — what SEC-2's role-editing checklist
+    renders its options from. Read-only: the mapping itself is written
+    through `RoleViewSet.update`/`partial_update` (apps/accounts/views.py),
+    never here.
+
+    Gated on `roles.manage`, the same permission that already gates writing
+    `Role.permissions` — nobody can see the vocabulary without also being
+    able to act on it. Keyed by lowercased HTTP method rather than a DRF
+    `action`, the same pattern `KnowledgeBaseSearchView`
+    (apps/knowledge_base/views.py:94-111) already established for a plain
+    `APIView`. Only `GET` is defined, so any other verb 405s via Django's
+    own `http_method_not_allowed` — no `http_method_names` override needed,
+    unlike `UserViewSet` (Story 48), which had an action to actively
+    disable rather than simply never define.
+    """
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {"get": Permissions.ROLES_MANAGE}
+
+    def get(self, request):
+        return Response(sorted(ALL_PERMISSIONS))
 
 
 class ApiNotFoundView(APIView):

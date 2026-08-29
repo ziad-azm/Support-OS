@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from apps.core.permissions import permissions_for
+from apps.core.permissions import ALL_PERMISSIONS, permissions_for
 from apps.core.serializers import BaseModelSerializer
 
 from .models import Role
@@ -18,10 +18,14 @@ class RoleSerializer(serializers.ModelSerializer):
 
 
 class RoleAdminSerializer(BaseModelSerializer):
-    """CRUD over `Role` for SEC-1's admin screen. `permissions` and
-    `is_system` stay read-only — editing the permission bundle is SEC-2
-    (CONVENTIONS.md §22); `RoleAdmin`'s raw JSON textarea remains the only
-    write path for `permissions` until then.
+    """CRUD over `Role` for SEC-1/SEC-2's admin screen. `permissions` is
+    writable here — validated against `ALL_PERMISSIONS` the same way
+    `Role.clean()` validates it for the Django-admin path (DRF does not call
+    model `clean()`, so this serializer must repeat the check; see
+    CONVENTIONS.md §22). `is_system` stays read-only — it protects `slug`
+    and `destroy` only (see `validate_slug` below and `RoleViewSet.destroy`),
+    never `permissions`: editing a system role's grants is this story's
+    whole point.
     """
 
     class Meta(BaseModelSerializer.Meta):
@@ -36,10 +40,7 @@ class RoleAdminSerializer(BaseModelSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = BaseModelSerializer.Meta.read_only_fields + (
-            "permissions",
-            "is_system",
-        )
+        read_only_fields = BaseModelSerializer.Meta.read_only_fields + ("is_system",)
 
     def validate_slug(self, value):
         """A system role's slug is code-referenced (the seed migrations key
@@ -50,6 +51,22 @@ class RoleAdminSerializer(BaseModelSerializer):
         """
         if self.instance is not None and self.instance.is_system and value != self.instance.slug:
             raise serializers.ValidationError(_("A system role's slug cannot be changed."))
+        return value
+
+    def validate_permissions(self, value):
+        """Mirrors `Role.clean()` (apps/accounts/models.py:69-86) for the API
+        path — DRF does not call model `clean()`, so a bare `partial_update`
+        would otherwise let `permissions` drift from `ALL_PERMISSIONS` with
+        no check at all. Deliberately does NOT special-case `is_system`:
+        editing a seeded role's permissions is this story's entire purpose.
+        """
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Permissions must be a list."))
+        unknown = sorted(set(value) - ALL_PERMISSIONS)
+        if unknown:
+            raise serializers.ValidationError(
+                _("Unknown permissions: %(names)s") % {"names": ", ".join(unknown)}
+            )
         return value
 
 
