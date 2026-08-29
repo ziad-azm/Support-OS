@@ -7,6 +7,7 @@ import {
   FileTextIcon,
   InboxIcon,
   ListTodoIcon,
+  LogOutIcon,
   SearchIcon,
   ShieldCheckIcon,
   TicketIcon,
@@ -177,18 +178,18 @@ export function Sidebar() {
           />
         </Can>
       </nav>
-      <div className="mt-auto flex flex-col gap-2 border-t p-2">
+      <div className="mt-auto flex flex-col gap-3 border-t p-3">
         {user ? (
-          <div
-            className={cn('flex items-center gap-2', collapsed ? 'flex-col' : 'justify-between')}
-          >
+          <div className={cn('flex items-center gap-2', collapsed && 'flex-col')}>
             <NotificationBell />
             {collapsed ? null : (
-              <span className="flex-1 truncate text-sm text-muted-foreground">{user.email}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                {user.email}
+              </span>
             )}
           </div>
         ) : null}
-        <div className={cn('flex items-center gap-2', collapsed ? 'flex-col' : '')}>
+        <div className={cn('flex items-center gap-2', collapsed ? 'flex-col' : 'justify-between')}>
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
@@ -196,9 +197,10 @@ export function Sidebar() {
           <Button
             variant="ghost"
             size="sm"
-            className={cn('justify-start', collapsed && 'justify-center px-0')}
+            className={cn('justify-start gap-2', collapsed && 'justify-center px-0')}
             onClick={() => void logout()}
           >
+            <LogOutIcon />
             {collapsed ? null : t('actions.logout')}
           </Button>
         ) : null}
