@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useArticles } from '../api/useArticles'
 import type { Article } from '../types/article'
@@ -21,12 +22,14 @@ export function ArticleBrowsePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('articles.title')}</h1>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/knowledge-base/search">{t('search.title')}</Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={t('articles.title')}
+        action={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/knowledge-base/search">{t('search.title')}</Link>
+          </Button>
+        }
+      />
       <QueryBoundary
         query={query}
         isEmpty={(data) => data.items.length === 0}

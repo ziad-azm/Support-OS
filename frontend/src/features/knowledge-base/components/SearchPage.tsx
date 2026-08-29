@@ -6,6 +6,7 @@ import { Badge } from '@/shared/ui/primitives/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Input } from '@/shared/ui/primitives/input'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 
 import { MarkdownPreview } from './MarkdownPreview'
@@ -32,7 +33,7 @@ export function SearchPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-lg font-semibold">{t('search.title')}</h1>
+      <PageHeader title={t('search.title')} />
       <Input
         value={input}
         onChange={(event) => setInput(event.target.value)}

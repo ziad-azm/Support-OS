@@ -15,8 +15,10 @@ import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useTickets } from '../api/useTickets'
+import { ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
 import { TICKET_PRIORITIES, TICKET_STATUSES } from '../types/ticket'
 import type { Ticket, TicketPriority, TicketStatus } from '../types/ticket'
 
@@ -76,13 +78,19 @@ export function MyTicketsPage() {
       id: 'status',
       header: t('fields.status'),
       sortable: true,
-      cell: (row) => <Badge variant="secondary">{t(`statuses.${row.status}`)}</Badge>,
+      cell: (row) => (
+        <Badge variant={ticketStatusVariant(row.status)}>{t(`statuses.${row.status}`)}</Badge>
+      ),
     },
     {
       id: 'priority',
       header: t('fields.priority'),
       sortable: true,
-      cell: (row) => <Badge variant="secondary">{t(`priorities.${row.priority}`)}</Badge>,
+      cell: (row) => (
+        <Badge variant={ticketPriorityVariant(row.priority)}>
+          {t(`priorities.${row.priority}`)}
+        </Badge>
+      ),
     },
     {
       id: 'created_at',
@@ -94,7 +102,7 @@ export function MyTicketsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-lg font-semibold">{t('myQueue.title')}</h1>
+      <PageHeader title={t('myQueue.title')} />
       <div className="flex flex-wrap items-center gap-2">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger aria-label={t('filters.status')} size="sm">

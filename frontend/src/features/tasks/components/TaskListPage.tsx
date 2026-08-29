@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
@@ -17,6 +18,7 @@ import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useCompleteTask, useDeleteTask, useReopenTask } from '../api/useTaskMutations'
 import { useTasks } from '../api/useTasks'
@@ -92,7 +94,7 @@ export function TaskListPage() {
       id: 'status',
       header: t('fields.status'),
       cell: (row) => (
-        <Badge variant={row.completed_at === null ? 'secondary' : 'default'}>
+        <Badge variant={row.completed_at === null ? 'warning' : 'success'}>
           {t(row.completed_at === null ? 'statuses.pending' : 'statuses.completed')}
         </Badge>
       ),
@@ -121,12 +123,17 @@ export function TaskListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('title')}</h1>
-        <Button asChild>
-          <Link to="/tasks/new">{t('new')}</Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={t('title')}
+        action={
+          <Button asChild>
+            <Link to="/tasks/new">
+              <PlusIcon />
+              {t('new')}
+            </Link>
+          </Button>
+        }
+      />
       <Select
         value={completedFilter}
         onValueChange={(value) => setCompletedFilter(value as CompletedFilter)}

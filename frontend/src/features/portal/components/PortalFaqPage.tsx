@@ -5,6 +5,7 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { usePortalFaqs } from '../api/usePortalFaqs'
 import type { PortalFaq } from '../types/portalFaq'
@@ -24,12 +25,14 @@ export function PortalFaqPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('faqs.title')}</h1>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/portal/articles">{t('articles.title')}</Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={t('faqs.title')}
+        action={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/portal/articles">{t('articles.title')}</Link>
+          </Button>
+        }
+      />
       <QueryBoundary
         query={query}
         isEmpty={(data) => data.items.length === 0}

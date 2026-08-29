@@ -13,6 +13,7 @@ import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useDeleteTicket, useEscalateTicket } from '../api/useTicketMutations'
 import { useTicket } from '../api/useTicket'
+import { ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
 import { CustomerContextPanel } from './CustomerContextPanel'
 import { InternalNotesSection } from './InternalNotesSection'
 import { TicketAssigneeControl } from './TicketAssigneeControl'
@@ -124,7 +125,9 @@ export function TicketDetailPage() {
                           <Can
                             permission="tickets.manage"
                             fallback={
-                              <Badge variant="secondary">{t(`statuses.${ticket.status}`)}</Badge>
+                              <Badge variant={ticketStatusVariant(ticket.status)}>
+                                {t(`statuses.${ticket.status}`)}
+                              </Badge>
                             }
                           >
                             <TicketStatusControl ticketId={ticket.id} status={ticket.status} />
@@ -137,7 +140,7 @@ export function TicketDetailPage() {
                           {ticket.escalated ? (
                             <Badge variant="destructive">{t('escalation.escalated')}</Badge>
                           ) : (
-                            <Badge variant="secondary">{t('escalation.notEscalated')}</Badge>
+                            <Badge variant="success">{t('escalation.notEscalated')}</Badge>
                           )}
                           <Can permission="tickets.manage">
                             <Button
@@ -157,7 +160,9 @@ export function TicketDetailPage() {
                       <div>
                         <dt className="text-sm text-muted-foreground">{t('fields.priority')}</dt>
                         <dd>
-                          <Badge variant="secondary">{t(`priorities.${ticket.priority}`)}</Badge>
+                          <Badge variant={ticketPriorityVariant(ticket.priority)}>
+                            {t(`priorities.${ticket.priority}`)}
+                          </Badge>
                         </dd>
                       </div>
                       <div>

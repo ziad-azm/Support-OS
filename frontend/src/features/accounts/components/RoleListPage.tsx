@@ -1,3 +1,4 @@
+import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
@@ -9,6 +10,7 @@ import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useDeleteRole } from '../api/useRoleMutations'
 import { useRoles } from '../api/useRoles'
@@ -76,14 +78,19 @@ export function RoleListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('roles.title')}</h1>
-        <Can permission="roles.manage">
-          <Button asChild>
-            <Link to="/roles/new">{t('roles.new')}</Link>
-          </Button>
-        </Can>
-      </div>
+      <PageHeader
+        title={t('roles.title')}
+        action={
+          <Can permission="roles.manage">
+            <Button asChild>
+              <Link to="/roles/new">
+                <PlusIcon />
+                {t('roles.new')}
+              </Link>
+            </Button>
+          </Can>
+        }
+      />
       <DataTable
         columns={columns}
         query={query}

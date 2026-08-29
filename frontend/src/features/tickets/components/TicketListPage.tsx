@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
@@ -20,9 +21,11 @@ import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useCategories } from '../api/useCategories'
 import { useTickets } from '../api/useTickets'
+import { ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
 import { TICKET_PRIORITIES } from '../types/ticket'
 import type { Ticket, TicketPriority } from '../types/ticket'
 
@@ -103,13 +106,19 @@ export function TicketListPage() {
       id: 'status',
       header: t('fields.status'),
       sortable: true,
-      cell: (row) => <Badge variant="secondary">{t(`statuses.${row.status}`)}</Badge>,
+      cell: (row) => (
+        <Badge variant={ticketStatusVariant(row.status)}>{t(`statuses.${row.status}`)}</Badge>
+      ),
     },
     {
       id: 'priority',
       header: t('fields.priority'),
       sortable: true,
-      cell: (row) => <Badge variant="secondary">{t(`priorities.${row.priority}`)}</Badge>,
+      cell: (row) => (
+        <Badge variant={ticketPriorityVariant(row.priority)}>
+          {t(`priorities.${row.priority}`)}
+        </Badge>
+      ),
     },
     {
       id: 'created_at',
@@ -121,14 +130,19 @@ export function TicketListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('title')}</h1>
-        <Can permission="tickets.manage">
-          <Button asChild>
-            <Link to="/tickets/new">{t('new')}</Link>
-          </Button>
-        </Can>
-      </div>
+      <PageHeader
+        title={t('title')}
+        action={
+          <Can permission="tickets.manage">
+            <Button asChild>
+              <Link to="/tickets/new">
+                <PlusIcon />
+                {t('new')}
+              </Link>
+            </Button>
+          </Can>
+        }
+      />
       <Input
         value={searchInput}
         onChange={(event) => setSearchInput(event.target.value)}

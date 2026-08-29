@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
@@ -10,6 +11,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useUsers } from '../api/useUsers'
 import type { AdminUser } from '../types/user'
@@ -81,14 +83,19 @@ export function UserListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('users.title')}</h1>
-        <Can permission="users.manage">
-          <Button asChild>
-            <Link to="/users/new">{t('users.new')}</Link>
-          </Button>
-        </Can>
-      </div>
+      <PageHeader
+        title={t('users.title')}
+        action={
+          <Can permission="users.manage">
+            <Button asChild>
+              <Link to="/users/new">
+                <PlusIcon />
+                {t('users.new')}
+              </Link>
+            </Button>
+          </Can>
+        }
+      />
       <Input
         value={searchInput}
         onChange={(event) => setSearchInput(event.target.value)}

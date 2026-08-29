@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useFaqs } from '../api/useFaqs'
 import type { Faq } from '../types/faq'
@@ -20,22 +21,24 @@ export function FaqBrowsePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('title')}</h1>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/knowledge-base/articles">{t('articles.title')}</Link>
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/knowledge-base/search">{t('search.title')}</Link>
-          </Button>
-          <Can permission="knowledge_base.manage">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/knowledge-base/manage">{t('manage.title')}</Link>
+      <PageHeader
+        title={t('title')}
+        action={
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/knowledge-base/articles">{t('articles.title')}</Link>
             </Button>
-          </Can>
-        </div>
-      </div>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/knowledge-base/search">{t('search.title')}</Link>
+            </Button>
+            <Can permission="knowledge_base.manage">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/knowledge-base/manage">{t('manage.title')}</Link>
+              </Button>
+            </Can>
+          </div>
+        }
+      />
       <QueryBoundary
         query={query}
         isEmpty={(data) => data.items.length === 0}

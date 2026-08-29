@@ -7,8 +7,10 @@ import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { usePortalTickets } from '../api/usePortalTickets'
+import { ticketPriorityVariant } from '../lib/statusBadge'
 import type { PortalTicket } from '../types/portalTicket'
 
 /**
@@ -55,7 +57,11 @@ export function PortalTicketHistoryPage() {
       id: 'priority',
       header: t('tickets.fields.priority'),
       sortable: true,
-      cell: (row) => <Badge variant="secondary">{t(`tickets.priorities.${row.priority}`)}</Badge>,
+      cell: (row) => (
+        <Badge variant={ticketPriorityVariant(row.priority)}>
+          {t(`tickets.priorities.${row.priority}`)}
+        </Badge>
+      ),
     },
     {
       id: 'created_at',
@@ -72,12 +78,14 @@ export function PortalTicketHistoryPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('tickets.history.title')}</h1>
-        <Link to="/portal/tickets" className="text-sm text-muted-foreground hover:underline">
-          {t('tickets.history.viewActive')}
-        </Link>
-      </div>
+      <PageHeader
+        title={t('tickets.history.title')}
+        action={
+          <Link to="/portal/tickets" className="text-sm text-muted-foreground hover:underline">
+            {t('tickets.history.viewActive')}
+          </Link>
+        }
+      />
       <DataTable
         columns={columns}
         query={query}

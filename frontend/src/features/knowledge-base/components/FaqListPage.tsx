@@ -1,3 +1,4 @@
+import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
@@ -7,6 +8,7 @@ import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { Empty } from '@/shared/ui/Empty'
+import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useDeleteFaq } from '../api/useFaqMutations'
 import { useFaqs } from '../api/useFaqs'
@@ -59,12 +61,17 @@ export function FaqListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">{t('manage.title')}</h1>
-        <Button asChild>
-          <Link to="/knowledge-base/manage/new">{t('manage.new')}</Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={t('manage.title')}
+        action={
+          <Button asChild>
+            <Link to="/knowledge-base/manage/new">
+              <PlusIcon />
+              {t('manage.new')}
+            </Link>
+          </Button>
+        }
+      />
       <DataTable
         columns={columns}
         query={query}

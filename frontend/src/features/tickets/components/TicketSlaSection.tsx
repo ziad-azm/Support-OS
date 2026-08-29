@@ -8,8 +8,8 @@ import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useTicketSla } from '../api/useTicketSla'
 import type { SlaDimensionStatus } from '../types/ticketSla'
 
-function badgeVariant(status: SlaDimensionStatus): 'default' | 'secondary' | 'destructive' {
-  if (status === 'met') return 'default'
+function badgeVariant(status: SlaDimensionStatus): 'success' | 'secondary' | 'destructive' {
+  if (status === 'met') return 'success'
   if (status === 'breached') return 'destructive'
   return 'secondary'
 }

@@ -1524,6 +1524,7 @@ lines 9-46, never customized since Story 06.
 | `--chart-1` … `--chart-5` (lines 29-33) | five achromatic-to-hued shadcn defaults | Not in MASTER.md — no fixed 5-color chart palette exists anywhere in `DSN` (confirmed by `DSN-3`, Story 38) | **Resolved (Story 38) — keep current** | Already a mutually-distinguishable five-hue qualitative palette, untouched by Story 36's retint; no `DSN`-sourced alternative exists to adopt instead. See "Chart-type guidance" below for the separate, bounded status-zone colors (`#FFCDD2`/`#FFF9C4`/`#C8E6C9`) Bullet/Gauge charts need, which are not `--chart-1..5` slots. |
 | `--font-sans` (line 44) | `system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` | Atkinson Hyperlegible (Google Fonts, `@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap')`) | **Adopted (Story 36), English UI only** | An accessibility/dyslexia-friendly font fits MASTER.md's own "Enterprise apps... professional tools" framing and its Pre-Delivery Checklist's contrast/a11y emphasis. Loaded via `<link>` in `frontend/index.html` (not a CSS `@import`), first in the `--font-sans` fallback chain. |
 | `--font-arabic` (line 45) | `'Segoe UI', Tahoma, 'Noto Naskh Arabic', system-ui, sans-serif` | *(same Atkinson Hyperlegible pairing — MASTER.md does not distinguish a bilingual/Arabic typeface)* | **Keep current** | Atkinson Hyperlegible is a Latin-only accessibility font with no Arabic glyph coverage; `CONVENTIONS.md` § 18 requires a font stack that renders Arabic, which the generated pairing does not provide. The skill's query did not mention bilingual/RTL requirements. |
+| `--success`/`--success-foreground`, `--warning`/`--warning-foreground`, `--info`/`--info-foreground` (new) | *(did not exist)* | *(none — `MASTER.md`'s Color Palette table has no semantic-status role)* | **Adopted (Story 50)** | No DSN source exists for badge semantics; `#16A34A`/`#D97706`/`#0284C7` sourced from the `ui-ux-pro-max` skill's own `colors.csv` (the most-repeated "success green" across the dataset; amber and a `--primary`-distinct blue chosen by hue-family convention, no exact hex available). All three pair with **black**, not white, text — verified 6.37:1/6.59:1/5.13:1; white text fails 4.5:1 on all three. |
 | `--radius` (line 10) | `0.625rem` (one value, `sm`/`md`/`lg`/`xl` derived via `calc()`, § "@theme inline" lines 115-118) | MASTER.md's component CSS uses differentiated per-component radii: `8px` (buttons/inputs), `12px` (cards), `16px` (modals) | **Resolved (Story 36) — component-level, not token-scale** | `card.tsx` (`rounded-xl`, 14px) and `input.tsx` (`rounded-md`, 8px) already land within 2px / exactly on MASTER.md's 12px/8px targets — no change. `dialog.tsx` and `alert-dialog.tsx` moved from `rounded-lg` (10px) to `rounded-xl` (14px), within 2px of the 16px modal target. The single derived `--radius` scale is unchanged; only which Tailwind radius utility two primitives use was adjusted. |
 
 ### UX & accessibility guidance (from `design-system/supportos/MASTER.md` and the `ux-guidelines.csv` catalog)
@@ -1617,6 +1618,41 @@ qualitative zones (`#FFCDD2`/`#FFF9C4`/`#C8E6C9`) and Waffle's category pairs
 are a **separate**, bounded, chart-specific color need — not `--chart-1..5`
 slots — and are recorded in the table above for `RPT-0` to name as its own
 tokens when it exists.
+
+### Badge semantics, iconography, and page-header hierarchy (`DSN-4`, Story 50)
+
+`success`/`warning`/`info` variants added to `badge.tsx` (§ above) — applied to
+ticket status (`open`→info, `in_progress`→warning, `resolved`→success,
+`closed`→outline), ticket priority (`low`→outline, `medium`→secondary,
+`high`→warning, `urgent`→destructive), task completion state
+(pending→warning, completed→success), one SLA dimension (`met`→success;
+`breached` stays `destructive`; `pending` stays `secondary` — no `at_risk`
+value exists in `SlaDimensionStatus` to justify a warning), and ticket
+escalation (`false`→success, `true` stays `destructive`). Deliberately
+**not** applied to article draft/published status or any `direction`/
+`channel`/`category`/mention/`activity_kind`/`is_system`/`is_active` badge —
+not one of the intake's four named categories.
+
+The ticket-status/priority mapping is duplicated in
+`features/tickets/lib/statusBadge.ts` and `features/portal/lib/statusBadge.ts`
+rather than shared — `no-restricted-imports` forbids the cross-feature
+import, the same boundary `features/portal/types/portalTicket.ts` already
+documents for its own duplicated `TicketStatus`/`TicketPriority` types.
+
+`lucide-react` icons added to: every list page's "New X" action, every
+`RootLayout` nav link, and (via `Empty.tsx`'s new optional `icon` prop, a
+generic `InboxIcon` default) every empty state. `Notification.kind` gained
+its first-ever visual indicator (an icon, not a badge — no badge existed to
+recolor) in `NotificationBell.tsx`'s dropdown rows.
+
+`PageHeader` (`shared/ui/PageHeader.tsx`) replaces 13 duplicated list-page
+header blocks, establishing the first real two-level heading hierarchy
+(`text-2xl` page titles above `CardTitle`'s `text-lg` section titles,
+Story 37) — everything previously read at one flat size. `Card`/`FormItem`
+spacing was audited and found already exactly matching `MASTER.md`'s
+24px/8px spacing scale — no change. `table.tsx`'s cell padding moved from
+8px to 12px horizontal, a bounded judgment call — no DSN table spec exists
+to size against precisely.
 
 ---
 

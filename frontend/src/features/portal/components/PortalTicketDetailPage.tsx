@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 
 import { usePortalTicket } from '../api/usePortalTicket'
+import { ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
 
 /**
  * A read-only view of one of the customer's own tickets — PORTAL-2. No
@@ -47,7 +48,9 @@ export function PortalTicketDetailPage() {
                         {t('tickets.fields.status')}
                       </dt>
                       <dd>
-                        <Badge variant="secondary">{t(`tickets.statuses.${ticket.status}`)}</Badge>
+                        <Badge variant={ticketStatusVariant(ticket.status)}>
+                          {t(`tickets.statuses.${ticket.status}`)}
+                        </Badge>
                       </dd>
                     </div>
                     <div>
@@ -55,7 +58,7 @@ export function PortalTicketDetailPage() {
                         {t('tickets.fields.priority')}
                       </dt>
                       <dd>
-                        <Badge variant="secondary">
+                        <Badge variant={ticketPriorityVariant(ticket.priority)}>
                           {t(`tickets.priorities.${ticket.priority}`)}
                         </Badge>
                       </dd>

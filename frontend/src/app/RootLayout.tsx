@@ -1,3 +1,14 @@
+import {
+  BookOpenIcon,
+  ContactIcon,
+  FileTextIcon,
+  InboxIcon,
+  ListTodoIcon,
+  SearchIcon,
+  ShieldCheckIcon,
+  TicketIcon,
+  UserCogIcon,
+} from 'lucide-react'
 import { Link, Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
 
@@ -28,39 +39,66 @@ export function RootLayout() {
           <nav className="flex items-center gap-1">
             <Can permission="customers.view">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/customers">{t('customers:title')}</Link>
+                <Link to="/customers">
+                  <ContactIcon />
+                  {t('customers:title')}
+                </Link>
               </Button>
             </Can>
             <Can permission="tickets.view">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/tickets">{t('tickets:title')}</Link>
+                <Link to="/tickets">
+                  <TicketIcon />
+                  {t('tickets:title')}
+                </Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/tickets/my-tickets">{t('tickets:myQueue.title')}</Link>
+                <Link to="/tickets/my-tickets">
+                  <InboxIcon />
+                  {t('tickets:myQueue.title')}
+                </Link>
               </Button>
             </Can>
             <Button asChild variant="ghost" size="sm">
-              <Link to="/tasks">{t('tasks:title')}</Link>
+              <Link to="/tasks">
+                <ListTodoIcon />
+                {t('tasks:title')}
+              </Link>
             </Button>
             <Can permission="knowledge_base.view">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/knowledge-base">{t('knowledgeBase:title')}</Link>
+                <Link to="/knowledge-base">
+                  <BookOpenIcon />
+                  {t('knowledgeBase:title')}
+                </Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/knowledge-base/articles">{t('knowledgeBase:articles.title')}</Link>
+                <Link to="/knowledge-base/articles">
+                  <FileTextIcon />
+                  {t('knowledgeBase:articles.title')}
+                </Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/knowledge-base/search">{t('knowledgeBase:search.title')}</Link>
+                <Link to="/knowledge-base/search">
+                  <SearchIcon />
+                  {t('knowledgeBase:search.title')}
+                </Link>
               </Button>
             </Can>
             <Can permission="users.view">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/users">{t('accounts:users.title')}</Link>
+                <Link to="/users">
+                  <UserCogIcon />
+                  {t('accounts:users.title')}
+                </Link>
               </Button>
             </Can>
             <Can permission="roles.manage">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/roles">{t('accounts:roles.title')}</Link>
+                <Link to="/roles">
+                  <ShieldCheckIcon />
+                  {t('accounts:roles.title')}
+                </Link>
               </Button>
             </Can>
           </nav>

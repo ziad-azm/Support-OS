@@ -523,6 +523,28 @@
 
 - **Task: Capture chart-type guidance for future dashboards** 🔑 (reused by Reports & Analytics `RPT-0`) — Record the skill's chart-type recommendations (by data shape/use case) as part of `DSN`, for the shared chart wrapper built later in Reports & Analytics. Outcome: chart choices are justified up front, not picked ad hoc when `RPT-0` is built.
 
+### STORY (DSN-4) — Comprehensive Visual Redesign of Built Screens
+
+**As a user, I want the app to look polished and visually considered instead of flat and generic, so that using it feels trustworthy and professional.**
+**Description:** DSN-1 only swapped color/font/radius tokens — a deliberate narrow scope, not a full redesign. Screens still read as unstyled shadcn defaults: uniform-gray status/priority badges with no semantic color, no iconography, no density/hierarchy polish on tables and forms. This story goes past the token swap to make every already-built screen actually look designed, using `DSN`'s guidance (`design-system/supportos/MASTER.md`) and the `ui-ux-pro-max` skill, while staying inside the existing shadcn/ui + Tailwind v4 primitive set — visual/styling only, no new component library and no re-architecture of data flow or logic.
+**Dependencies:** DSN-0, DSN-1.
+
+- **Task: Semantic status/priority color-coding** — Extend the shared `Badge` primitive's variants (or add new ones) so ticket status, priority, notification kind, and task state render with distinct, meaningful colors (e.g. success/warning/danger/info) per `DSN`'s palette, instead of one uniform gray pill. Constraints: reuse the existing `badge.tsx` primitive and `DSN` tokens; no per-feature badge reimplementation. Outcome: status is scannable at a glance across every list view.
+- **Task: Iconography pass** — Add icons (via the icon library already bundled with shadcn) to primary actions, nav items, status badges, and empty states per `DSN` guidance. Constraints: reuse one icon set consistently; no mixed icon libraries. Outcome: improved scannability and a less "bare" feel.
+- **Task: Spacing, density & table polish** — Apply `DSN`'s spacing scale and visual-hierarchy guidance to the shared `DataTable` pattern, page headers, and form layouts every already-built screen composes from. Constraints: shared-component-level changes only, so every consuming screen inherits the fix. Outcome: consistent, less flat layout app-wide with no per-page rework.
+- **Task: Full-app visual QA pass** — Walk every already-built route (same list as DSN-1's `## Verification Steps`) confirming the refresh landed consistently; log and fix any straggler screen. Outcome: no unstyled screen left behind.
+
+### STORY (DSN-5) — App Shell Redesign: Sidebar Navigation & Theme Backgrounds
+
+**As a user, I want a proper sidebar and a considered light/dark background palette instead of a bare top bar and flat grayscale surfaces, so that navigating the app feels like a real product, not a scaffold.**
+**Description:** Complements `DSN-4`. That story polishes existing components in place; this one changes the app **shell** itself — the current top-bar nav (`frontend/src/app/RootLayout.tsx`) becomes a sidebar, and the base surface tokens (background/card/muted/border — not just the accent colors `DSN-1` already retinted) get a real light/dark treatment. This is the one story in `EPIC 8` that is *not* token-only — converting the nav from a header to a sidebar is a deliberate layout restructuring, done carefully to preserve every existing permission gate, i18n label, and route unchanged.
+**Dependencies:** DSN-0. Complements DSN-4 (either order is fine; both build on `DSN`'s spec).
+
+- **Task: Sidebar navigation shell** — Replace `RootLayout.tsx`'s top `<nav>` with a collapsible sidebar (start-side in LTR, end-side in RTL, per `I18N`'s logical-direction rules), preserving every existing `<Can permission="...">`-gated link, i18n label, the notification bell, and logout exactly as they behave today — only the container markup and layout change, not the route/permission logic. Outcome: real app-shell navigation instead of a single crowded header row.
+- **Task: Light/dark background & surface refresh** — Beyond `DSN-1`'s accent-only swap (`--primary`/`--secondary`/`--destructive`), retint the base surface tokens (`--background`, `--foreground`, `--card`, `--muted`, `--border`) in `frontend/src/index.css` for both `:root` and `.dark` per `DSN`'s guidance, so the new sidebar and every page have real depth/contrast instead of shadcn's default flat grayscale. Outcome: light and dark mode both look designed, not just recolored accents on a gray canvas.
+- **Task: Button & input primitive polish** — Refine the shared primitives every form and screen already composes from (`shared/ui/primitives/button.tsx`, `input.tsx`, `select.tsx`, and the shared field components in `shared/ui/form/`) with `DSN`'s guidance on shadows, hover/focus/active states, and sizing. Constraints: component-level only — no per-feature overrides — so every consuming screen inherits the polish automatically. Outcome: every button and input in the app feels considered, not default shadcn.
+- **Task: Full-app QA pass** — Verify the sidebar and new theme across every already-built route, in both languages/directions (`ar`/RTL, `en`/LTR) and both color modes (light/dark), confirming permission-gated links still show/hide correctly and no screen is left half-migrated. Outcome: one consistent, polished shell everywhere.
+
 ---
 
 ---

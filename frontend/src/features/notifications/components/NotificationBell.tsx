@@ -1,8 +1,9 @@
-import { BellIcon } from 'lucide-react'
+import { AtSignIcon, BellIcon, ClockIcon, TriangleAlertIcon, UserPlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 
+import { cn } from '@/shared/lib/cn'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
@@ -23,6 +24,24 @@ import { useNotificationSocket } from '../api/useNotificationSocket'
 import { useNotifications } from '../api/useNotifications'
 import { useUnreadCount } from '../api/useUnreadCount'
 import type { Notification } from '../types/notification'
+
+const NOTIFICATION_KIND_ICON: Record<Notification['kind'], typeof UserPlusIcon> = {
+  ticket_assigned: UserPlusIcon,
+  ticket_escalated: TriangleAlertIcon,
+  task_due: ClockIcon,
+  mentioned: AtSignIcon,
+}
+
+// ticket_escalated reuses text-destructive, not a new token — an escalation
+// is the same severity Badge variant="destructive" already asserts on
+// TicketDetailPage's own escalation badge (Story 50); a fourth distinct hue
+// for the same severity would not be "meaningful," just noisier.
+const NOTIFICATION_KIND_COLOR: Record<Notification['kind'], string> = {
+  ticket_assigned: 'text-info',
+  ticket_escalated: 'text-destructive',
+  task_due: 'text-warning',
+  mentioned: 'text-info',
+}
 
 /**
  * Header bell + dropdown notification center — Story 31. Structure copied
@@ -99,11 +118,24 @@ export function NotificationBell() {
               onClick={() => handleSelect(notification)}
               className={notification.read_at === null ? 'font-medium' : undefined}
             >
-              <div className="flex w-full flex-col gap-0.5">
-                <span>{notification.title}</span>
-                <span className="text-xs text-muted-foreground">
-                  {dateTime(notification.created_at)}
-                </span>
+              <div className="flex w-full items-start gap-2">
+                {(() => {
+                  const KindIcon = NOTIFICATION_KIND_ICON[notification.kind]
+                  return (
+                    <KindIcon
+                      className={cn(
+                        'mt-0.5 size-4 shrink-0',
+                        NOTIFICATION_KIND_COLOR[notification.kind],
+                      )}
+                    />
+                  )
+                })()}
+                <div className="flex flex-col gap-0.5">
+                  <span>{notification.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {dateTime(notification.created_at)}
+                  </span>
+                </div>
               </div>
             </DropdownMenuItem>
           ))
