@@ -74,6 +74,24 @@
       "viewActive": "View my tickets",
       "empty": "No closed tickets yet",
       "emptyDescription": "Tickets you have resolved with our team will appear here."
+    },
+    "feedback": {
+      "cta": "Rate this ticket",
+      "thanks": "Thanks for your feedback.",
+      "title": "Rate your experience",
+      "fields": {
+        "rating": "How satisfied were you?",
+        "comment": "Comments (optional)"
+      },
+      "ratings": {
+        "satisfied": "Satisfied",
+        "neutral": "Neutral",
+        "dissatisfied": "Dissatisfied"
+      },
+      "actions": {
+        "submit": "Submit feedback"
+      },
+      "created": "Thank you for your feedback."
     }
   }
 }

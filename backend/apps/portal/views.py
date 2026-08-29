@@ -6,9 +6,9 @@ from rest_framework.exceptions import ValidationError
 from apps.core.permissions import Permissions
 from apps.core.views import CustomerScopedModelViewSet
 from apps.sla.tasks import auto_assign_ticket
-from apps.tickets.models import Ticket
+from apps.tickets.models import Feedback, Ticket
 
-from .serializers import PortalTicketSerializer
+from .serializers import PortalFeedbackSerializer, PortalTicketSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,13 @@ class PortalTicketViewSet(CustomerScopedModelViewSet):
     # Same select_related tuple as TicketViewSet.queryset
     # (apps/tickets/views.py:50) — `category_name`/`assigned_agent_name`
     # are derived, joined fields; without this, `list` is an N+1 query,
-    # one extra SELECT per row per joined field.
-    queryset = Ticket.objects.select_related("customer", "category", "assigned_agent").all()
+    # one extra SELECT per row per joined field. `"feedback"` added for
+    # `has_feedback` (PORTAL-5) — the reverse side of a OneToOneField IS
+    # select_related-able in Django (unlike a reverse ForeignKey, which
+    # needs prefetch_related).
+    queryset = Ticket.objects.select_related(
+        "customer", "category", "assigned_agent", "feedback"
+    ).all()
     serializer_class = PortalTicketSerializer
     permission_map = {
         "create": Permissions.PORTAL_ACCESS,
@@ -70,3 +75,22 @@ class PortalTicketViewSet(CustomerScopedModelViewSet):
             # committed; auto-assignment queuing failing must not fail
             # the customer's submission.
             logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
+
+
+class PortalFeedbackViewSet(CustomerScopedModelViewSet):
+    """A customer's own CSAT submission — PORTAL-5. Create only; no
+    `list`/`retrieve` route exists or is needed — a customer learns
+    whether they already rated a ticket via
+    `PortalTicketSerializer.has_feedback`, not by fetching `Feedback` rows
+    directly. `customer_field` left at the default (`"customer"`) —
+    `Feedback.customer` is a direct FK, matching what
+    `CustomerScopedModelViewSet`/`HasPermission.has_object_permission`
+    both expect (see Story 47 `## Prerequisites`).
+    """
+
+    queryset = Feedback.objects.all()
+    serializer_class = PortalFeedbackSerializer
+    permission_map = {"create": Permissions.PORTAL_ACCESS}
+
+    def perform_create(self, serializer):
+        serializer.save(customer=self.request.user.customer_profile)

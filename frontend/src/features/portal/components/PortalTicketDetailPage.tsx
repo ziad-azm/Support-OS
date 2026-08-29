@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
+import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 
@@ -32,57 +33,72 @@ export function PortalTicketDetailPage() {
       {isValidId ? (
         <QueryBoundary query={query}>
           {(ticket) => (
-            <Card>
-              <CardHeader>
-                <CardTitle asChild className="text-lg">
-                  <h1>{ticket.subject}</h1>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <dl className="grid grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{t('tickets.fields.status')}</dt>
-                    <dd>
-                      <Badge variant="secondary">{t(`tickets.statuses.${ticket.status}`)}</Badge>
-                    </dd>
-                  </div>
+            <div className="flex flex-col gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle asChild className="text-lg">
+                    <h1>{ticket.subject}</h1>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <dl className="grid grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm text-muted-foreground">
+                        {t('tickets.fields.status')}
+                      </dt>
+                      <dd>
+                        <Badge variant="secondary">{t(`tickets.statuses.${ticket.status}`)}</Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">
+                        {t('tickets.fields.priority')}
+                      </dt>
+                      <dd>
+                        <Badge variant="secondary">
+                          {t(`tickets.priorities.${ticket.priority}`)}
+                        </Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">
+                        {t('tickets.fields.category')}
+                      </dt>
+                      <dd>{ticket.category_name ?? t('tickets.fields.noCategory')}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">
+                        {t('tickets.fields.assignedAgent')}
+                      </dt>
+                      <dd>{ticket.assigned_agent_name ?? t('tickets.fields.unassigned')}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">
+                        {t('tickets.fields.createdAt')}
+                      </dt>
+                      <dd>{date(ticket.created_at)}</dd>
+                    </div>
+                  </dl>
                   <div>
                     <dt className="text-sm text-muted-foreground">
-                      {t('tickets.fields.priority')}
+                      {t('tickets.fields.description')}
                     </dt>
-                    <dd>
-                      <Badge variant="secondary">
-                        {t(`tickets.priorities.${ticket.priority}`)}
-                      </Badge>
-                    </dd>
+                    <dd className="whitespace-pre-wrap">{ticket.description}</dd>
                   </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">
-                      {t('tickets.fields.category')}
-                    </dt>
-                    <dd>{ticket.category_name ?? t('tickets.fields.noCategory')}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">
-                      {t('tickets.fields.assignedAgent')}
-                    </dt>
-                    <dd>{ticket.assigned_agent_name ?? t('tickets.fields.unassigned')}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">
-                      {t('tickets.fields.createdAt')}
-                    </dt>
-                    <dd>{date(ticket.created_at)}</dd>
-                  </div>
-                </dl>
-                <div>
-                  <dt className="text-sm text-muted-foreground">
-                    {t('tickets.fields.description')}
-                  </dt>
-                  <dd className="whitespace-pre-wrap">{ticket.description}</dd>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+              {!ticket.has_feedback &&
+              (ticket.status === 'resolved' || ticket.status === 'closed') ? (
+                <Button asChild>
+                  <Link to={`/portal/tickets/${ticket.id}/feedback`}>
+                    {t('tickets.feedback.cta')}
+                  </Link>
+                </Button>
+              ) : null}
+              {ticket.has_feedback ? (
+                <p className="text-sm text-muted-foreground">{t('tickets.feedback.thanks')}</p>
+              ) : null}
+            </div>
           )}
         </QueryBoundary>
       ) : null}

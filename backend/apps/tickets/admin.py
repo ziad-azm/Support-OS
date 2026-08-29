@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apps.communications.models import Message
 
-from .models import Category, Ticket, TicketActivity
+from .models import Category, Feedback, Ticket, TicketActivity
 
 
 class MessageInline(admin.TabularInline):
@@ -46,4 +46,16 @@ class TicketActivityAdmin(admin.ModelAdmin):
     list_display = ("ticket", "kind", "actor", "from_value", "to_value", "created_at")
     list_filter = ("kind",)
     search_fields = ("ticket__subject",)
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    """The only way to see submitted feedback until RPT-4 builds a real
+    report — same interim-admin pattern as `RoleAdmin` before SEC-1.
+    """
+
+    list_display = ("ticket", "customer", "rating", "created_at")
+    list_filter = ("rating",)
+    search_fields = ("ticket__subject", "customer__name", "comment")
     readonly_fields = ("created_at", "updated_at")

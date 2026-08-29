@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import PortalTicketViewSet
+from .views import PortalFeedbackViewSet, PortalTicketViewSet
 
 app_name = "portal"
 
@@ -18,5 +18,10 @@ urlpatterns = [
         "portal/tickets/<int:pk>/",
         PortalTicketViewSet.as_view({"get": "retrieve"}),
         name="portal-ticket-detail",
+    ),
+    path(
+        "portal/feedback/",
+        PortalFeedbackViewSet.as_view({"post": "create"}),
+        name="portal-feedback-create",
     ),
 ]

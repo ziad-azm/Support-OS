@@ -45,4 +45,5 @@ export type PortalTicket = {
   escalated_at: string | null
   created_at: string
   updated_at: string
+  has_feedback: boolean
 }

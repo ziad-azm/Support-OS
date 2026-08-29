@@ -1,3 +1,8 @@
+from django.utils.translation import gettext_lazy as _
+from rest_framework import serializers
+
+from apps.core.serializers import BaseModelSerializer
+from apps.tickets.models import Feedback, Ticket
 from apps.tickets.serializers import TicketSerializer
 
 
@@ -22,11 +27,55 @@ class PortalTicketSerializer(TicketSerializer):
     needs. A portal-submitted ticket lands uncategorized at the default
     priority; staff triage assigns both later, the same way an unassigned
     `assigned_agent` already works.
+
+    `has_feedback` — PORTAL-5. `Feedback.ticket` is a `OneToOneField` with
+    `related_name="feedback"`, so `hasattr(ticket, "feedback")` is the same
+    verified-safe pattern Story 42 already used for `Customer.user`'s
+    reverse accessor (`RelatedObjectDoesNotExist` subclasses
+    `AttributeError`, so `getattr`/`hasattr` need no try/except). Read-only
+    by construction (`SerializerMethodField`); no entry needed in
+    `read_only_fields`.
     """
 
+    has_feedback = serializers.SerializerMethodField()
+
     class Meta(TicketSerializer.Meta):
+        fields = TicketSerializer.Meta.fields + ("has_feedback",)
         read_only_fields = TicketSerializer.Meta.read_only_fields + (
             "customer",
             "category",
             "priority",
         )
+
+    def get_has_feedback(self, ticket: Ticket) -> bool:
+        return hasattr(ticket, "feedback")
+
+
+class PortalFeedbackSerializer(BaseModelSerializer):
+    """A customer's own post-resolution rating — PORTAL-5. No staff-facing
+    counterpart exists to subclass (unlike `PortalTicketSerializer`
+    narrowing `TicketSerializer`) — `Feedback` has no viewer at all yet,
+    staff or portal, so this is the only serializer for it. See Story 47
+    `## Explicitly out of scope`.
+    """
+
+    class Meta(BaseModelSerializer.Meta):
+        model = Feedback
+        fields = ("id", "ticket", "customer", "rating", "comment", "created_at", "updated_at")
+        read_only_fields = BaseModelSerializer.Meta.read_only_fields + ("customer",)
+
+    def validate_ticket(self, ticket: Ticket) -> Ticket:
+        """Runs in ADDITION to (not instead of) the automatic `UniqueValidator`
+        DRF derives for `ticket` because it is left un-overridden — see
+        `apps.customers.serializers.CustomerSerializer`'s own comment on
+        this exact DRF behaviour. Ownership and status-eligibility are
+        checked here; "already has feedback" is the free UniqueValidator.
+        """
+        customer = self.context["request"].user.customer_profile
+        if ticket.customer_id != customer.id:
+            raise serializers.ValidationError(_("That ticket does not belong to you."))
+        if ticket.status not in (Ticket.Status.RESOLVED, Ticket.Status.CLOSED):
+            raise serializers.ValidationError(
+                _("Feedback can only be submitted for a resolved or closed ticket.")
+            )
+        return ticket

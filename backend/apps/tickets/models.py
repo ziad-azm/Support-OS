@@ -164,3 +164,55 @@ class TicketActivity(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.get_kind_display()} on ticket #{self.ticket_id}"
+
+
+class Feedback(TimeStampedModel):
+    """Post-resolution customer satisfaction rating — PORTAL-5. One row per
+    ticket (`ticket` is a `OneToOneField`), submitted by the customer
+    through the portal. No staff-facing viewer or report exists yet —
+    `RPT-4` (Customer Satisfaction, `SupportOs backlog.MD:623-627`, not
+    yet planned) is the eventual consumer named in the intake ("feeds
+    Reports CSAT"); this story ships the model, the portal submission
+    endpoint, and Django admin as the interim way to see the data.
+    """
+
+    class Rating(models.TextChoices):
+        # Matches CONVENTIONS.md §25's already-recorded RPT-4 chart design
+        # ("satisfied/neutral/dissatisfied breakdown", a Waffle Chart over
+        # exactly these three categories) — this vocabulary is not invented
+        # here, it is the one already decided for reporting.
+        SATISFIED = "satisfied", _("Satisfied")
+        NEUTRAL = "neutral", _("Neutral")
+        DISSATISFIED = "dissatisfied", _("Dissatisfied")
+
+    # CASCADE, not PROTECT: feedback has no existence independent of the
+    # ticket it is about, the same reasoning TicketActivity.ticket uses
+    # (above). OneToOneField, not ForeignKey: one CSAT rating per ticket —
+    # the DB-level uniqueness DRF turns into a free UniqueValidator on
+    # create (see apps/portal/serializers.py, PortalFeedbackSerializer).
+    ticket = models.OneToOneField(
+        Ticket, on_delete=models.CASCADE, related_name="feedback", verbose_name=_("ticket")
+    )
+    # Denormalized from `ticket.customer` — deliberately a direct FK, not
+    # reached via a `ticket__customer` lookup. CustomerScopedModelViewSet's
+    # `customer_field` and HasPermission.has_object_permission both resolve
+    # `customer_field` as `getattr(obj, f"{customer_field}_id", None)` — a
+    # single real attribute, not an ORM double-underscore path. A nested
+    # field name would satisfy `get_queryset()`'s `filter(**{...})` but
+    # silently break `has_object_permission` (`getattr(obj,
+    # "ticket__customer_id", None)` is never a real attribute) — the exact
+    # class of bug Story 46 found and fixed in ArticleViewSet.retrieve, in
+    # the opposite direction. CASCADE, matching `ticket` above.
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name="feedback", verbose_name=_("customer")
+    )
+    rating = models.CharField(_("rating"), max_length=20, choices=Rating.choices)
+    comment = models.TextField(_("comment"), blank=True)
+
+    class Meta:
+        verbose_name = _("feedback")
+        verbose_name_plural = _("feedback")
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.get_rating_display()} — ticket #{self.ticket_id}"
