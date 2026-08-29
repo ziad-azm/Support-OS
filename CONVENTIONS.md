@@ -833,6 +833,19 @@ can now change through `RoleFormPage` (Story 49, `SEC-2`) with no Django
 admin involved, which makes the "plus a reload" half of this constraint the
 only thing still standing between an edit and a stale in-session user.
 
+**A row that must reference one of several target types uses one nullable
+FK per type, not a `GenericForeignKey`.** `AuditLog` (Story 52, `SEC-3`)
+needs to point at either a `User` or a `Role`. `apps/notifications
+/models.py`'s own precedent already established "a plain FK to the one
+target type that exists today, not a `GenericForeignKey`" for a
+single-target case (`Notification.ticket`); `AuditLog.target_user`/
+`target_role` is the direct generalization of that same reasoning to two
+target types — two plain, independently nullable FKs, exactly one
+populated per row, rather than introducing the one `GenericForeignKey`/
+`ContentType` relation this codebase has never used. A `target_label`
+snapshot field (mirroring `TicketActivity`'s own from/to snapshot
+rationale) keeps the row meaningful after `SET_NULL` fires on either FK.
+
 ---
 
 ## 23. Feature module conventions

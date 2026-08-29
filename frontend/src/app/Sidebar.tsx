@@ -5,6 +5,7 @@ import {
   ChevronsRightIcon,
   ContactIcon,
   FileTextIcon,
+  HistoryIcon,
   InboxIcon,
   ListTodoIcon,
   LogOutIcon,
@@ -77,6 +78,7 @@ export function Sidebar() {
     'tasks',
     'knowledgeBase',
     'accounts',
+    'auditLog',
   ])
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(readCollapsed)
@@ -174,6 +176,14 @@ export function Sidebar() {
             to="/roles"
             icon={ShieldCheckIcon}
             label={t('accounts:roles.title')}
+            collapsed={collapsed}
+          />
+        </Can>
+        <Can permission="audit_log.view">
+          <SidebarLink
+            to="/audit-log"
+            icon={HistoryIcon}
+            label={t('auditLog:title')}
             collapsed={collapsed}
           />
         </Can>

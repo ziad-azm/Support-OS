@@ -1,0 +1,30 @@
+{
+  "title": "Audit Log",
+  "empty": "No audit log entries yet",
+  "emptyDescription": "Sensitive user and role changes will appear here.",
+  "deletedActor": "Deleted user",
+  "fields": {
+    "when": "When",
+    "actor": "Actor",
+    "action": "Action",
+    "target": "Target",
+    "change": "Change"
+  },
+  "filters": {
+    "action": "Filter by action",
+    "allActions": "All actions",
+    "targetType": "Filter by target type",
+    "allTargetTypes": "All targets",
+    "targetTypeUser": "Users",
+    "targetTypeRole": "Roles"
+  },
+  "actions": {
+    "user_created": "User created",
+    "user_role_changed": "User role changed",
+    "user_status_changed": "User status changed",
+    "role_created": "Role created",
+    "role_renamed": "Role renamed",
+    "role_permissions_changed": "Role permissions changed",
+    "role_deleted": "Role deleted"
+  }
+}

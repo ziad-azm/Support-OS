@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import Role, User
+from .models import AuditLog, Role, User
 
 
 @admin.register(Role)
@@ -88,3 +88,38 @@ class UserAdmin(DjangoUserAdmin):
             },
         ),
     )
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    """The Django-admin fallback view over `AuditLog`, mirroring
+    `TicketActivityAdmin` (apps/tickets/admin.py:44-49) — same
+    `list_display`/`list_filter`/`search_fields` shape, adapted for two
+    possible targets instead of one. Every field is read-only: the table is
+    immutable end to end, including from this screen — there is no
+    `has_add_permission`/`has_change_permission` override needed because
+    `readonly_fields` covering every field already makes the change form
+    display-only, and no create button exists without at least one
+    non-readonly field for Django to render a form around.
+    """
+
+    list_display = ("action", "actor", "target_label", "created_at")
+    list_filter = ("action",)
+    search_fields = ("target_label",)
+    readonly_fields = (
+        "actor",
+        "action",
+        "target_user",
+        "target_role",
+        "target_label",
+        "from_value",
+        "to_value",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request) -> bool:
+        return False
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        return False

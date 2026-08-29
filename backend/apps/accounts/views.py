@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
@@ -11,8 +12,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.core.permissions import Permissions
 from apps.core.views import BaseModelViewSet
 
-from .models import Role
-from .serializers import LogoutSerializer, RoleAdminSerializer, UserAdminSerializer, UserSerializer
+from .models import AuditLog, Role
+from .serializers import (
+    AuditLogSerializer,
+    LogoutSerializer,
+    RoleAdminSerializer,
+    UserAdminSerializer,
+    UserSerializer,
+)
 
 User = get_user_model()
 
@@ -96,6 +103,42 @@ class UserViewSet(BaseModelViewSet):
         # assigned. See `## Story Goal`.
         return User.objects.select_related("role").filter(customer_profile__isnull=True)
 
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        user = serializer.instance
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action=AuditLog.Action.USER_CREATED,
+            target_user=user,
+            target_label=user.get_full_name(),
+        )
+
+    def perform_update(self, serializer):
+        user = serializer.instance
+        old_role_id = user.role_id
+        old_role_name = user.role.name if old_role_id else ""
+        old_is_active = user.is_active
+        super().perform_update(serializer)
+
+        if user.role_id != old_role_id:
+            AuditLog.objects.create(
+                actor=self.request.user,
+                action=AuditLog.Action.USER_ROLE_CHANGED,
+                target_user=user,
+                target_label=user.get_full_name(),
+                from_value=old_role_name,
+                to_value=user.role.name if user.role_id else "",
+            )
+        if user.is_active != old_is_active:
+            AuditLog.objects.create(
+                actor=self.request.user,
+                action=AuditLog.Action.USER_STATUS_CHANGED,
+                target_user=user,
+                target_label=user.get_full_name(),
+                from_value=_("Active") if old_is_active else _("Inactive"),
+                to_value=_("Active") if user.is_active else _("Inactive"),
+            )
+
 
 class RoleViewSet(BaseModelViewSet):
     """Role administration — SEC-1's other half. `list`/`retrieve` are
@@ -123,12 +166,128 @@ class RoleViewSet(BaseModelViewSet):
     ordering_fields = ("name", "slug", "created_at")
     search_fields = ("name", "slug")
 
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        role = serializer.instance
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action=AuditLog.Action.ROLE_CREATED,
+            target_role=role,
+            target_label=role.name,
+        )
+
+    def perform_update(self, serializer):
+        role = serializer.instance
+        old_name = role.name
+        old_permissions = list(role.permissions)
+        super().perform_update(serializer)
+
+        if role.name != old_name:
+            AuditLog.objects.create(
+                actor=self.request.user,
+                action=AuditLog.Action.ROLE_RENAMED,
+                target_role=role,
+                target_label=role.name,
+                from_value=old_name,
+                to_value=role.name,
+            )
+        if set(role.permissions) != set(old_permissions):
+            AuditLog.objects.create(
+                actor=self.request.user,
+                action=AuditLog.Action.ROLE_PERMISSIONS_CHANGED,
+                target_role=role,
+                target_label=role.name,
+                from_value=", ".join(sorted(old_permissions)),
+                to_value=", ".join(sorted(role.permissions)),
+            )
+
     def destroy(self, request, *args, **kwargs):
         """Mirrors `RoleAdmin.has_delete_permission` (apps/accounts/admin.py:42-45)
         for the API path — a system role must not be deletable from here
-        either.
+        either. Logs the deletion before it happens: `target_role`'s
+        `on_delete=SET_NULL` means the just-created `AuditLog` row's own
+        `target_role` is nulled out the instant `super().destroy()` runs,
+        the same way any other `AuditLog` row survives its target's later
+        deletion — `target_label` is what keeps the entry meaningful either
+        way.
         """
         role = self.get_object()
         if role.is_system:
             raise ValidationError({"non_field_errors": [_("System roles cannot be deleted.")]})
+        AuditLog.objects.create(
+            actor=request.user,
+            action=AuditLog.Action.ROLE_DELETED,
+            target_role=role,
+            target_label=role.name,
+        )
         return super().destroy(request, *args, **kwargs)
+
+
+class AuditLogViewSet(BaseModelViewSet):
+    """The read-only viewer over `AuditLog` — SEC-3's "filtered viewer".
+    `http_method_names` drops every unsafe verb entirely, the same
+    `UserViewSet` precedent (Story 48) for actively disabling an action
+    rather than leaving it unmapped: an omitted `permission_map` entry is
+    merely authenticated-only (`HasPermission`'s grant-on-omission rule),
+    which would be the wrong default for a table the intake calls
+    "immutable". POST/PUT/PATCH/DELETE now 405 at Django's own dispatch
+    level, before `HasPermission` is ever consulted.
+    """
+
+    http_method_names = ["get", "head", "options"]
+    queryset = AuditLog.objects.select_related("actor", "target_user", "target_role").all()
+    serializer_class = AuditLogSerializer
+
+    permission_map = {
+        "list": Permissions.AUDIT_LOG_VIEW,
+        "retrieve": Permissions.AUDIT_LOG_VIEW,
+    }
+
+    ordering_fields = ("created_at", "action")
+    search_fields = ("target_label",)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action != "list":
+            return queryset
+
+        params = self.request.query_params
+
+        actor_id = params.get("actor")
+        if actor_id:
+            try:
+                actor_id = int(actor_id)
+            except ValueError:
+                raise ValidationError({"actor": [_("Must be a valid user id.")]}) from None
+            queryset = queryset.filter(actor_id=actor_id)
+
+        action_filter = params.get("action")
+        if action_filter:
+            if action_filter not in AuditLog.Action.values:
+                raise ValidationError({"action": [_("Must be a valid action.")]})
+            queryset = queryset.filter(action=action_filter)
+
+        target_type = params.get("target_type")
+        if target_type:
+            if target_type == "user":
+                queryset = queryset.filter(target_user__isnull=False)
+            elif target_type == "role":
+                queryset = queryset.filter(target_role__isnull=False)
+            else:
+                raise ValidationError({"target_type": [_('Must be "user" or "role".')]})
+
+        date_from = params.get("date_from")
+        if date_from:
+            parsed = parse_date(date_from)
+            if parsed is None:
+                raise ValidationError({"date_from": [_("Must be a valid date (YYYY-MM-DD).")]})
+            queryset = queryset.filter(created_at__date__gte=parsed)
+
+        date_to = params.get("date_to")
+        if date_to:
+            parsed = parse_date(date_to)
+            if parsed is None:
+                raise ValidationError({"date_to": [_("Must be a valid date (YYYY-MM-DD).")]})
+            queryset = queryset.filter(created_at__date__lte=parsed)
+
+        return queryset

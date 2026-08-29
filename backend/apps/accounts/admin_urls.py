@@ -1,6 +1,6 @@
 from rest_framework.routers import SimpleRouter
 
-from .views import RoleViewSet, UserViewSet
+from .views import AuditLogViewSet, RoleViewSet, UserViewSet
 
 app_name = "accounts_admin"
 
@@ -9,5 +9,6 @@ app_name = "accounts_admin"
 router = SimpleRouter()
 router.register("users", UserViewSet, basename="user")
 router.register("roles", RoleViewSet, basename="role")
+router.register("audit-logs", AuditLogViewSet, basename="auditlog")
 
 urlpatterns = router.urls

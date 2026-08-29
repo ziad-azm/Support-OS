@@ -281,6 +281,19 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="audit_log.view" />,
+            children: [
+              {
+                path: 'audit-log',
+                lazy: async () => {
+                  const { AuditLogListPage } =
+                    await import('@/features/audit-log/components/AuditLogListPage')
+                  return { element: <AuditLogListPage /> }
+                },
+              },
+            ],
+          },
+          {
             path: 'tasks',
             lazy: async () => {
               const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')

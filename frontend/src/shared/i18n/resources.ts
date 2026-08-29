@@ -1,5 +1,7 @@
 import accountsAr from '@/features/accounts/locales/ar.json'
 import accountsEn from '@/features/accounts/locales/en.json'
+import auditLogAr from '@/features/audit-log/locales/ar.json'
+import auditLogEn from '@/features/audit-log/locales/en.json'
 import authAr from '@/features/auth/locales/ar.json'
 import authEn from '@/features/auth/locales/en.json'
 import customersAr from '@/features/customers/locales/ar.json'
@@ -43,6 +45,7 @@ export const resources = {
     validation: enValidation,
     health: healthEn,
     auth: authEn,
+    auditLog: auditLogEn,
     accounts: accountsEn,
     customers: customersEn,
     tickets: ticketsEn,
@@ -59,6 +62,7 @@ export const resources = {
     validation: arValidation,
     health: healthAr,
     auth: authAr,
+    auditLog: auditLogAr,
     accounts: accountsAr,
     customers: customersAr,
     tickets: ticketsAr,

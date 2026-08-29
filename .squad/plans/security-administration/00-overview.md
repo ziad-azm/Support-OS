@@ -8,17 +8,25 @@ Entry point for the **security-administration** feature. Stories execute in orde
 |----|------|-------|------------|------------|
 | 48 | [48-story-users-roles-admin-SUPPORTOS-72.md](48-story-users-roles-admin-SUPPORTOS-72.md) | Users & Roles Admin | SUPPORTOS-72 | Story 09 (`AUTH-2`), Story 10 (feature-module template) |
 | 49 | [49-story-permissions-management-SUPPORTOS-73.md](49-story-permissions-management-SUPPORTOS-73.md) | Permissions Management | SUPPORTOS-73 | Story 48 (`SEC-1`) |
+| 52 | [52-story-audit-logs-SUPPORTOS-74.md](52-story-audit-logs-SUPPORTOS-74.md) | Audit Logs | SUPPORTOS-74 | Story 48 (`SEC-1`), Story 49 (`SEC-2`) |
 
 ## Dependency notes
 
-This feature maps to **EPIC 13 — Security & Administration** in the Jira workspace (`SEC-1` through `SEC-4`, `SUPPORTOS-72`–`75`). It builds admin screens over the `AUTHZ` models Story 09 (`../authentication-authorization/09-story-roles-permissions-authorization-SUPPORTOS-27.md`) shipped — no new authorization mechanism, no new `Permissions` constant, no migration.
+This feature maps to **EPIC 14 — Security & Administration** in the Jira workspace (`SEC-1` through `SEC-4`, `SUPPORTOS-72`–`75`) — renumbered from "EPIC 13" sometime between Story 49 and Story 52 (verified this session by re-grepping `SupportOs backlog.MD`, which now numbers Integrations as EPIC 13). It builds admin screens over the `AUTHZ` models Story 09 (`../authentication-authorization/09-story-roles-permissions-authorization-SUPPORTOS-27.md`) shipped — no new authorization mechanism, no new `Permissions` constant beyond what SEC-3 itself adds, no migration beyond what SEC-3 itself adds.
 
-**SEC-1 → SEC-2 → SEC-3 → SEC-4 is a strict sequence**, per each intake's own dependency line:
+**SEC-1 → SEC-2 → SEC-3 → SEC-4 is a strict sequence**, per each intake's own dependency line. Because `naming.globalSequence: true` (`.squad/config.yaml`), this feature's own `NN` numbers are **not contiguous** — Stories 50 and 51 were claimed by two unrelated `design-intelligence-ui-ux-system` stories (`DSN-4`, `DSN-5`) planned in between SEC-2 and SEC-3:
 
 - **Story 48 (`SEC-1`, this one)** ships `UserViewSet`/`RoleViewSet` — user CRUD (no delete; deactivation only) and role CRUD (create/rename/delete, **not** permission editing).
 - **Story 49 (`SEC-2`, `SUPPORTOS-73`)** — "Dependencies: SEC-1" per its own intake. Builds the role→permission mapping UI over `Role.permissions`, which Story 48 deliberately ships read-only.
-- **Story 50 (`SEC-3`, `SUPPORTOS-74`)** — Audit-log service + viewer over sensitive actions (user/role changes among them).
-- **Story 51 (`SEC-4`, `SUPPORTOS-75`)** — Settings model + admin UI for org-level configuration (branding/departments/branches/SLA defaults) — independent of the other three.
+- **Story 52 (`SEC-3`, `SUPPORTOS-74`)** — Audit-log service + viewer over sensitive actions: every SEC-1/SEC-2 write (user create/role-change/status-change, role create/rename/permissions-change/delete) now writes an immutable `AuditLog` row, visible in a new filtered `/audit-log` screen.
+- **SEC-4 (`SUPPORTOS-75`, not yet planned)** — Settings model + admin UI for org-level configuration (branding/departments/branches/SLA defaults) — independent of the other three. Its own `NN` is not assumed to be 53 until `/squad-plan` actually runs for it.
+
+**Verified findings that shaped Story 52:**
+
+- **`AuditLog` lives in `apps/accounts`, not a new app.** `backend/apps/README.md`'s own placement rule ("belongs to exactly one business area → that app") resolves this: today's only two target types, `User` and `Role`, both already live in `accounts`. Unlike `Notification` (its own app because genuinely cross-cutting across `tickets`/`sla`/future consumers), `AuditLog` audits only `accounts`-owned models today.
+- **Two nullable FKs (`target_user`/`target_role`), not a `GenericForeignKey`** — the direct generalization of `apps/notifications/models.py:35-36`'s own explicit rejection of `ContentType` machinery ("a plain FK to the one target type that exists today") to a table that needs two target types at once.
+- **Every `AuditLog` row is written inline, at the exact call site of the change** (`UserViewSet`/`RoleViewSet`'s `perform_create`/`perform_update`/`destroy`), mirroring `TicketActivity.objects.create()`'s own call-site pattern (`apps/tickets/views.py:217-223`) — no signal, no generic diff-everything hook.
+- **`Permissions.AUDIT_LOG_VIEW` is granted to the seeded `admin` role only**, the same admin-only grant `ROLES_MANAGE` already has — a judgment call (seeing who changed what is at least as sensitive as making the change), not dictated by the intake.
 
 **Verified findings that shaped Story 48:**
 

@@ -33,6 +33,7 @@ class Permissions:
     KNOWLEDGE_BASE_VIEW = "knowledge_base.view"
     KNOWLEDGE_BASE_MANAGE = "knowledge_base.manage"
     PORTAL_ACCESS = "portal.access"
+    AUDIT_LOG_VIEW = "audit_log.view"
 
 
 ALL_PERMISSIONS: frozenset[str] = frozenset(

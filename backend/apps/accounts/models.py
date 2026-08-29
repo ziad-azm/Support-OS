@@ -131,3 +131,86 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self) -> str:
         return self.first_name or self.email
+
+
+class AuditLog(TimeStampedModel):
+    """An immutable, admin-facing audit trail of sensitive account/role
+    changes — SEC-3's own reuse of TKT-5's "reusable activity-log pattern"
+    (`TicketActivity`, apps/tickets/models.py:113-166), adapted for a target
+    that can be either a `User` or a `Role` rather than always the same
+    parent `Ticket`.
+
+    Two nullable FKs (`target_user`/`target_role`), not a `GenericForeignKey`
+    — `apps/notifications/models.py:35-36` already rejected `ContentType`
+    machinery for a single target type ("a plain FK to the one target type
+    that exists today, not a GenericForeignKey"). This table needs two
+    target types at once, so it gets two plain FKs instead of introducing
+    the one `GenericForeignKey` this codebase has never used anywhere.
+    Exactly one of the two is populated per row — enforced by every call
+    site in `UserViewSet`/`RoleViewSet` below, the only places a row is
+    ever created; there is no model-level constraint, the same "trust the
+    call site" posture `TicketActivity` itself takes for its own `kind`/
+    `from_value`/`to_value` shape.
+
+    `target_label` is a point-in-time snapshot of the target's display name
+    — the same snapshot rationale `TicketActivity`'s `from_value`/`to_value`
+    already establishes (`history.py`'s `build_history` reads
+    `activity.actor.get_full_name()` live instead, because `actor` is never
+    the thing being described). Here, the *target* is the thing being
+    described, and it is exactly what `SET_NULL` can null out from under a
+    live join (a deleted role, a — hypothetically — deleted user), so its
+    display name must survive independently of the FK.
+
+    `from_value`/`to_value` are `TextField`, not `TicketActivity`'s
+    `CharField(max_length=150)` — the one structural deviation from that
+    precedent. A role's permission-set change stores a comma-joined list of
+    permission strings in each, which can exceed 150 characters as
+    `ALL_PERMISSIONS` grows; a user's role/status change never approaches
+    that length either way.
+    """
+
+    class Action(models.TextChoices):
+        USER_CREATED = "user_created", _("User created")
+        USER_ROLE_CHANGED = "user_role_changed", _("User role changed")
+        USER_STATUS_CHANGED = "user_status_changed", _("User status changed")
+        ROLE_CREATED = "role_created", _("Role created")
+        ROLE_RENAMED = "role_renamed", _("Role renamed")
+        ROLE_PERMISSIONS_CHANGED = "role_permissions_changed", _("Role permissions changed")
+        ROLE_DELETED = "role_deleted", _("Role deleted")
+
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+        verbose_name=_("actor"),
+    )
+    action = models.CharField(_("action"), max_length=30, choices=Action.choices)
+    target_user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs_as_target",
+        verbose_name=_("target user"),
+    )
+    target_role = models.ForeignKey(
+        Role,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs_as_target",
+        verbose_name=_("target role"),
+    )
+    target_label = models.CharField(_("target label"), max_length=150)
+    from_value = models.TextField(_("from value"), blank=True)
+    to_value = models.TextField(_("to value"), blank=True)
+
+    class Meta:
+        verbose_name = _("audit log entry")
+        verbose_name_plural = _("audit log entries")
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.get_action_display()} — {self.target_label}"

@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.core.permissions import ALL_PERMISSIONS, permissions_for
 from apps.core.serializers import BaseModelSerializer
 
-from .models import Role
+from .models import AuditLog, Role
 
 User = get_user_model()
 
@@ -156,6 +156,40 @@ class UserAdminSerializer(serializers.ModelSerializer):
         # more than a normal validation error should.
         validated_data.pop("password", None)
         return super().update(instance, validated_data)
+
+
+class AuditLogSerializer(BaseModelSerializer):
+    """Read-only — `AuditLogViewSet` has no write action for this to ever
+    validate. `actor_name` uses the same verified-safe dotted-`source`
+    pattern as `TicketSerializer.assigned_agent_name`
+    (apps/tickets/serializers.py:33-35): `get_full_name` is a method, not a
+    field, and DRF's `get_attribute` calls it; `allow_null=True` returns
+    `None` instead of erroring when `actor` is `None` (a deleted actor).
+    `target_label` is the snapshot field, not a dotted source on
+    `target_user`/`target_role` — see `AuditLog`'s own docstring for why the
+    snapshot exists.
+    """
+
+    actor_name = serializers.CharField(
+        source="actor.get_full_name", read_only=True, allow_null=True
+    )
+    action_display = serializers.CharField(source="get_action_display", read_only=True)
+
+    class Meta(BaseModelSerializer.Meta):
+        model = AuditLog
+        fields = (
+            "id",
+            "actor",
+            "actor_name",
+            "action",
+            "action_display",
+            "target_user",
+            "target_role",
+            "target_label",
+            "from_value",
+            "to_value",
+            "created_at",
+        )
 
 
 class LogoutSerializer(serializers.Serializer):
