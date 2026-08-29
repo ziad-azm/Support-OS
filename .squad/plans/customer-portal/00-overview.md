@@ -9,6 +9,7 @@ Entry point for the **customer-portal** feature. Stories execute in order by the
 | 42 | [42-story-portal-access-customer-auth-SUPPORTOS-55.md](42-story-portal-access-customer-auth-SUPPORTOS-55.md) | Portal Access & Customer Auth | SUPPORTOS-55 | EPIC 2 (`AUTHZ`, stories 08–09); EPIC 1 (`I18N`/`UI`, stories 05–06); CUST-1 (story 10); TKT-1 (story 12) |
 | 43 | [43-story-submit-tickets-SUPPORTOS-56.md](43-story-submit-tickets-SUPPORTOS-56.md) | Submit Tickets | SUPPORTOS-56 | Story 42 (`PORTAL-0`); TKT-1 (story 12) |
 | 44 | [44-story-track-requests-SUPPORTOS-57.md](44-story-track-requests-SUPPORTOS-57.md) | Track Requests | SUPPORTOS-57 | Story 42 (`PORTAL-0`); Story 43 (`PORTAL-1`, extended rather than re-built) |
+| 45 | [45-story-view-history-SUPPORTOS-58.md](45-story-view-history-SUPPORTOS-58.md) | View History | SUPPORTOS-58 | Story 44 (`PORTAL-2`) — frontend-only, no backend change |
 
 ## Dependency notes
 
@@ -49,4 +50,11 @@ This feature maps to **EPIC 10 — Customer Portal** in `SupportOs backlog.MD` (
 - **PORTAL-1's own code comment predicted this story exactly.** `usePortalTicketMutations.ts`'s docstring said PORTAL-2 would add `queryClient.invalidateQueries` once a portal ticket list existed — story 44 is that change, verified live: a ticket submitted via `/portal/tickets/new` appears in `/portal/tickets` with no manual reload.
 - **`features/portal/` keeps redefining types locally rather than importing from `features/tickets/`.** `PortalTicket`/`PORTAL_TICKET_STATUSES`/`PORTAL_TICKET_PRIORITIES` duplicate `features/tickets/types/ticket.ts`'s `Ticket`/`TICKET_STATUSES`/`TICKET_PRIORITIES` — the accepted, unavoidable cost of `no-restricted-imports`' feature-boundary rule, the same tradeoff PORTAL-1's `PortalTicketInput` already made.
 
-**Known gap carried out of story 44:** the list shows every one of the customer's tickets regardless of status, with no distinction between active and historical/closed ones, and no text search. **PORTAL-3 (View History)** is the story that addresses the first; search remains a forward note with no story currently asking for it.
+**Known gap carried out of story 44:** the list shows every one of the customer's tickets regardless of status, with no distinction between active and historical/closed ones, and no text search. **PORTAL-3 (View History)** is the story that addresses the first; search remains a forward note with no story currently asking for it. **Closed (the history half) by story 45.**
+
+**Verified findings that shaped story 45:**
+
+- **Zero backend changes were needed.** PORTAL-2's `PortalTicketViewSet.get_queryset` already validated and applied `?status=` generically — `closed` was already a legal value the day PORTAL-2 shipped. Verified live against the running dev server before writing any frontend code, rather than assumed. This is the cleanest "reuse" story in the epic so far: one new frontend page, two small cross-link edits, one route, no `apps/portal/` file touched at all.
+- **"Extend the scoped list with closed tickets" was read as additive, not restrictive.** `PortalTicketListPage` (PORTAL-2) already shows every ticket regardless of status — story 45 does not change that default or split it into "active"/"history" tabs; it adds a second, complementary, purpose-built archive page instead, so PORTAL-2's already-verified behavior stays intact.
+- **`updated_at`, not a new `closed_at` field, is what the history view shows — honestly labelled "Last updated."** `Ticket` has no dedicated closed-at timestamp, and `updated_at` can move for reasons unrelated to closing (a later `escalate` toggle, verified against `apps/tickets/views.py`). Adding a real `closed_at` field is a schema decision with its own backfill question that no story has asked for.
+- **`resolved` was deliberately excluded from "history."** `TICKET_STATUS_TRANSITIONS.resolved` still allows a move to `in_progress` or `closed` — only `closed` (`transitions: []`) is truly terminal, matching "past-request" in a way `resolved` does not yet.

@@ -93,6 +93,9 @@ export function PortalTicketListPage() {
           <Link to="/portal/tickets/new">{t('tickets.new')}</Link>
         </Button>
       </div>
+      <Link to="/portal/tickets/history" className="text-sm text-muted-foreground hover:underline">
+        {t('tickets.list.viewHistory')}
+      </Link>
       <Select value={statusFilter} onValueChange={setStatusFilter}>
         <SelectTrigger aria-label={t('tickets.filters.status')} size="sm">
           <SelectValue />

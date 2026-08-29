@@ -9,6 +9,7 @@
   "nav": {
     "home": "Home",
     "myTickets": "My tickets",
+    "history": "History",
     "newTicket": "New ticket"
   },
   "tickets": {
@@ -22,7 +23,8 @@
       "unassigned": "Unassigned",
       "status": "Status",
       "priority": "Priority",
-      "createdAt": "Submitted"
+      "createdAt": "Submitted",
+      "updatedAt": "Last updated"
     },
     "actions": {
       "submit": "Submit"
@@ -43,7 +45,8 @@
     "list": {
       "title": "My tickets",
       "empty": "No tickets yet",
-      "emptyDescription": "Submit your first ticket and it will show up here."
+      "emptyDescription": "Submit your first ticket and it will show up here.",
+      "viewHistory": "View closed-ticket history"
     },
     "filters": {
       "status": "Status",
@@ -51,6 +54,12 @@
     },
     "detail": {
       "backToList": "Back to my tickets"
+    },
+    "history": {
+      "title": "Ticket history",
+      "viewActive": "View my tickets",
+      "empty": "No closed tickets yet",
+      "emptyDescription": "Tickets you have resolved with our team will appear here."
     }
   }
 }

@@ -288,6 +288,17 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                // Must stay before `tickets/:id`, same reason `tickets/new`
+                // already does — a literal "history"/"new" segment would
+                // otherwise match the `:id` param first.
+                path: 'tickets/history',
+                lazy: async () => {
+                  const { PortalTicketHistoryPage } =
+                    await import('@/features/portal/components/PortalTicketHistoryPage')
+                  return { element: <PortalTicketHistoryPage /> }
+                },
+              },
+              {
                 // Must stay before `tickets/:id`, the same reason
                 // `customers/new`/`tickets/new` are declared before their
                 // own `:id` siblings elsewhere in this file.

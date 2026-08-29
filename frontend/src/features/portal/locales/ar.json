@@ -9,6 +9,7 @@
   "nav": {
     "home": "الرئيسية",
     "myTickets": "تذاكري",
+    "history": "السجل",
     "newTicket": "تذكرة جديدة"
   },
   "tickets": {
@@ -22,7 +23,8 @@
       "unassigned": "غير مسندة",
       "status": "الحالة",
       "priority": "الأولوية",
-      "createdAt": "تاريخ الإرسال"
+      "createdAt": "تاريخ الإرسال",
+      "updatedAt": "آخر تحديث"
     },
     "actions": {
       "submit": "إرسال"
@@ -43,7 +45,8 @@
     "list": {
       "title": "تذاكري",
       "empty": "لا توجد تذاكر بعد",
-      "emptyDescription": "أرسل تذكرتك الأولى وستظهر هنا."
+      "emptyDescription": "أرسل تذكرتك الأولى وستظهر هنا.",
+      "viewHistory": "عرض سجل التذاكر المغلقة"
     },
     "filters": {
       "status": "الحالة",
@@ -51,6 +54,12 @@
     },
     "detail": {
       "backToList": "العودة إلى تذاكري"
+    },
+    "history": {
+      "title": "سجل التذاكر",
+      "viewActive": "عرض تذاكري",
+      "empty": "لا توجد تذاكر مغلقة بعد",
+      "emptyDescription": "ستظهر هنا التذاكر التي تم حلها مع فريقنا."
     }
   }
 }
