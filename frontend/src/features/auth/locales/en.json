@@ -4,5 +4,10 @@
     "email": "Email",
     "password": "Password",
     "submit": "Sign in"
+  },
+  "help": {
+    "prompt": "Not a staff member?",
+    "contact": "Submit a request",
+    "chat": "Start a live chat"
   }
 }

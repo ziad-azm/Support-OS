@@ -1,5 +1,10 @@
 {
   "title": "Submit a request",
+  "subtitle": "Tell us what's going on and we'll get back to you as soon as possible.",
+  "links": {
+    "chatPrompt": "Prefer to talk right now?",
+    "chat": "Start a live chat"
+  },
   "fields": {
     "name": "Your name",
     "email": "Email (optional)",

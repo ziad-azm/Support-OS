@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
+import { LogInIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useState } from 'react'
 import * as z from 'zod'
 
@@ -8,6 +9,7 @@ import { useAuth } from '@/shared/auth'
 import { email, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
+import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
 import { FormErrorSummary, TextField, useAppForm } from '@/shared/ui/form'
 
@@ -44,33 +46,56 @@ export function LoginPage() {
   })
 
   return (
-    <div className="mx-auto flex max-w-sm flex-col gap-4">
-      <h1 className="text-lg font-semibold">{t('login.title')}</h1>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-          className="flex flex-col gap-4"
-        >
-          <TextField
-            control={form.control}
-            name="email"
-            label={t('login.email')}
-            type="email"
-            autoComplete="email"
-          />
-          <TextField
-            control={form.control}
-            name="password"
-            label={t('login.password')}
-            type="password"
-            autoComplete="current-password"
-          />
-          <FormErrorSummary errors={formErrors} />
-          <Button type="submit" disabled={mutation.isPending}>
-            {t('login.submit')}
-          </Button>
-        </form>
-      </Form>
+    <div className="flex w-full max-w-sm flex-col gap-6">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+          <LogInIcon className="size-6 text-primary" />
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('login.title')}</h1>
+      </div>
+      <Card>
+        <CardContent>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+              className="flex flex-col gap-4"
+            >
+              <TextField
+                control={form.control}
+                name="email"
+                label={t('login.email')}
+                type="email"
+                autoComplete="email"
+              />
+              <TextField
+                control={form.control}
+                name="password"
+                label={t('login.password')}
+                type="password"
+                autoComplete="current-password"
+              />
+              <FormErrorSummary errors={formErrors} />
+              <Button type="submit" size="lg" className="w-full" disabled={mutation.isPending}>
+                {t('login.submit')}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+      <div className="flex flex-col items-center gap-1 text-center text-sm text-muted-foreground">
+        <span>{t('help.prompt')}</span>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/contact"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            {t('help.contact')}
+          </Link>
+          <Link to="/chat" className="font-medium text-primary underline-offset-4 hover:underline">
+            {t('help.chat')}
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

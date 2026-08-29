@@ -1,13 +1,19 @@
 import { createBrowserRouter } from 'react-router'
 
+import { PublicLayout } from './PublicLayout'
 import { RootLayout } from './RootLayout'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
 import { RequireAuth, RequirePermission } from '@/shared/auth'
 
 export const router = createBrowserRouter([
   {
-    path: '/',
-    element: <RootLayout />,
+    // Pathless — matched purely by its children's own paths, not nested
+    // under `path: '/'`. Kept separate from the staff `RootLayout` tree
+    // below so `/login`, `/chat`, `/contact` never render the staff
+    // `Sidebar` (nav links, language/theme controls meant for a signed-in
+    // session), the same reasoning `portal` already gets its own sibling
+    // tree instead of nesting inside `RootLayout`.
+    element: <PublicLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
       {
@@ -31,6 +37,13 @@ export const router = createBrowserRouter([
           return { element: <WebFormPage /> }
         },
       },
+    ],
+  },
+  {
+    path: '/',
+    element: <RootLayout />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
       {
         element: <RequireAuth />,
         children: [
