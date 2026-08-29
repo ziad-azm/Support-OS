@@ -8,9 +8,23 @@
   },
   "nav": {
     "home": "Home",
+    "faqs": "FAQs",
+    "articles": "Articles",
     "myTickets": "My tickets",
     "history": "History",
     "newTicket": "New ticket"
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "empty": "No FAQs yet",
+    "emptyDescription": "Check back soon."
+  },
+  "articles": {
+    "title": "Help articles",
+    "empty": "No articles yet",
+    "emptyDescription": "Check back soon.",
+    "notFound": "That article could not be found.",
+    "backToList": "Back to articles"
   },
   "tickets": {
     "new": "Submit a ticket",

@@ -280,6 +280,30 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'faqs',
+                lazy: async () => {
+                  const { PortalFaqPage } =
+                    await import('@/features/portal/components/PortalFaqPage')
+                  return { element: <PortalFaqPage /> }
+                },
+              },
+              {
+                path: 'articles',
+                lazy: async () => {
+                  const { PortalArticleListPage } =
+                    await import('@/features/portal/components/PortalArticleListPage')
+                  return { element: <PortalArticleListPage /> }
+                },
+              },
+              {
+                path: 'articles/:id',
+                lazy: async () => {
+                  const { PortalArticleReaderPage } =
+                    await import('@/features/portal/components/PortalArticleReaderPage')
+                  return { element: <PortalArticleReaderPage /> }
+                },
+              },
+              {
                 path: 'tickets',
                 lazy: async () => {
                   const { PortalTicketListPage } =

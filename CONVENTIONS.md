@@ -1611,6 +1611,18 @@ through `self.get_object()`/`self.get_queryset()` — never a raw manager
 query — or it bypasses the primary defence and leaves only the
 object-permission check to catch a leak.**
 
+**`has_object_permission` only tightens for a view that declares
+`customer_field` — it must never assume every model has a `customer`
+relation.** Fixed live by Story 46 (Access FAQs, `PORTAL-4`): the original
+version defaulted `customer_field` to `"customer"` for *any* view once the
+caller had a `customer_profile`, which produced a false `403` on
+`ArticleViewSet.retrieve` — a plain `BaseModelViewSet` subclass with no
+`customer` FK at all — the first time a portal customer got real `retrieve`
+access to a non-`CustomerScopedModelViewSet` endpoint. The check now does
+`if not hasattr(view, "customer_field"): return True` before reading it, so
+it is a true no-op for every viewset that does not opt into row-scoping,
+not just for a caller with no `customer_profile`.
+
 **`CustomerScopedModelViewSet` declares no `permission_map` of its own.**
 Per `HasPermission`'s existing grant-on-omission rule, a subclass that ships
 without declaring one is authenticated-only, not closed — every `PORTAL-N`

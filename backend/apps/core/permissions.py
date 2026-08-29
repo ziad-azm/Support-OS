@@ -107,11 +107,23 @@ class HasPermission(BasePermission):
         fetches an object directly (e.g. `Model.objects.get(pk=...)`) instead
         of through `self.get_object()`. Without it, such an action would leak
         another customer's row with no gate at all.
+
+        Only tightens for a view that opts in by declaring `customer_field`
+        (every `CustomerScopedModelViewSet` subclass). A plain
+        `BaseModelViewSet` subclass — e.g. `ArticleViewSet`, `FAQViewSet` —
+        has no customer-owned relation at all; defaulting `customer_field` to
+        `"customer"` here caused a false 403 on `Article.retrieve` for any
+        portal customer, since `Article` has no `customer` FK to read a
+        `customer_id` off of. Found live by Story 46 (Access FAQs), the
+        first story to give a portal customer real `retrieve` access to a
+        non-`CustomerScopedModelViewSet` endpoint.
         """
         customer = getattr(request.user, "customer_profile", None)
         if customer is None:
             return True
-        customer_field = getattr(view, "customer_field", "customer")
+        if not hasattr(view, "customer_field"):
+            return True
+        customer_field = view.customer_field
         return getattr(obj, f"{customer_field}_id", None) == customer.id
 
     @staticmethod

@@ -17,6 +17,9 @@ export function PortalHomePage() {
         <Button asChild variant="outline">
           <Link to="/portal/tickets">{t('nav.myTickets')}</Link>
         </Button>
+        <Button asChild variant="outline">
+          <Link to="/portal/faqs">{t('nav.faqs')}</Link>
+        </Button>
       </div>
     </div>
   )
