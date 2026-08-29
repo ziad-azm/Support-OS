@@ -1376,6 +1376,33 @@ source text, truncated (`note.body[:500]`) at the call site before reaching
 `notify(...)`, since a longer string would fail as a database-level
 constraint violation on Postgres, not just a Python-level oversight.
 
+**A resource that must never be hard-deleted removes the HTTP verb, not
+just the permission mapping.** `UserViewSet` (Story 48, `SEC-1`) is the
+first case: `accounts.User` is referenced by `agents.Task.owner` and
+`notifications.Notification.recipient` with `on_delete=CASCADE`, so a
+`DELETE` would silently remove a person's tasks and notifications.
+Per this section's own grant-on-omission rule, leaving `destroy` out of
+`permission_map` is not a deny — it falls through to authenticated-only.
+Dropping `"delete"` from the viewset's `http_method_names` is what actually
+disables the verb: Django's `View.dispatch()` gates on
+`request.method.lower() in self.http_method_names` before a DRF viewset's
+router-bound `self.delete` (set by `ViewSetMixin.as_view()`) is ever
+reached, so the request 405s as `method_not_allowed` with no new error
+code. Reach for this whenever a resource has a `CASCADE`-related model that
+must survive a parent record's removal and there is no row-level rule
+(`has_object_permission`) that could express "always deny" instead.
+
+**A queryset filter can exclude rows that belong to a different feature's
+identity, keyed on the owning relation, not on a denormalised field.**
+`UserViewSet.get_queryset` (Story 48, `SEC-1`) excludes portal-customer
+accounts from the staff user-admin screen by filtering on
+`customer_profile__isnull=True` (the `Customer.user` OneToOne's reverse
+accessor) rather than on `role.slug == "customer"` — the FK relation is
+the actual grant of portal access; a role is just data an admin could
+otherwise leave stale. The same reasoning as `ArticleViewSet.get_queryset`
+filtering by the caller's *own* permission (Story 40) rather than by
+action name: filter on the fact that is actually true, not on a proxy for it.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

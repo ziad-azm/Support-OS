@@ -6,13 +6,11 @@ from .models import Role, User
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    """Until SEC-1 ships, this is the only way to create a role or edit its
-    permissions.
-
-    `permissions` is edited as a raw JSON textarea on purpose — a checkbox
-    list over `ALL_PERMISSIONS` is what SEC-2 is for, and `Role.clean()`
-    rejects an invalid string with a field error, so the raw editor is safe
-    rather than merely tolerable. See CONVENTIONS.md §22.
+    """`RoleViewSet` (apps.accounts.views) now covers create/rename/delete —
+    SEC-1. `permissions` is still edited here as a raw JSON textarea: a
+    checkbox list over `ALL_PERMISSIONS` is what SEC-2 is for, and
+    `Role.clean()` rejects an invalid string with a field error, so the raw
+    editor is safe rather than merely tolerable. See CONVENTIONS.md §22.
     """
 
     list_display = ("name", "slug", "permission_count", "is_system")

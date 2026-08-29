@@ -221,6 +221,66 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="users.view" />,
+            children: [
+              {
+                path: 'users',
+                lazy: async () => {
+                  const { UserListPage } =
+                    await import('@/features/accounts/components/UserListPage')
+                  return { element: <UserListPage /> }
+                },
+              },
+              {
+                // Must stay before `users/:id`, same reason as `customers/new`.
+                path: 'users/new',
+                lazy: async () => {
+                  const { UserFormPage } =
+                    await import('@/features/accounts/components/UserFormPage')
+                  return { element: <UserFormPage /> }
+                },
+              },
+              {
+                path: 'users/:id/edit',
+                lazy: async () => {
+                  const { UserFormPage } =
+                    await import('@/features/accounts/components/UserFormPage')
+                  return { element: <UserFormPage /> }
+                },
+              },
+            ],
+          },
+          {
+            element: <RequirePermission permission="roles.manage" />,
+            children: [
+              {
+                path: 'roles',
+                lazy: async () => {
+                  const { RoleListPage } =
+                    await import('@/features/accounts/components/RoleListPage')
+                  return { element: <RoleListPage /> }
+                },
+              },
+              {
+                // Must stay before `roles/:id`, same reason as `users/new`.
+                path: 'roles/new',
+                lazy: async () => {
+                  const { RoleFormPage } =
+                    await import('@/features/accounts/components/RoleFormPage')
+                  return { element: <RoleFormPage /> }
+                },
+              },
+              {
+                path: 'roles/:id/edit',
+                lazy: async () => {
+                  const { RoleFormPage } =
+                    await import('@/features/accounts/components/RoleFormPage')
+                  return { element: <RoleFormPage /> }
+                },
+              },
+            ],
+          },
+          {
             path: 'tasks',
             lazy: async () => {
               const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')

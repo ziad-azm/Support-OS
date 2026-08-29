@@ -1,0 +1,57 @@
+{
+  "users": {
+    "title": "المستخدمون",
+    "new": "مستخدم جديد",
+    "edit": "تعديل المستخدم",
+    "search": "البحث عن المستخدمين",
+    "searchPlaceholder": "الاسم أو البريد الإلكتروني",
+    "empty": "لا يوجد مستخدمون بعد",
+    "emptyDescription": "أنشئ أول مستخدم للبدء.",
+    "noSearchResults": "لا يوجد مستخدمون مطابقون لهذا البحث.",
+    "noRole": "بدون دور",
+    "superuser": "مشرف عام",
+    "fields": {
+      "email": "البريد الإلكتروني",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "role": "الدور",
+      "status": "الحالة",
+      "password": "كلمة المرور"
+    },
+    "status": { "active": "نشط", "inactive": "غير نشط" },
+    "actions": { "save": "حفظ" },
+    "created": "تم إنشاء المستخدم.",
+    "updated": "تم تحديث المستخدم.",
+    "notFound": "تعذر العثور على هذا المستخدم."
+  },
+  "roles": {
+    "title": "الأدوار",
+    "new": "دور جديد",
+    "edit": "تعديل الدور",
+    "empty": "لا توجد أدوار بعد",
+    "emptyDescription": "أنشئ أول دور للبدء.",
+    "permissionCount_zero": "لا توجد صلاحيات",
+    "permissionCount_one": "صلاحية واحدة",
+    "permissionCount_two": "صلاحيتان",
+    "permissionCount_few": "{{count}} صلاحيات",
+    "permissionCount_many": "{{count}} صلاحية",
+    "permissionCount_other": "{{count}} صلاحية",
+    "fields": {
+      "name": "الاسم",
+      "slug": "المعرّف",
+      "description": "الوصف",
+      "permissions": "الصلاحيات",
+      "actions": "الإجراءات"
+    },
+    "systemBadge": "نظامي",
+    "actions": { "save": "حفظ", "delete": "حذف" },
+    "delete": {
+      "title": "حذف هذا الدور؟",
+      "description": "سيؤدي هذا إلى إزالة الدور نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+    },
+    "created": "تم إنشاء الدور.",
+    "updated": "تم تحديث الدور.",
+    "deleted": "تم حذف الدور.",
+    "notFound": "تعذر العثور على هذا الدور."
+  }
+}

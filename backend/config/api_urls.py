@@ -11,6 +11,7 @@ from apps.core.views import ApiNotFoundView
 urlpatterns = [
     path("", include("apps.core.urls")),
     path("auth/", include("apps.accounts.urls")),
+    path("", include("apps.accounts.admin_urls")),
     path("", include("apps.customers.urls")),
     path("", include("apps.tickets.urls")),
     path("", include("apps.communications.urls")),

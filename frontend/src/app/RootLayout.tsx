@@ -10,7 +10,14 @@ import { ThemeToggle } from '@/shared/ui/ThemeToggle'
 /** Story 06 owns layout: a header with the language and theme controls, and
  * a main content area for the routed page. */
 export function RootLayout() {
-  const { t } = useTranslation(['common', 'customers', 'tickets', 'tasks', 'knowledgeBase'])
+  const { t } = useTranslation([
+    'common',
+    'customers',
+    'tickets',
+    'tasks',
+    'knowledgeBase',
+    'accounts',
+  ])
   const { user, logout } = useAuth()
 
   return (
@@ -44,6 +51,16 @@ export function RootLayout() {
               </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link to="/knowledge-base/search">{t('knowledgeBase:search.title')}</Link>
+              </Button>
+            </Can>
+            <Can permission="users.view">
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/users">{t('accounts:users.title')}</Link>
+              </Button>
+            </Can>
+            <Can permission="roles.manage">
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/roles">{t('accounts:roles.title')}</Link>
               </Button>
             </Can>
           </nav>

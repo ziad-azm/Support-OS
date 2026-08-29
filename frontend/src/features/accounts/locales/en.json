@@ -1,0 +1,53 @@
+{
+  "users": {
+    "title": "Users",
+    "new": "New user",
+    "edit": "Edit user",
+    "search": "Search users",
+    "searchPlaceholder": "Name or email",
+    "empty": "No users yet",
+    "emptyDescription": "Create the first user to get started.",
+    "noSearchResults": "No users match that search.",
+    "noRole": "No role",
+    "superuser": "Superuser",
+    "fields": {
+      "email": "Email",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "role": "Role",
+      "status": "Status",
+      "password": "Password"
+    },
+    "status": { "active": "Active", "inactive": "Inactive" },
+    "actions": { "save": "Save" },
+    "created": "User created.",
+    "updated": "User updated.",
+    "notFound": "That user could not be found."
+  },
+  "roles": {
+    "title": "Roles",
+    "new": "New role",
+    "edit": "Edit role",
+    "empty": "No roles yet",
+    "emptyDescription": "Create the first role to get started.",
+    "permissionCount": "{{count}} permission",
+    "permissionCount_other": "{{count}} permissions",
+    "fields": {
+      "name": "Name",
+      "slug": "Slug",
+      "description": "Description",
+      "permissions": "Permissions",
+      "actions": "Actions"
+    },
+    "systemBadge": "System",
+    "actions": { "save": "Save", "delete": "Delete" },
+    "delete": {
+      "title": "Delete this role?",
+      "description": "This permanently removes the role. This cannot be undone."
+    },
+    "created": "Role created.",
+    "updated": "Role updated.",
+    "deleted": "Role deleted.",
+    "notFound": "That role could not be found."
+  }
+}

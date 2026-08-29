@@ -96,6 +96,11 @@ resolution), `Can.tsx` (declarative gating of a control), and
 bypass included — and **never** derive from `user.role`. A feature that reads
 `user.role` directly is bypassing `can()`. See `CONVENTIONS.md` § 22.
 
+`src/shared/ui/form/SwitchField.tsx` got its first production consumer in
+`features/accounts/components/UserFormPage.tsx` (Story 48, `SEC-1`)'s
+active/inactive toggle — the fifth field component to ship with a real call
+site, after `TextField`/`SelectField` (Customer/Article/Ticket forms).
+
 ## Internationalization
 
 `src/shared/i18n/` holds the i18next bootstrap: `config.ts` (the language
