@@ -294,6 +294,19 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="settings.manage" />,
+            children: [
+              {
+                path: 'settings',
+                lazy: async () => {
+                  const { SettingsPage } =
+                    await import('@/features/organization/components/SettingsPage')
+                  return { element: <SettingsPage /> }
+                },
+              },
+            ],
+          },
+          {
             path: 'tasks',
             lazy: async () => {
               const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')

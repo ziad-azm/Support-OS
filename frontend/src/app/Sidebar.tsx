@@ -10,6 +10,7 @@ import {
   ListTodoIcon,
   LogOutIcon,
   SearchIcon,
+  SettingsIcon,
   ShieldCheckIcon,
   TicketIcon,
   UserCogIcon,
@@ -79,6 +80,7 @@ export function Sidebar() {
     'knowledgeBase',
     'accounts',
     'auditLog',
+    'organization',
   ])
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(readCollapsed)
@@ -184,6 +186,14 @@ export function Sidebar() {
             to="/audit-log"
             icon={HistoryIcon}
             label={t('auditLog:title')}
+            collapsed={collapsed}
+          />
+        </Can>
+        <Can permission="settings.manage">
+          <SidebarLink
+            to="/settings"
+            icon={SettingsIcon}
+            label={t('organization:settings.title')}
             collapsed={collapsed}
           />
         </Can>

@@ -1,0 +1,19 @@
+{
+  "settings": {
+    "title": "Organization Settings",
+    "saved": "Settings saved.",
+    "fields": {
+      "name": "Organization name",
+      "logoUrl": "Logo URL",
+      "departments": "Departments",
+      "branches": "Branches",
+      "defaultResponseMinutes": "Default response target (minutes)",
+      "defaultResolutionMinutes": "Default resolution target (minutes)"
+    },
+    "addDepartment": "Add department",
+    "addBranch": "Add branch",
+    "newItemPlaceholder": "Name",
+    "remove": "Remove",
+    "actions": { "save": "Save" }
+  }
+}

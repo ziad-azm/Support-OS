@@ -15,6 +15,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from apps.communications.models import Message
+from apps.organization.models import OrganizationSettings
 from apps.tickets.models import Ticket, TicketActivity
 
 from .models import SLAPolicy
@@ -23,9 +24,10 @@ from .models import SLAPolicy
 def resolve_policy(ticket: Ticket) -> SLAPolicy | None:
     """The most specific policy for this ticket: an exact
     (priority, category) match if the ticket has a category and one
-    exists, else the priority-only default (category=None). `None` if
-    neither exists — SLA tracking is opt-in per priority, not guaranteed
-    for every ticket.
+    exists, else the priority-only default (category=None), else the
+    org-wide default from `OrganizationSettings` (SEC-4) if one is
+    configured. `None` only when none of the three apply — SLA tracking
+    remains opt-in, not guaranteed for every ticket.
     """
     if ticket.category_id is not None:
         specific = SLAPolicy.objects.filter(
@@ -33,7 +35,31 @@ def resolve_policy(ticket: Ticket) -> SLAPolicy | None:
         ).first()
         if specific is not None:
             return specific
-    return SLAPolicy.objects.filter(priority=ticket.priority, category__isnull=True).first()
+    default = SLAPolicy.objects.filter(priority=ticket.priority, category__isnull=True).first()
+    if default is not None:
+        return default
+    return _org_default_policy()
+
+
+def _org_default_policy() -> SLAPolicy | None:
+    """An UNSAVED `SLAPolicy` built from `OrganizationSettings`'s two
+    default-minutes fields, or `None` if either is unset. Never
+    `.save()`d: `compute_sla_status` (below) only ever reads
+    `.response_target_minutes`/`.resolution_target_minutes` off whatever
+    `resolve_policy` returns, plus `.id` for the response's `policy_id` —
+    `None` on an unsaved instance, which correctly tells a caller this
+    came from the org default, not a configured `SLAPolicy` row.
+    """
+    settings_obj = OrganizationSettings.load()
+    if (
+        settings_obj.default_response_target_minutes is None
+        or settings_obj.default_resolution_target_minutes is None
+    ):
+        return None
+    return SLAPolicy(
+        response_target_minutes=settings_obj.default_response_target_minutes,
+        resolution_target_minutes=settings_obj.default_resolution_target_minutes,
+    )
 
 
 def _dimension_status(due_at, achieved_at, now) -> str:

@@ -9,6 +9,7 @@ Entry point for the **security-administration** feature. Stories execute in orde
 | 48 | [48-story-users-roles-admin-SUPPORTOS-72.md](48-story-users-roles-admin-SUPPORTOS-72.md) | Users & Roles Admin | SUPPORTOS-72 | Story 09 (`AUTH-2`), Story 10 (feature-module template) |
 | 49 | [49-story-permissions-management-SUPPORTOS-73.md](49-story-permissions-management-SUPPORTOS-73.md) | Permissions Management | SUPPORTOS-73 | Story 48 (`SEC-1`) |
 | 52 | [52-story-audit-logs-SUPPORTOS-74.md](52-story-audit-logs-SUPPORTOS-74.md) | Audit Logs | SUPPORTOS-74 | Story 48 (`SEC-1`), Story 49 (`SEC-2`) |
+| 53 | [53-story-system-configuration-SUPPORTOS-75.md](53-story-system-configuration-SUPPORTOS-75.md) | System Configuration | SUPPORTOS-75 | None (independent of SEC-1/2/3) |
 
 ## Dependency notes
 
@@ -19,7 +20,16 @@ This feature maps to **EPIC 14 — Security & Administration** in the Jira works
 - **Story 48 (`SEC-1`, this one)** ships `UserViewSet`/`RoleViewSet` — user CRUD (no delete; deactivation only) and role CRUD (create/rename/delete, **not** permission editing).
 - **Story 49 (`SEC-2`, `SUPPORTOS-73`)** — "Dependencies: SEC-1" per its own intake. Builds the role→permission mapping UI over `Role.permissions`, which Story 48 deliberately ships read-only.
 - **Story 52 (`SEC-3`, `SUPPORTOS-74`)** — Audit-log service + viewer over sensitive actions: every SEC-1/SEC-2 write (user create/role-change/status-change, role create/rename/permissions-change/delete) now writes an immutable `AuditLog` row, visible in a new filtered `/audit-log` screen.
-- **SEC-4 (`SUPPORTOS-75`, not yet planned)** — Settings model + admin UI for org-level configuration (branding/departments/branches/SLA defaults) — independent of the other three. Its own `NN` is not assumed to be 53 until `/squad-plan` actually runs for it.
+- **Story 53 (`SEC-4`, `SUPPORTOS-75`)** — Settings model + admin UI for org-level configuration (branding/departments/branches/SLA defaults) — independent of the other three (no `Dependencies:` line in its own intake). All four SEC stories are now planned.
+
+**Verified findings that shaped Story 53:**
+
+- **`apps/organization` was an untouched `startapp` scaffold** — this is the first story to put real code in it, fulfilling the "org-level settings" third of `apps/README.md`'s own app-table promise for that app (line 67).
+- **`OrganizationSettings` is a singleton** (`save()` forces `pk=1`, `delete()` is a no-op, `load()` is the only accessor) — this codebase's first singleton model, deliberately self-built rather than a new `django-solo`-style dependency.
+- **`departments`/`branches` are `JSONField(default=list)` string lists, not new `Department`/`Branch` tables** — the direct generalization of `Role.permissions`'s own "a list of strings that doesn't need its own table today" precedent; neither list has any other consumer yet, a deliberate, flagged scope decision.
+- **SLA defaults are wired, not inert**: `apps/sla/policy.py::resolve_policy` gained a third fallback tier reading `OrganizationSettings`'s two default-minutes fields, returned as an unsaved `SLAPolicy` instance — zero risk to `compute_sla_status`, which already tolerates a `None` `policy_id`.
+- **`logo_url` is a plain URL field, not an uploaded file** — combining a multipart file upload with this model's JSON list fields in one request would need an untested parsing path this codebase has never exercised (its one existing upload, `uploadAttachment.ts`, never combines a file with a `JSONField`).
+- **`Permissions.SETTINGS_MANAGE` is granted to the seeded `admin` role only**, the same admin-only posture `ROLES_MANAGE`/`AUDIT_LOG_VIEW` already have.
 
 **Verified findings that shaped Story 52:**
 

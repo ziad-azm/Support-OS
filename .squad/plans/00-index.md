@@ -15,4 +15,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | design-intelligence-ui-ux-system | [design-intelligence-ui-ux-system/00-overview.md](design-intelligence-ui-ux-system/00-overview.md) | 35–38, 50–51 (EPIC 8 fully planned; DSN-0/1/2/3/4 implemented, DSN-5 planned) |
 | knowledge-base | [knowledge-base/00-overview.md](knowledge-base/00-overview.md) | 39–41 (EPIC 9 fully planned, KB-1/KB-2/KB-3) |
 | customer-portal | [customer-portal/00-overview.md](customer-portal/00-overview.md) | 42–47 (EPIC 10 fully planned, PORTAL-0 through PORTAL-5) |
-| security-administration | [security-administration/00-overview.md](security-administration/00-overview.md) | 48–49, 52 (EPIC 14, SEC-1/SEC-2/SEC-3 planned; SEC-4 not yet planned) |
+| security-administration | [security-administration/00-overview.md](security-administration/00-overview.md) | 48–49, 52–53 (EPIC 14 fully planned, SEC-1 through SEC-4) |

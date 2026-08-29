@@ -640,6 +640,12 @@ function TicketForm() {
 }
 ```
 
+**`nullablePositiveInt(max?)`** (Story 53) is `positiveInt`'s coerced-number
+validator combined with `nullableEmail`/`nullableString`'s `'' -> null`
+transform — for a nullable numeric database column edited through a text
+input, the same shape `OrganizationSettings.default_response_target_minutes`/
+`default_resolution_target_minutes` need.
+
 ---
 
 ## 21. Authentication (JWT)
@@ -1430,6 +1436,17 @@ extracted into a new `shared/ui/form/CheckboxListField.tsx`. The options
 themselves are grouped by a computed transform of a code identifier (the
 permission string's area prefix), not translated copy — the same category
 of content `RoleListPage`'s `slug` column already shows untranslated.
+
+**A "there is exactly one row" configuration table is a small, self-built
+singleton, not a new dependency.** `OrganizationSettings` (Story 53,
+`SEC-4`) is this codebase's first singleton model: `save()` forces `pk=1`,
+`delete()` is a no-op, and `load()` (`get_or_create(pk=1)`) is the only
+supported way to get an instance. No third-party package (e.g.
+`django-solo`) is installed for this — the pattern is small enough to
+own directly, the same "no new dependency" bias every other story in this
+project has followed. `MeView` (Story 08) is the closer-to-hand precedent
+for the *API* shape this pairs with: a `GET`/`PATCH` endpoint with no id
+in the URL, because there is exactly one relevant object.
 
 ---
 

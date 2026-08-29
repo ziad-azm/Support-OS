@@ -14,6 +14,8 @@ import liveChatAr from '@/features/live-chat/locales/ar.json'
 import liveChatEn from '@/features/live-chat/locales/en.json'
 import notificationsAr from '@/features/notifications/locales/ar.json'
 import notificationsEn from '@/features/notifications/locales/en.json'
+import organizationAr from '@/features/organization/locales/ar.json'
+import organizationEn from '@/features/organization/locales/en.json'
 import portalAr from '@/features/portal/locales/ar.json'
 import portalEn from '@/features/portal/locales/en.json'
 import tasksAr from '@/features/tasks/locales/ar.json'
@@ -52,6 +54,7 @@ export const resources = {
     liveChat: liveChatEn,
     webForm: webFormEn,
     notifications: notificationsEn,
+    organization: organizationEn,
     portal: portalEn,
     tasks: tasksEn,
     knowledgeBase: knowledgeBaseEn,
@@ -69,6 +72,7 @@ export const resources = {
     liveChat: liveChatAr,
     webForm: webFormAr,
     notifications: notificationsAr,
+    organization: organizationAr,
     portal: portalAr,
     tasks: tasksAr,
     knowledgeBase: knowledgeBaseAr,

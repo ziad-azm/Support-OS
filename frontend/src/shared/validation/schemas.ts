@@ -60,6 +60,16 @@ export function positiveInt(max?: number) {
   return max === undefined ? base : base.max(max)
 }
 
+/** A number typed into a text input, for a NULLABLE database column. Empty
+ * input becomes `null`, not `undefined` — same '' -> null reasoning as
+ * `nullableString`/`nullableEmail`, combined with `positiveInt`'s own
+ * coerced validator. */
+export function nullablePositiveInt(max?: number) {
+  const numberSchema =
+    max === undefined ? z.coerce.number().int().min(1) : z.coerce.number().int().min(1).max(max)
+  return z.union([z.literal(''), numberSchema]).transform((value) => (value === '' ? null : value))
+}
+
 /** A `<select>` over a fixed set. Matches a DRF `ChoiceField`. */
 export function choice<const T extends readonly [string, ...string[]]>(values: T) {
   return z.enum(values)

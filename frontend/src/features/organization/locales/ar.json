@@ -1,0 +1,19 @@
+{
+  "settings": {
+    "title": "إعدادات المؤسسة",
+    "saved": "تم حفظ الإعدادات.",
+    "fields": {
+      "name": "اسم المؤسسة",
+      "logoUrl": "رابط الشعار",
+      "departments": "الأقسام",
+      "branches": "الفروع",
+      "defaultResponseMinutes": "هدف الاستجابة الافتراضي (بالدقائق)",
+      "defaultResolutionMinutes": "هدف الحل الافتراضي (بالدقائق)"
+    },
+    "addDepartment": "إضافة قسم",
+    "addBranch": "إضافة فرع",
+    "newItemPlaceholder": "الاسم",
+    "remove": "إزالة",
+    "actions": { "save": "حفظ" }
+  }
+}
