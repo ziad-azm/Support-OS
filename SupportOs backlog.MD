@@ -348,6 +348,14 @@
 - **Task: `TicketActivity` log & API** 🔑 (reusable activity-log pattern) — Implement change logging (status/assignment/replies) + history endpoint. Outcome: auditable ticket timeline pattern reusable elsewhere.
 - **Task: History timeline UI** — Implement activity timeline reusing timeline/state components. Outcome: full ticket history view.
 
+### STORY (TKT-6) — Category Management UI
+
+**⏭ Next up.**
+**Description:** `TKT-2` already shipped the `Category` model and its management API — but no in-app screen, so Django Admin has been the only way to add/edit/delete a category. This story closes that gap with a small, dedicated screen inside the app itself.
+**Dependencies:** TKT-2.
+
+- **Task: Category CRUD UI** — Implement a simple list + create/edit/delete screen for `Category`, reusing the existing `UI` table/primitives and `FORM` (RHF+Zod), calling `TKT-2`'s already-built `Category` API — no backend change needed. Constraints: reuse `AUTHZ` (`tickets.manage`, matching the permission other ticket-admin actions already use); no new permission string unless a real gap is found. Outcome: categories are managed from the app, Django Admin no longer required for day-to-day use.
+
 ---
 
 ---

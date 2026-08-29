@@ -8,3 +8,10 @@ export type Category = {
   created_at: string
   updated_at: string
 }
+
+/** The write shape. `id`/`created_at`/`updated_at` are server-managed
+ * (`BaseModelSerializer.Meta.read_only_fields`) — the only writable field
+ * is `name`. */
+export type CategoryInput = {
+  name: string
+}

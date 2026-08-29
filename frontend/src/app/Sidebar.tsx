@@ -12,6 +12,7 @@ import {
   SearchIcon,
   SettingsIcon,
   ShieldCheckIcon,
+  TagIcon,
   TicketIcon,
   UserCogIcon,
 } from 'lucide-react'
@@ -136,6 +137,14 @@ export function Sidebar() {
             to="/tickets/my-tickets"
             icon={InboxIcon}
             label={t('tickets:myQueue.title')}
+            collapsed={collapsed}
+          />
+        </Can>
+        <Can permission="tickets.manage">
+          <SidebarLink
+            to="/categories"
+            icon={TagIcon}
+            label={t('tickets:categories.title')}
             collapsed={collapsed}
           />
         </Can>

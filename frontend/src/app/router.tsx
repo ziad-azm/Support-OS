@@ -294,6 +294,36 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="tickets.manage" />,
+            children: [
+              {
+                path: 'categories',
+                lazy: async () => {
+                  const { CategoryListPage } =
+                    await import('@/features/tickets/components/CategoryListPage')
+                  return { element: <CategoryListPage /> }
+                },
+              },
+              {
+                // Must stay before `categories/:id`, same reason as `roles/new`.
+                path: 'categories/new',
+                lazy: async () => {
+                  const { CategoryFormPage } =
+                    await import('@/features/tickets/components/CategoryFormPage')
+                  return { element: <CategoryFormPage /> }
+                },
+              },
+              {
+                path: 'categories/:id/edit',
+                lazy: async () => {
+                  const { CategoryFormPage } =
+                    await import('@/features/tickets/components/CategoryFormPage')
+                  return { element: <CategoryFormPage /> }
+                },
+              },
+            ],
+          },
+          {
             element: <RequirePermission permission="audit_log.view" />,
             children: [
               {

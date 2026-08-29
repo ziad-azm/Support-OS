@@ -156,5 +156,27 @@
     },
     "created": "Note added.",
     "updated": "Note updated."
+  },
+  "categories": {
+    "title": "Categories",
+    "new": "New category",
+    "edit": "Edit category",
+    "empty": "No categories yet",
+    "emptyDescription": "Create the first category to get started.",
+    "fields": {
+      "name": "Name",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete this category?",
+      "description": "Tickets using this category become uncategorized. This cannot be undone."
+    },
+    "created": "Category created.",
+    "updated": "Category updated."
   }
 }

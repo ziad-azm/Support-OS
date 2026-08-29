@@ -14,8 +14,8 @@ class MessageInline(admin.TabularInline):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    """Also the de facto category-management UI for now — this story ships
-    no frontend CRUD screen for categories. See Story 18 `## Story Goal`.
+    """Retained alongside the frontend CRUD screen (`/categories`, Story 54)
+    as a superuser-only fallback — not the only management path anymore.
     """
 
     list_display = ("name", "created_at")
