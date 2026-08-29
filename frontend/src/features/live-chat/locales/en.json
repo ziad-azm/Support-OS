@@ -1,13 +1,18 @@
 {
   "start": {
     "title": "Start a conversation",
+    "subtitle": "Tell us your name and we'll connect you with an agent right away.",
     "name": "Your name",
     "email": "Email (optional)",
-    "action": "Start chat"
+    "action": "Start chat",
+    "contactPrompt": "Prefer email instead?",
+    "contactLink": "Submit a request"
   },
   "chat": {
     "title": "Live chat",
+    "subtitle": "An agent will reply here shortly.",
     "placeholder": "Type a message",
+    "empty": "No messages yet — say hello!",
     "send": "Send"
   }
 }
