@@ -8,17 +8,49 @@
   },
   "nav": {
     "home": "الرئيسية",
+    "myTickets": "تذاكري",
     "newTicket": "تذكرة جديدة"
   },
   "tickets": {
     "new": "إرسال تذكرة",
     "fields": {
       "subject": "الموضوع",
-      "description": "الوصف"
+      "description": "الوصف",
+      "category": "الفئة",
+      "noCategory": "بدون فئة",
+      "assignedAgent": "مسندة إلى",
+      "unassigned": "غير مسندة",
+      "status": "الحالة",
+      "priority": "الأولوية",
+      "createdAt": "تاريخ الإرسال"
     },
     "actions": {
       "submit": "إرسال"
     },
-    "created": "تم إرسال تذكرتك بنجاح."
+    "created": "تم إرسال تذكرتك بنجاح.",
+    "statuses": {
+      "open": "مفتوحة",
+      "in_progress": "قيد المعالجة",
+      "resolved": "تم الحل",
+      "closed": "مغلقة"
+    },
+    "priorities": {
+      "low": "منخفضة",
+      "medium": "متوسطة",
+      "high": "عالية",
+      "urgent": "عاجلة"
+    },
+    "list": {
+      "title": "تذاكري",
+      "empty": "لا توجد تذاكر بعد",
+      "emptyDescription": "أرسل تذكرتك الأولى وستظهر هنا."
+    },
+    "filters": {
+      "status": "الحالة",
+      "allStatuses": "كل الحالات"
+    },
+    "detail": {
+      "backToList": "العودة إلى تذاكري"
+    }
   }
 }

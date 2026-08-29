@@ -8,17 +8,49 @@
   },
   "nav": {
     "home": "Home",
+    "myTickets": "My tickets",
     "newTicket": "New ticket"
   },
   "tickets": {
     "new": "Submit a ticket",
     "fields": {
       "subject": "Subject",
-      "description": "Description"
+      "description": "Description",
+      "category": "Category",
+      "noCategory": "Uncategorized",
+      "assignedAgent": "Assigned to",
+      "unassigned": "Unassigned",
+      "status": "Status",
+      "priority": "Priority",
+      "createdAt": "Submitted"
     },
     "actions": {
       "submit": "Submit"
     },
-    "created": "Your ticket has been submitted."
+    "created": "Your ticket has been submitted.",
+    "statuses": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "list": {
+      "title": "My tickets",
+      "empty": "No tickets yet",
+      "emptyDescription": "Submit your first ticket and it will show up here."
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All statuses"
+    },
+    "detail": {
+      "backToList": "Back to my tickets"
+    }
   }
 }

@@ -4,14 +4,19 @@ from .views import PortalTicketViewSet
 
 app_name = "portal"
 
-# A plain `path()`, not a router: this viewset exposes exactly one action.
-# Registering it with a router would additionally route list/retrieve/
-# update/destroy URLs this story does not want reachable — see
-# PortalTicketViewSet's own docstring.
+# Plain path()s, not a router: this viewset exposes exactly three actions.
+# Registering it with a router would additionally route update/partial_update
+# /destroy URLs no story has asked for — see PortalTicketViewSet's own
+# docstring.
 urlpatterns = [
     path(
         "portal/tickets/",
-        PortalTicketViewSet.as_view({"post": "create"}),
-        name="portal-ticket-create",
+        PortalTicketViewSet.as_view({"get": "list", "post": "create"}),
+        name="portal-ticket-list",
+    ),
+    path(
+        "portal/tickets/<int:pk>/",
+        PortalTicketViewSet.as_view({"get": "retrieve"}),
+        name="portal-ticket-detail",
     ),
 ]

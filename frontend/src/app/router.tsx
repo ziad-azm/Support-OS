@@ -280,11 +280,30 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'tickets',
+                lazy: async () => {
+                  const { PortalTicketListPage } =
+                    await import('@/features/portal/components/PortalTicketListPage')
+                  return { element: <PortalTicketListPage /> }
+                },
+              },
+              {
+                // Must stay before `tickets/:id`, the same reason
+                // `customers/new`/`tickets/new` are declared before their
+                // own `:id` siblings elsewhere in this file.
                 path: 'tickets/new',
                 lazy: async () => {
                   const { PortalTicketFormPage } =
                     await import('@/features/portal/components/PortalTicketFormPage')
                   return { element: <PortalTicketFormPage /> }
+                },
+              },
+              {
+                path: 'tickets/:id',
+                lazy: async () => {
+                  const { PortalTicketDetailPage } =
+                    await import('@/features/portal/components/PortalTicketDetailPage')
+                  return { element: <PortalTicketDetailPage /> }
                 },
               },
             ],

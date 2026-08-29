@@ -31,6 +31,9 @@ export function PortalLayout() {
               <Link to="/portal">{t('nav.home')}</Link>
             </Button>
             <Button asChild variant="ghost" size="sm">
+              <Link to="/portal/tickets">{t('nav.myTickets')}</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
               <Link to="/portal/tickets/new">{t('nav.newTicket')}</Link>
             </Button>
           </nav>

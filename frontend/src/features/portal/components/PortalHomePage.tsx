@@ -10,9 +10,14 @@ export function PortalHomePage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold">{t('home.title')}</h1>
       <p className="text-sm text-muted-foreground">{t('home.intro')}</p>
-      <Button asChild className="self-start">
-        <Link to="/portal/tickets/new">{t('tickets.new')}</Link>
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild>
+          <Link to="/portal/tickets/new">{t('tickets.new')}</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/portal/tickets">{t('nav.myTickets')}</Link>
+        </Button>
+      </div>
     </div>
   )
 }
