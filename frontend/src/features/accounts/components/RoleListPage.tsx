@@ -57,16 +57,12 @@ export function RoleListPage() {
       cell: (row) => t('roles.permissionCount', { count: row.permissions.length }),
     },
     {
-      id: 'is_system',
-      header: '',
-      cell: (row) =>
-        row.is_system ? <Badge variant="outline">{t('roles.systemBadge')}</Badge> : null,
-    },
-    {
       id: 'actions',
       header: t('roles.fields.actions'),
       cell: (row) =>
-        row.is_system ? null : (
+        row.is_system ? (
+          <Badge variant="outline">{t('roles.systemBadge')}</Badge>
+        ) : (
           <Can permission="roles.manage">
             <Button size="sm" variant="ghost" onClick={() => void handleDelete(row)}>
               {t('roles.actions.delete')}

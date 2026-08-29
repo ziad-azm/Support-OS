@@ -74,7 +74,10 @@ export function UserListPage() {
       header: t('users.fields.status'),
       sortable: true,
       cell: (row) => (
-        <Badge variant={row.is_active ? 'secondary' : 'outline'}>
+        <Badge
+          variant={row.is_active ? 'success' : 'destructive'}
+          className={row.is_active ? 'text-white' : undefined}
+        >
           {row.is_active ? t('users.status.active') : t('users.status.inactive')}
         </Badge>
       ),
