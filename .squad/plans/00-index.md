@@ -16,3 +16,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | knowledge-base | [knowledge-base/00-overview.md](knowledge-base/00-overview.md) | 39–41 (EPIC 9 fully planned, KB-1/KB-2/KB-3) |
 | customer-portal | [customer-portal/00-overview.md](customer-portal/00-overview.md) | 42–47 (EPIC 10 fully planned, PORTAL-0 through PORTAL-5) |
 | security-administration | [security-administration/00-overview.md](security-administration/00-overview.md) | 48–49, 52–53 (EPIC 14 fully planned, SEC-1 through SEC-4) |
+| reports-analytics | [reports-analytics/00-overview.md](reports-analytics/00-overview.md) | 55 (EPIC 11 started, RPT-0 planned; RPT-1–RPT-5 pending) |
