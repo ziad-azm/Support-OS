@@ -67,8 +67,13 @@ import), `schemas.ts` (shared field-shape helpers), and `serverErrors.ts`
 `src/shared/ui/form/` holds `useAppForm` (the only form entry point) and the
 six shared field components (`TextField`, `TextareaField`, `SelectField`,
 `CheckboxField`, `SwitchField`, `RadioGroupField`), following the same
-file-shape precedent as `shared/ui/confirm/`. See `CONVENTIONS.md` § 20 for
-the full rules and a worked example. `schemas.ts` also holds
+file-shape precedent as `shared/ui/confirm/`. `shared/ui/chart/`
+(`ChartFrame`, `ChartDataTable`, `LineChart`, `BarChart`, Story 55,
+`RPT-0`) is a third folder in that shape — its components live in
+`shared/` rather than inside the `reports` feature specifically because
+`no-restricted-imports` would otherwise block every other report feature
+from reusing them. See `CONVENTIONS.md` § 20 for the full rules and a
+worked example. `schemas.ts` also holds
 `nullableString`/`nullableEmail` beside `optionalString`/`optionalEmail` —
 reach for the nullable pair on a **nullable** database column, where a
 cleared field must round-trip as an explicit `null`; keep the optional pair

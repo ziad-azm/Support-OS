@@ -42,5 +42,15 @@
   "sidebar": {
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar"
+  },
+  "chart": {
+    "showTable": "Show data table",
+    "hideTable": "Hide data table",
+    "dataTableCaption": "{{title}} — data table",
+    "empty": "No data for this period",
+    "series": "Series",
+    "value": "Value",
+    "period": "Period",
+    "category": "Category"
   }
 }

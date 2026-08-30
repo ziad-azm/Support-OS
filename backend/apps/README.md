@@ -49,6 +49,13 @@ the newest example, alongside the existing `config/asgi.py`/`wsgi.py`.
 `core` is **not** a dumping ground. It holds no business logic and nothing that
 only one app uses. A helper used by exactly one app lives in that app.
 
+`apps/reports/aggregation.py`/`export.py` (Story 55, `RPT-0`) are a
+worked example of rule 1 beating rule 2 even when several future stories
+will call them: `RPT-1`…`RPT-5` are all reports inside the one `reports`
+business area, so "belongs to exactly one business area → that app" is
+already satisfied before "needed by two or more apps → `core`" is ever
+reached.
+
 ## Files are created on demand
 
 An app gets a `serializers.py` when it has a serializer and a `urls.py` when it

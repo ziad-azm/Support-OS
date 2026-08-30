@@ -1621,7 +1621,7 @@ touch target size (`icon-xs` = 24px, meets WCAG 2.2's minimum exactly).
 Recorded by `DSN-3` (Story 38, `SupportOs backlog.MD:520`) against each
 `RPT-*` report's actual data shape (`SupportOs backlog.MD:600-633`), queried
 fresh from `charts.csv` — not a generic chart-type list. `RPT-0`
-(Reporting Foundation, unplanned) implements its shared chart wrapper
+(Reporting Foundation, Story 55) implements its shared chart wrapper
 against this table; no chart library, component, or token exists yet.
 
 | Report | Data shape | Chart type | Library options | Color guidance |
@@ -1788,3 +1788,59 @@ then links it to a `Customer` row's `user` field — the same
 admin-first-until-SEC-1 pattern § 22 already documents for staff role
 assignment. There is no self-service registration and no combined
 create-and-link form.
+
+---
+
+## 27. Reporting (RPT-0)
+
+`RPT-0` (Story 55) is the shared foundation `RPT-1`…`RPT-5` build on. See
+§ 25 above for the chart-type specification it implements against.
+
+1. **`apps/reports/aggregation.py` is the only place a report query is
+   bucketed or grouped.** `bucketed_counts`/`grouped_counts` take a
+   **queryset** and a field name, so a report view never writes its own
+   `Trunc*`/`values().annotate()` chain — that chain is where the classic
+   Django aggregation bugs live (see point 3 below).
+2. **A trend series is always gap-filled.** `bucketed_counts` returns one
+   row per bucket across the whole requested range, `value: 0` included,
+   even when nothing fell in it. A missing bucket would otherwise draw a
+   straight line across a real zero and silently misrepresent the trend.
+3. **Two quiet aggregation failures this project has already hit once,
+   fixed permanently in `aggregation.py`, never to be re-solved per
+   report:** Django's `TruncWeek` truncates to **Monday**, so a gap-fill
+   spine that steps in 7-day increments from an arbitrary start (instead of
+   snapping to Monday first) never matches the database's own keys and the
+   whole series reads as zeros. And a model's default `Meta.ordering`
+   (e.g. `Ticket.Meta.ordering = ("-created_at",)`) silently joins itself
+   into a `GROUP BY` and fragments an aggregate into one row per record
+   unless `.order_by()` is called explicitly — every aggregate chain in
+   `aggregation.py` ends in one.
+4. **The export query parameter is `?export=csv`, never `?format=csv`.**
+   DRF's `DefaultContentNegotiation` reads `?format=` as a renderer
+   override and raises `Http404` when no renderer matches
+   (`rest_framework/negotiation.py:41-45,80-89`) — this project registers
+   exactly one renderer, format `"json"` (`config/settings/base.py:229`).
+   Worse, `APIView.initial()` negotiates content **before** it checks
+   permissions (`rest_framework/views.py:404-420`), so `?format=csv` would
+   404 before a view body or permission check ever ran. `BaseReportView`
+   (`apps/reports/views.py`) names the parameter `export` instead.
+5. **A report response is a flat list of dicts; the CSV and the JSON are
+   the same rows.** `BaseReportView.get` calls `get_report` once and
+   branches only on how to render the result — an exported file can never
+   disagree with the chart the user was looking at.
+6. **`frontend/src/shared/ui/chart/` is the only home for chart
+   components.** `no-restricted-imports` (`.oxlintrc.json`) forbids one
+   feature importing another's code, so a chart built inside one `RPT-*`
+   feature could never be reused by a sibling report. Every chart is
+   rendered inside `ChartFrame`, which is what supplies § 25's required
+   data-table fallback — a report screen never renders `LineChart`/
+   `BarChart` directly.
+7. **No chart library.** Two of the four chart types this epic needs
+   (Bullet, Waffle) have no mainstream React library implementation, and
+   § 25 lists only D3/Plotly/Custom SVG/Custom CSS Grid for them — so no
+   single library covers the epic, and adopting one for Line/Bar alone
+   would still leave Bullet/Waffle custom and add a dependency whose
+   output must be overridden anyway to satisfy § 25's accessibility floor
+   and this project's RTL discipline. Plain SVG, per `LineChart.tsx`/
+   `BarChart.tsx`. `RPT-1`…`RPT-5` inherit this decision; it is not
+   reopened per report.
