@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   BookOpenIcon,
+  ChartNoAxesColumnIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
   ContactIcon,
@@ -82,6 +83,7 @@ export function Sidebar() {
     'accounts',
     'auditLog',
     'organization',
+    'reports',
   ])
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(readCollapsed)
@@ -187,6 +189,14 @@ export function Sidebar() {
             to="/roles"
             icon={ShieldCheckIcon}
             label={t('accounts:roles.title')}
+            collapsed={collapsed}
+          />
+        </Can>
+        <Can permission="reports.view">
+          <SidebarLink
+            to="/reports/tickets"
+            icon={ChartNoAxesColumnIcon}
+            label={t('reports:title')}
             collapsed={collapsed}
           />
         </Can>

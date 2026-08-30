@@ -1,0 +1,44 @@
+{
+  "title": "Ticket Reports",
+  "volume": {
+    "title": "Ticket volume over time",
+    "description": "Tickets created in the selected period.",
+    "allTickets": "All tickets"
+  },
+  "breakdown": {
+    "title": "Tickets by {{dimension}}",
+    "description": "Ticket counts for the selected period, highest first."
+  },
+  "filters": {
+    "from": "From",
+    "to": "To",
+    "bucket": "Group by",
+    "series": "Split by",
+    "noSeries": "No split",
+    "dimension": "Breakdown by"
+  },
+  "buckets": { "day": "Day", "week": "Week", "month": "Month" },
+  "dimensions": {
+    "status": "Status",
+    "priority": "Priority",
+    "category": "Category",
+    "channel": "Channel"
+  },
+  "statuses": {
+    "open": "Open",
+    "in_progress": "In progress",
+    "resolved": "Resolved",
+    "closed": "Closed"
+  },
+  "priorities": { "low": "Low", "medium": "Medium", "high": "High", "urgent": "Urgent" },
+  "channels": {
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "chat": "Live chat",
+    "sms": "SMS",
+    "web_form": "Web form",
+    "direct": "Created directly"
+  },
+  "fields": { "period": "Period", "series": "Series", "value": "Tickets" },
+  "actions": { "exportCsv": "Export CSV", "exportFailed": "Could not export the report." }
+}

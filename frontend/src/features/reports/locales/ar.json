@@ -1,0 +1,49 @@
+{
+  "title": "تقارير التذاكر",
+  "volume": {
+    "title": "حجم التذاكر عبر الزمن",
+    "description": "التذاكر التي أُنشئت خلال الفترة المحددة.",
+    "allTickets": "كل التذاكر"
+  },
+  "breakdown": {
+    "title": "التذاكر حسب {{dimension}}",
+    "description": "أعداد التذاكر للفترة المحددة، من الأعلى إلى الأقل."
+  },
+  "filters": {
+    "from": "من",
+    "to": "إلى",
+    "bucket": "التجميع حسب",
+    "series": "التقسيم حسب",
+    "noSeries": "بدون تقسيم",
+    "dimension": "التصنيف حسب"
+  },
+  "buckets": { "day": "يوم", "week": "أسبوع", "month": "شهر" },
+  "dimensions": {
+    "status": "الحالة",
+    "priority": "الأولوية",
+    "category": "الفئة",
+    "channel": "القناة"
+  },
+  "statuses": {
+    "open": "مفتوحة",
+    "in_progress": "قيد المعالجة",
+    "resolved": "تم الحل",
+    "closed": "مغلقة"
+  },
+  "priorities": {
+    "low": "منخفضة",
+    "medium": "متوسطة",
+    "high": "عالية",
+    "urgent": "عاجلة"
+  },
+  "channels": {
+    "email": "البريد الإلكتروني",
+    "whatsapp": "واتساب",
+    "chat": "الدردشة المباشرة",
+    "sms": "رسالة نصية",
+    "web_form": "نموذج الويب",
+    "direct": "أُنشئت مباشرة"
+  },
+  "fields": { "period": "الفترة", "series": "السلسلة", "value": "التذاكر" },
+  "actions": { "exportCsv": "تصدير CSV", "exportFailed": "تعذر تصدير التقرير." }
+}

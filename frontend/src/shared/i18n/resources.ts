@@ -18,6 +18,8 @@ import organizationAr from '@/features/organization/locales/ar.json'
 import organizationEn from '@/features/organization/locales/en.json'
 import portalAr from '@/features/portal/locales/ar.json'
 import portalEn from '@/features/portal/locales/en.json'
+import reportsAr from '@/features/reports/locales/ar.json'
+import reportsEn from '@/features/reports/locales/en.json'
 import tasksAr from '@/features/tasks/locales/ar.json'
 import tasksEn from '@/features/tasks/locales/en.json'
 import ticketsAr from '@/features/tickets/locales/ar.json'
@@ -56,6 +58,7 @@ export const resources = {
     notifications: notificationsEn,
     organization: organizationEn,
     portal: portalEn,
+    reports: reportsEn,
     tasks: tasksEn,
     knowledgeBase: knowledgeBaseEn,
   },
@@ -74,6 +77,7 @@ export const resources = {
     notifications: notificationsAr,
     organization: organizationAr,
     portal: portalAr,
+    reports: reportsAr,
     tasks: tasksAr,
     knowledgeBase: knowledgeBaseAr,
   },

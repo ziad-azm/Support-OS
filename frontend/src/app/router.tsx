@@ -324,6 +324,19 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="reports.view" />,
+            children: [
+              {
+                path: 'reports/tickets',
+                lazy: async () => {
+                  const { TicketReportsPage } =
+                    await import('@/features/reports/components/TicketReportsPage')
+                  return { element: <TicketReportsPage /> }
+                },
+              },
+            ],
+          },
+          {
             element: <RequirePermission permission="audit_log.view" />,
             children: [
               {

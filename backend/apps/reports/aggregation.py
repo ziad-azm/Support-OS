@@ -120,6 +120,7 @@ def bucketed_counts(
     end: datetime,
     bucket: str = DEFAULT_BUCKET,
     series_field: str | None = None,
+    null_label: str = "",
 ) -> list[dict]:
     """Rows-per-time-bucket, gap-filled, ascending by bucket.
 
@@ -134,6 +135,13 @@ def bucketed_counts(
     `bucket` values are `YYYY-MM-DD` date strings, not datetimes — the
     frontend formats them through `useFormatters().date()`, and a bucket is
     a day/week/month, never an instant.
+
+    `null_label` mirrors `grouped_counts`'s own NULL policy: a row whose
+    `series_field` is SQL NULL (a nullable FK with nothing assigned) is
+    counted under `null_label` rather than dropped. Without this, sorting
+    the collected series keys compares `str` with `None` and raises
+    `TypeError` — a real crash, hit by RPT-1's origin-channel split and
+    RPT-3's `assigned_agent` split. See Story 56 `## Prerequisites`.
     """
     trunc = BUCKETS[bucket]
     tz = timezone.get_current_timezone()
@@ -147,10 +155,18 @@ def bucketed_counts(
     counts: dict[tuple, int] = {}
     for row in rows:
         bucket_date = row["_bucket"].date() if hasattr(row["_bucket"], "date") else row["_bucket"]
-        key = (bucket_date, row[series_field]) if series_field else (bucket_date,)
+        series_value = row[series_field] if series_field else None
+        if series_field and series_value is None:
+            series_value = null_label
+        key = (bucket_date, series_value) if series_field else (bucket_date,)
         counts[key] = row["_count"]
 
-    series_keys = sorted({key[1] for key in counts if series_field}) if series_field else [None]
+    # Every series key is a string by this point (NULLs became `null_label`
+    # above), so this sort cannot raise. It did before: a nullable
+    # `series_field` — RPT-1's origin channel, RPT-3's `assigned_agent` —
+    # made this `sorted()` compare str with None and TypeError. See Story 56
+    # `## Prerequisites`.
+    series_keys = sorted({key[1] for key in counts}) if series_field else [None]
     spine = _bucket_starts(start, end, bucket)
 
     result: list[dict] = []

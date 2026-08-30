@@ -35,6 +35,7 @@ class Permissions:
     PORTAL_ACCESS = "portal.access"
     AUDIT_LOG_VIEW = "audit_log.view"
     SETTINGS_MANAGE = "settings.manage"
+    REPORTS_VIEW = "reports.view"
 
 
 ALL_PERMISSIONS: frozenset[str] = frozenset(

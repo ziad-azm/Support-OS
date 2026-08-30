@@ -1805,6 +1805,9 @@ create-and-link form.
    row per bucket across the whole requested range, `value: 0` included,
    even when nothing fell in it. A missing bucket would otherwise draw a
    straight line across a real zero and silently misrepresent the trend.
+   A nullable `series_field` maps NULL to `null_label` before the series
+   keys are sorted — without it the sort compares `str` with `None` and
+   raises (`RPT-1`'s origin channel, `RPT-3`'s `assigned_agent`).
 3. **Two quiet aggregation failures this project has already hit once,
    fixed permanently in `aggregation.py`, never to be re-solved per
    report:** Django's `TruncWeek` truncates to **Monday**, so a gap-fill
@@ -1844,3 +1847,15 @@ create-and-link form.
    and this project's RTL discipline. Plain SVG, per `LineChart.tsx`/
    `BarChart.tsx`. `RPT-1`…`RPT-5` inherit this decision; it is not
    reopened per report.
+8. **A report's dimensions are a whitelist, never a field name off the
+   query string.** `apps/reports/tickets.py::DIMENSION_FIELDS` maps the
+   four wire values to queryset fields; `parse_dimension` rejects
+   everything else. An endpoint that resolved `?dimension=` directly
+   would be a general-purpose data-extraction API for anyone with
+   `reports.view`.
+9. **A bucket is a calendar date, so format it in UTC.** `bucketed_counts`
+   emits `YYYY-MM-DD`, which JS parses as UTC midnight — rendered through
+   `useFormatters().date()` with no options it shows the **previous day**
+   anywhere west of Greenwich (verified: `'2026-01-01'` → "Dec 31, 2025"
+   in `America/New_York`). Every bucket label passes
+   `{ dateStyle: 'medium', timeZone: 'UTC' }`.
