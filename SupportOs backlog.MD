@@ -503,7 +503,7 @@
 
 # EPIC 8 — Design Intelligence & UI/UX System
 
-**Description:** Applies AI-driven design intelligence (via the `ui-ux-pro-max` skill) to generate and codify a tailored design system — palette, typography, UI patterns, accessibility/UX guidelines, and chart guidance — layered on top of `UI` (EPIC 1) and retrofitted across already-built screens (EPIC 0-7) before Knowledge Base and later features add more UI.
+**Description:** Applies AI-driven design intelligence (via the `ui-ux-pro-max` skill) to generate and codify a tailored design system — palette, typography, UI patterns, accessibility/UX guidelines, and chart guidance — layered on top of `UI` (EPIC 1) and retrofitted across already-built screens (EPIC 0-7) before Knowledge Base and later features add more UI. Also runs the dedicated _audit → fix → verify_ pass (`DSN-6`–`DSN-13`) over the entire built product (EPICs 0–11) from a professional UI/UX perspective — cross-feature consistency, usability, interaction/feedback, responsiveness, forms, information architecture, and bilingual content quality — before AI Features and later epics add more surface.
 **Depends on:** Internationalization & Design System (`UI`, `I18N`), Agent Workspace (existing built screens).
 
 ### STORY (DSN-0) — Design Intelligence Foundation
@@ -545,13 +545,85 @@
 ### STORY (DSN-5) — App Shell Redesign: Sidebar Navigation & Theme Backgrounds
 
 **As a user, I want a proper sidebar and a considered light/dark background palette instead of a bare top bar and flat grayscale surfaces, so that navigating the app feels like a real product, not a scaffold.**
-**Description:** Complements `DSN-4`. That story polishes existing components in place; this one changes the app **shell** itself — the current top-bar nav (`frontend/src/app/RootLayout.tsx`) becomes a sidebar, and the base surface tokens (background/card/muted/border — not just the accent colors `DSN-1` already retinted) get a real light/dark treatment. This is the one story in `EPIC 8` that is *not* token-only — converting the nav from a header to a sidebar is a deliberate layout restructuring, done carefully to preserve every existing permission gate, i18n label, and route unchanged.
+**Description:** Complements `DSN-4`. That story polishes existing components in place; this one changes the app **shell** itself — the current top-bar nav (`frontend/src/app/RootLayout.tsx`) becomes a sidebar, and the base surface tokens (background/card/muted/border — not just the accent colors `DSN-1` already retinted) get a real light/dark treatment. This is the one story in `EPIC 8` that is _not_ token-only — converting the nav from a header to a sidebar is a deliberate layout restructuring, done carefully to preserve every existing permission gate, i18n label, and route unchanged.
 **Dependencies:** DSN-0. Complements DSN-4 (either order is fine; both build on `DSN`'s spec).
 
 - **Task: Sidebar navigation shell** — Replace `RootLayout.tsx`'s top `<nav>` with a collapsible sidebar (start-side in LTR, end-side in RTL, per `I18N`'s logical-direction rules), preserving every existing `<Can permission="...">`-gated link, i18n label, the notification bell, and logout exactly as they behave today — only the container markup and layout change, not the route/permission logic. Outcome: real app-shell navigation instead of a single crowded header row.
 - **Task: Light/dark background & surface refresh** — Beyond `DSN-1`'s accent-only swap (`--primary`/`--secondary`/`--destructive`), retint the base surface tokens (`--background`, `--foreground`, `--card`, `--muted`, `--border`) in `frontend/src/index.css` for both `:root` and `.dark` per `DSN`'s guidance, so the new sidebar and every page have real depth/contrast instead of shadcn's default flat grayscale. Outcome: light and dark mode both look designed, not just recolored accents on a gray canvas.
 - **Task: Button & input primitive polish** — Refine the shared primitives every form and screen already composes from (`shared/ui/primitives/button.tsx`, `input.tsx`, `select.tsx`, and the shared field components in `shared/ui/form/`) with `DSN`'s guidance on shadows, hover/focus/active states, and sizing. Constraints: component-level only — no per-feature overrides — so every consuming screen inherits the polish automatically. Outcome: every button and input in the app feels considered, not default shadcn.
 - **Task: Full-app QA pass** — Verify the sidebar and new theme across every already-built route, in both languages/directions (`ar`/RTL, `en`/LTR) and both color modes (light/dark), confirming permission-gated links still show/hide correctly and no screen is left half-migrated. Outcome: one consistent, polished shell everywhere.
+
+**Thread guardrail (DSN-6 through DSN-13 below):** frontend visual/UX only, inside the existing shadcn/ui + Tailwind + `DSN`/`UI` primitives. No data-flow, API, or route-logic changes; no new component library; permission gates and i18n keys preserved exactly. Fixes land at the **shared-component/foundation level** wherever possible so every consuming screen inherits them (no per-page rework).
+
+### STORY (DSN-6) — Full UI/UX Audit & Issue Register
+
+**As a product team, we want one professional audit of the entire built UI, so that inconsistencies and usability issues are found and prioritized once, and every fix traces back to a recorded finding.**
+**Description:** A single systematic review of every already-built route (EPICs 0–11) through `ui-ux-pro-max` plus a Nielsen heuristic pass, cataloguing what's inconsistent or hard to use. This is the "identify" half — it produces the register the remediation stories act on, so the app is never re-scanned from scratch.
+**Dependencies:** DSN-0, DSN-4, DSN-5 (audit reflects the current refreshed UI).
+
+- **Task: Produce the prioritized UX issue register** 🔑 (consumed by DSN-7–DSN-13) — Implement: walk every built route via `ui-ux-pro-max` + a heuristic checklist (consistency, feedback, error prevention, recognition-over-recall, minimalism, match to real workflow); record each finding in `design-system/supportos/UX-AUDIT.md` with a stable ID, screen, category (consistency / interaction / responsive / form / IA / content / bilingual), severity (critical/major/minor), and recommended fix + owning DSN story. Constraints: catalogue only — no code changes here beyond trivially obvious one-liners; reference `DSN`/`UI`/`I18N`, don't restate them. Outcome: one authoritative, ID'd issue register that all remediation references.
+
+### STORY (DSN-7) — Cross-Feature Consistency Remediation
+
+**As a user, I want every screen to behave and read the same way, so that patterns I learn in one feature carry everywhere.**
+**Description:** Fixes the register's `consistency` findings — divergent patterns that crept in as features were built independently (button order/placement, primary-action naming, page-header structure, modal-vs-inline choices, table column/date conventions, badge usage). Fixes land in shared components so consistency is structural, not per-screen.
+**Dependencies:** DSN-6.
+
+- **Task: Standardize page & action patterns at the shared level** — Implement: from the register's `consistency` items, converge page-header layout, primary/secondary button order & placement, and action naming onto one pattern via the shared layout/primitive components; align date/number display on the `I18N` formatters. Constraints: change shared components, not individual screens; update register entries to resolved. Outcome: one consistent interaction vocabulary app-wide.
+- **Task: Consolidate divergent UI patterns** — Implement: replace any one-off tables/dialogs/dropdowns that bypassed the `UI` primitives with the shared ones flagged in the register. Constraints: reuse-first, no new variants unless the register proves a real gap. Outcome: no duplicated UI patterns remain.
+
+### STORY (DSN-8) — Interaction, State & Feedback Polish
+
+**As a user, I want the app to respond clearly to what I do, so that every action feels acknowledged and nothing feels frozen or silent.**
+**Description:** Fixes the register's `interaction` findings — inconsistent or missing hover/focus/active/disabled states, jarring or absent transitions, spinner-vs-skeleton inconsistency, and toast/confirm-dialog inconsistency. Distinct from `DSN-4` (static visual styling) — this is behavior and feedback over time.
+**Dependencies:** DSN-6. Complements DSN-4/DSN-5.
+
+- **Task: Unify component interaction states** — Implement: apply consistent hover/focus/active/disabled treatments per `DSN` to the shared button/input/select/row primitives; ensure keyboard focus is always visible and RTL-correct. Constraints: primitive-level only. Outcome: predictable, uniform feedback on every interactive element.
+- **Task: Standardize loading, transition & notification feedback** — Implement: converge on the shared loading/empty/error states (skeletons for lists, inline for actions), add restrained transitions per `DSN`, and make all toasts/confirms use the shared patterns wired to the `API` error model. Constraints: reuse EPIC 1 state components; no per-feature spinners. Outcome: consistent, calm feedback throughout.
+
+### STORY (DSN-9) — Responsive & Mobile UX Remediation
+
+**As a user on a phone or tablet, I want every screen to be fully usable, so that the "responsive" requirement holds in practice, not just in theory.**
+**Description:** Fixes the register's `responsive` findings across all built routes at mobile/tablet breakpoints — sidebar collapse behavior (from `DSN-5`), dense tables that need a card/stacked view on small screens, touch-target sizing, and overflow/scroll issues, in both LTR and RTL.
+**Dependencies:** DSN-5 (shell), DSN-6.
+
+- **Task: Add responsive behavior to the shared table & layout patterns** — Implement: give the shared `DataTable`/list pattern a small-screen presentation (stacked/card or prioritized columns) and fix page-shell overflow at each breakpoint. Constraints: shared-pattern level so all lists inherit it; verify RTL. Outcome: list-heavy screens work on mobile everywhere at once.
+- **Task: Per-screen responsive fixes & touch targets** — Implement: resolve remaining register `responsive` items (forms, side panels, dialogs, chart placeholders) and enforce minimum touch-target sizing via shared primitives. Constraints: styling/layout only. Outcome: no broken or cramped screen on mobile/tablet.
+
+### STORY (DSN-10) — Forms & Data-Entry UX Remediation
+
+**As a user filling in forms, I want clear, forgiving, consistent data entry, so that I always know what's expected and how to fix mistakes.**
+**Description:** Fixes the register's `form` findings at the `FORM` foundation so every form inherits the improvement — validation timing (on-blur/submit, not aggressive on-change), readable localized error messaging, error summary + focus-to-first-error, logical field grouping/order, autofocus, and clear submit/loading/disabled states.
+**Dependencies:** FORM-1, DSN-6.
+
+- **Task: Improve validation & error UX in the shared form foundation** 🔑 (all forms inherit) — Implement: standardize validation trigger timing, localized (via `I18N`) inline messages, an error-summary + focus-first-error behavior, and consistent submit/pending/disabled states in the shared RHF+Zod field components. Constraints: change `FORM` shared components only; no per-feature validation. Outcome: every form in the app gets consistent, forgiving data-entry UX from one change.
+- **Task: Field grouping, order & focus review** — Implement: apply the register's per-form layout/order/autofocus fixes using shared field components. Constraints: composition-level, no bespoke fields. Outcome: forms read logically and are keyboard-friendly.
+
+### STORY (DSN-11) — Navigation & Information Architecture Review
+
+**As a user, I want to always know where I am and how to get where I'm going, so that finding features and moving between them is effortless.**
+**Description:** Fixes the register's `IA` findings — nav grouping/labels and active-state clarity (on the `DSN-5` sidebar), consistent page titles/breadcrumbs, discoverability of admin/config areas, and sane back/deep-link behavior. Preserves every existing permission-gated route exactly.
+**Dependencies:** DSN-5, DSN-6.
+
+- **Task: Refine navigation structure & wayfinding** — Implement: group/label sidebar items and make active/current state unambiguous; add consistent page titles/breadcrumbs via the shared shell. Constraints: presentation only — routes and `Can`-gates unchanged. Outcome: clear, learnable navigation.
+- **Task: Fix IA discoverability & back/deep-link behavior** — Implement: resolve register items on hard-to-find admin/config surfaces and inconsistent back/deep-link handling. Constraints: no route logic changes. Outcome: features are discoverable and navigation is predictable.
+
+### STORY (DSN-12) — Microcopy & Bilingual (AR/EN) Quality Review
+
+**As an Arabic or English user, I want labels, empty states, and error messages that read naturally and mirror correctly, so that the product feels professionally localized, not machine-translated.**
+**Description:** Fixes the register's `content` and `bilingual` findings — inconsistent terminology/tone, weak empty-state and error copy, and Arabic/English parity + RTL mirroring gaps. A professional bilingual pass over the `I18N` strings; complements `DSN-2`'s structural RTL checklist by focusing on language quality and parity.
+**Dependencies:** I18N-1, DSN-6.
+
+- **Task: Terminology, tone & empty/error copy pass** — Implement: standardize terminology and improve empty-state/error/confirmation copy in the `I18N` namespaces (both languages). Constraints: edit translation resources only; no hardcoded strings introduced. Outcome: consistent, helpful microcopy everywhere.
+- **Task: Arabic/English parity & RTL correctness review** — Implement: verify every key exists and reads naturally in both languages and that AR mirrors correctly (icons, directionality, number/date rendering) per `I18N`; fix gaps. Constraints: content/direction only. Outcome: true bilingual parity, professionally localized.
+
+### STORY (DSN-13) — Final UX Verification & Sign-off
+
+**As a product team, we want to confirm the review actually closed the issues, so that we enter later features (AI, Integrations, Admin, Branding) on a clean, consistent UI baseline.**
+**Description:** Re-walks the register to confirm every critical/major item is resolved with no regressions, across both languages/directions and both color modes. The "verify" bookend of the audit→fix→verify thread.
+**Dependencies:** DSN-7, DSN-8, DSN-9, DSN-10, DSN-11, DSN-12.
+
+- **Task: Verify register to zero open criticals & sign off** — Implement: re-check each `UX-AUDIT.md` finding on its screen in `ar`/RTL + `en`/LTR and light/dark; mark resolved, log any regressions as new items, and record sign-off. Constraints: verification + straggler fixes only. Outcome: a clean, consistent UI baseline for all later feature work.
 
 ---
 
@@ -826,6 +898,9 @@
 - `DSN` design system + chart guidance (DSN-0, DSN-3) → EPIC 8
 - KB search retrieval (KB-3) → EPIC 9
 - Reporting foundation (RPT-0) → EPIC 11
+- UX issue register (`design-system/supportos/UX-AUDIT.md`) → EPIC 8 (DSN-6); consumed by DSN-7–DSN-13
+- Shared form UX behavior (validation timing, error summary, focus) → EPIC 8 (DSN-10), extends `FORM`
+- Responsive table/shell patterns → EPIC 8 (DSN-9), extend `UI`/`DSN-5`
 - AI service foundation (AI-0) → EPIC 12
 - Org scoping pattern (ORG-1), System config (SEC-4) → EPIC 14/15
 
