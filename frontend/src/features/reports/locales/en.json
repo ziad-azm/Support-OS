@@ -2,6 +2,23 @@
   "title": "Ticket Reports",
   "sidebarSla": "SLA Performance",
   "sidebarAgents": "Agent Performance",
+  "sidebarCsat": "Customer Satisfaction",
+  "csat": {
+    "trend": {
+      "title": "Satisfaction trend",
+      "description": "Feedback ratings received in the selected period, over time."
+    },
+    "breakdown": {
+      "title": "Satisfaction breakdown",
+      "description": "Share of feedback ratings for the selected period."
+    },
+    "ratings": {
+      "satisfied": "Satisfied",
+      "neutral": "Neutral",
+      "dissatisfied": "Dissatisfied"
+    },
+    "fields": { "rating": "Rating", "count": "Feedback count" }
+  },
   "agents": {
     "title": "Agent performance",
     "description": "Top agents for the selected period and metric.",

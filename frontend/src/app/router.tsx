@@ -350,6 +350,14 @@ export const router = createBrowserRouter([
                   return { element: <AgentReportsPage /> }
                 },
               },
+              {
+                path: 'reports/csat',
+                lazy: async () => {
+                  const { CsatReportsPage } =
+                    await import('@/features/reports/components/CsatReportsPage')
+                  return { element: <CsatReportsPage /> }
+                },
+              },
             ],
           },
           {

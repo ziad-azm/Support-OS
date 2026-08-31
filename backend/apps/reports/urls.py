@@ -2,6 +2,8 @@ from django.urls import path
 
 from .views import (
     AgentPerformanceReportView,
+    CsatBreakdownReportView,
+    CsatTrendReportView,
     SlaBreachRateReportView,
     SlaTrendReportView,
     TicketBreakdownReportView,
@@ -26,4 +28,6 @@ urlpatterns = [
         AgentPerformanceReportView.as_view(),
         name="agent-performance",
     ),
+    path("reports/csat/trend/", CsatTrendReportView.as_view(), name="csat-trend"),
+    path("reports/csat/breakdown/", CsatBreakdownReportView.as_view(), name="csat-breakdown"),
 ]

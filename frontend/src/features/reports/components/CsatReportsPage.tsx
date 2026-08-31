@@ -13,25 +13,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/primitives/select'
-import { ChartDataTable, ChartFrame, GaugeChart, LineChart } from '@/shared/ui/chart'
+import { ChartDataTable, ChartFrame, LineChart, WaffleChart } from '@/shared/ui/chart'
 import type { ChartSeries } from '@/shared/ui/chart'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { exportReport } from '../api/exportReport'
-import { useSlaBreachRate } from '../api/useSlaBreachRate'
-import { useSlaTrend } from '../api/useSlaTrend'
+import { useCsatBreakdown } from '../api/useCsatBreakdown'
+import { useCsatTrend } from '../api/useCsatTrend'
 import { formatBucket } from '../lib/formatBucket'
-import type { SlaTrendPoint } from '../types/sla'
+import type { CsatRating, CsatTrendPoint } from '../types/csat'
 
 const BUCKETS = ['day', 'week', 'month'] as const
 type Bucket = (typeof BUCKETS)[number]
 
 function toChartSeries(
-  rows: SlaTrendPoint[],
-  labelFor: (series: 'response' | 'resolution') => string,
+  rows: CsatTrendPoint[],
+  labelFor: (rating: CsatRating) => string,
 ): ChartSeries[] {
-  const bySeries = new Map<'response' | 'resolution', SlaTrendPoint[]>()
+  const bySeries = new Map<CsatRating, CsatTrendPoint[]>()
   for (const row of rows) {
     const existing = bySeries.get(row.series)
     if (existing) {
@@ -40,14 +40,10 @@ function toChartSeries(
       bySeries.set(row.series, [row])
     }
   }
-  return [...bySeries.entries()].map(([key, points]) => ({
-    key,
-    label: labelFor(key),
-    points,
-  }))
+  return [...bySeries.entries()].map(([key, points]) => ({ key, label: labelFor(key), points }))
 }
 
-export function SlaReportsPage() {
+export function CsatReportsPage() {
   const { t } = useTranslation('reports')
   const { date, number } = useFormatters()
   const { toast } = useToast()
@@ -56,27 +52,27 @@ export function SlaReportsPage() {
   const [to, setTo] = useState('')
   const [bucket, setBucket] = useState<Bucket>('day')
 
-  function labelForSeries(series: 'response' | 'resolution'): string {
-    return t(`trend.series.${series}`)
+  function labelForRating(rating: CsatRating): string {
+    return t(`csat.ratings.${rating}`)
   }
 
   const trendParams = { ...(from ? { from } : {}), ...(to ? { to } : {}), bucket }
-  const trendQuery = useSlaTrend(trendParams)
+  const trendQuery = useCsatTrend(trendParams)
 
-  const breachRateParams = { ...(from ? { from } : {}), ...(to ? { to } : {}) }
-  const breachRateQuery = useSlaBreachRate(breachRateParams)
+  const breakdownParams = { ...(from ? { from } : {}), ...(to ? { to } : {}) }
+  const breakdownQuery = useCsatBreakdown(breakdownParams)
 
   async function handleExportTrend() {
     try {
-      await exportReport('/reports/sla/trend/', 'sla-trend', trendParams)
+      await exportReport('/reports/csat/trend/', 'csat-trend', trendParams)
     } catch {
       toast({ tone: 'error', message: t('actions.exportFailed') })
     }
   }
 
-  async function handleExportBreachRate() {
+  async function handleExportBreakdown() {
     try {
-      await exportReport('/reports/sla/breach-rate/', 'sla-breach-rate', breachRateParams)
+      await exportReport('/reports/csat/breakdown/', 'csat-breakdown', breakdownParams)
     } catch {
       toast({ tone: 'error', message: t('actions.exportFailed') })
     }
@@ -87,22 +83,22 @@ export function SlaReportsPage() {
       <PageHeader title={t('title')} />
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex flex-col gap-1">
-          <Label htmlFor="sla-report-from" className="text-sm">
+          <Label htmlFor="csat-report-from" className="text-sm">
             {t('filters.from')}
           </Label>
           <Input
-            id="sla-report-from"
+            id="csat-report-from"
             type="date"
             value={from}
             onChange={(event) => setFrom(event.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="sla-report-to" className="text-sm">
+          <Label htmlFor="csat-report-to" className="text-sm">
             {t('filters.to')}
           </Label>
           <Input
-            id="sla-report-to"
+            id="csat-report-to"
             type="date"
             value={to}
             onChange={(event) => setTo(event.target.value)}
@@ -123,8 +119,8 @@ export function SlaReportsPage() {
       </div>
 
       <ChartFrame
-        title={t('trend.title')}
-        description={t('trend.description')}
+        title={t('csat.trend.title')}
+        description={t('csat.trend.description')}
         query={trendQuery}
         isEmpty={(rows) => rows.length === 0}
         action={
@@ -135,11 +131,11 @@ export function SlaReportsPage() {
         }
         table={(rows) => (
           <ChartDataTable
-            caption={t('chart.dataTableCaption', { ns: 'common', title: t('trend.title') })}
-            columns={[t('fields.period'), t('fields.dimension'), t('trend.minutes')]}
+            caption={t('chart.dataTableCaption', { ns: 'common', title: t('csat.trend.title') })}
+            columns={[t('fields.period'), t('csat.fields.rating'), t('csat.fields.count')]}
             rows={rows.map((row) => [
               formatBucket(date, row.bucket),
-              labelForSeries(row.series),
+              labelForRating(row.series),
               String(row.value),
             ])}
           />
@@ -147,54 +143,42 @@ export function SlaReportsPage() {
       >
         {(rows) => (
           <LineChart
-            series={toChartSeries(rows, labelForSeries)}
+            series={toChartSeries(rows, labelForRating)}
             formatBucket={(b) => formatBucket(date, b)}
           />
         )}
       </ChartFrame>
 
       <ChartFrame
-        title={t('breachRate.title')}
-        description={t('breachRate.description')}
-        query={breachRateQuery}
-        isEmpty={(rows) => rows.every((row) => row.rate === null)}
+        title={t('csat.breakdown.title')}
+        description={t('csat.breakdown.description')}
+        query={breakdownQuery}
+        isEmpty={(rows) => rows.length === 0}
         action={
-          <Button variant="outline" size="sm" onClick={() => void handleExportBreachRate()}>
+          <Button variant="outline" size="sm" onClick={() => void handleExportBreakdown()}>
             <DownloadIcon />
             {t('actions.exportCsv')}
           </Button>
         }
         table={(rows) => (
           <ChartDataTable
-            caption={t('chart.dataTableCaption', { ns: 'common', title: t('breachRate.title') })}
-            columns={[
-              t('fields.dimension'),
-              t('breachRate.met'),
-              t('breachRate.breached'),
-              t('breachRate.pending'),
-              t('breachRate.rate'),
-            ]}
-            rows={rows.map((row) => [
-              labelForSeries(row.key),
-              String(row.met),
-              String(row.breached),
-              String(row.pending),
-              row.rate === null
-                ? t('breachRate.noData')
-                : number(row.rate, { style: 'percent', maximumFractionDigits: 1 }),
-            ])}
+            caption={t('chart.dataTableCaption', {
+              ns: 'common',
+              title: t('csat.breakdown.title'),
+            })}
+            columns={[t('csat.fields.rating'), t('csat.fields.count')]}
+            rows={rows.map((row) => [labelForRating(row.key), String(row.value)])}
           />
         )}
       >
         {(rows) => (
-          <GaugeChart
-            gauges={rows
-              .filter((row) => row.rate !== null)
-              .map((row) => ({
-                key: row.key,
-                label: labelForSeries(row.key),
-                value: row.rate as number,
-              }))}
+          <WaffleChart
+            categories={rows.map((row) => ({
+              key: row.key,
+              label: labelForRating(row.key),
+              value: row.value,
+            }))}
+            formatValue={(v) => number(v, { style: 'percent', maximumFractionDigits: 0 })}
           />
         )}
       </ChartFrame>

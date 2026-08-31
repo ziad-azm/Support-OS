@@ -22,6 +22,7 @@ import { exportReport } from '../api/exportReport'
 import { useTicketBreakdown } from '../api/useTicketBreakdown'
 import { useTicketVolume } from '../api/useTicketVolume'
 import type { TicketVolumeParams } from '../api/getTicketVolume'
+import { formatBucket } from '../lib/formatBucket'
 import { REPORT_DIMENSIONS } from '../types/report'
 import type { BreakdownRow, ReportDimension, VolumePoint } from '../types/report'
 
@@ -63,14 +64,6 @@ export function TicketReportsPage() {
   const [bucket, setBucket] = useState<Bucket>('day')
   const [series, setSeries] = useState<'none' | ReportDimension>('none')
   const [dimension, setDimension] = useState<ReportDimension>('status')
-
-  function formatBucket(bucketValue: string): string {
-    // A bucket is a calendar date, not an instant — a bare YYYY-MM-DD is
-    // parsed as UTC midnight by the JS Date constructor, so formatting
-    // without timeZone: 'UTC' shows the previous day west of Greenwich.
-    // See Story 56 `## Prerequisites`.
-    return date(bucketValue, { dateStyle: 'medium', timeZone: 'UTC' })
-  }
 
   function labelForDimensionValue(dim: ReportDimension, key: string): string {
     if (dim === 'status') return t(`statuses.${key}`, { defaultValue: key })
@@ -184,7 +177,7 @@ export function TicketReportsPage() {
             caption={t('chart.dataTableCaption', { ns: 'common', title: t('volume.title') })}
             columns={[t('fields.period'), t('fields.series'), t('fields.value')]}
             rows={rows.map((row) => [
-              formatBucket(row.bucket),
+              formatBucket(date, row.bucket),
               row.series !== undefined
                 ? labelForDimensionValue(series as ReportDimension, row.series)
                 : t('volume.allTickets'),
@@ -196,7 +189,7 @@ export function TicketReportsPage() {
         {(rows) => (
           <LineChart
             series={toChartSeries(rows, t('volume.allTickets'))}
-            formatBucket={formatBucket}
+            formatBucket={(b) => formatBucket(date, b)}
           />
         )}
       </ChartFrame>

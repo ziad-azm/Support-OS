@@ -18,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.permissions import HasPermission, Permissions
-from apps.tickets.models import Ticket
+from apps.tickets.models import Feedback, Ticket
 
 from .agents import agent_performance, parse_metric
 from .aggregation import bucketed_counts, grouped_counts, parse_bucket, parse_date_range
@@ -183,3 +183,50 @@ class AgentPerformanceReportView(BaseReportView):
         metric = parse_metric(request.query_params)
         self.csv_filename = f"agent-performance-{metric}"
         return agent_performance(start, end, metric)
+
+
+class CsatTrendReportView(BaseReportView):
+    """Feedback count per time bucket, one line per rating — RPT-4's
+    trend half (CONVENTIONS.md § 25 row 6, Line Chart — same shape as
+    RPT-1's volume trend and RPT-2's SLA trend). No `?series=` param:
+    `rating` is always the series, never a user-selectable dimension.
+
+    Calls `bucketed_counts` directly — `Feedback.rating` needs no join or
+    annotation the way RPT-1's channel or RPT-3's agent name did, so no
+    `apps/reports/csat.py` module exists. See Story 59 `## Prerequisites`.
+    """
+
+    permission_map = {"get": Permissions.REPORTS_VIEW}
+    csv_columns = (
+        ("bucket", _("Period")),
+        ("series", _("Rating")),
+        ("value", _("Feedback count")),
+    )
+    csv_filename = "csat-trend"
+
+    def get_report(self, request, *, start, end, bucket):
+        return bucketed_counts(
+            Feedback.objects.all(),
+            date_field="created_at",
+            start=start,
+            end=end,
+            bucket=bucket,
+            series_field="rating",
+        )
+
+
+class CsatBreakdownReportView(BaseReportView):
+    """Feedback count per rating over the whole range, descending —
+    RPT-4's breakdown half (CONVENTIONS.md § 25 row 6, Waffle Chart).
+    Ignores `?bucket=` — a whole-range breakdown has no time axis, the
+    same consistency `TicketBreakdownReportView`/`SlaBreachRateReportView`
+    already establish.
+    """
+
+    permission_map = {"get": Permissions.REPORTS_VIEW}
+    csv_columns = (("key", _("Rating")), ("value", _("Feedback count")))
+    csv_filename = "csat-breakdown"
+
+    def get_report(self, request, *, start, end, bucket):
+        queryset = Feedback.objects.filter(created_at__gte=start, created_at__lt=end)
+        return grouped_counts(queryset, field="rating")
