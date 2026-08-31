@@ -62,12 +62,16 @@ def _org_default_policy() -> SLAPolicy | None:
     )
 
 
-def _dimension_status(due_at, achieved_at, now) -> str:
+def dimension_status(due_at, achieved_at, now) -> str:
     """ "met" (achieved by the deadline), "breached" (deadline passed,
     whether achieved late or not at all), or "pending" (not yet due, not
     yet achieved). Computed fresh every call — a "pending" ticket becomes
     "breached" automatically once real time passes `due_at`, with nothing
     to update.
+
+    Public since Story 57 (RPT-2): the bulk report path
+    (`apps/reports/sla.py`) needs the exact same classification a
+    single-ticket read uses, so the two can never disagree.
     """
     if achieved_at is not None:
         return "met" if achieved_at <= due_at else "breached"
@@ -113,7 +117,7 @@ def compute_sla_status(ticket: Ticket) -> dict | None:
         "response_target_minutes": policy.response_target_minutes,
         "resolution_target_minutes": policy.resolution_target_minutes,
         "response_due_at": response_due_at,
-        "response_status": _dimension_status(response_due_at, first_response_at, now),
+        "response_status": dimension_status(response_due_at, first_response_at, now),
         "resolution_due_at": resolution_due_at,
-        "resolution_status": _dimension_status(resolution_due_at, resolved_at, now),
+        "resolution_status": dimension_status(resolution_due_at, resolved_at, now),
     }

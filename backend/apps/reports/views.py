@@ -22,6 +22,7 @@ from apps.tickets.models import Ticket
 
 from .aggregation import bucketed_counts, grouped_counts, parse_bucket, parse_date_range
 from .export import csv_response
+from .sla import sla_breach_rate, sla_trend
 from .tickets import DIMENSION_FIELDS, DIRECT_CHANNEL, parse_dimension, with_origin_channel
 
 # NOT "format". DRF's DefaultContentNegotiation reads `?format=` as a
@@ -119,3 +120,45 @@ class TicketBreakdownReportView(BaseReportView):
             include_null=True,
             null_label=DIRECT_CHANNEL if dimension == "channel" else str(_("Uncategorized")),
         )
+
+
+class SlaTrendReportView(BaseReportView):
+    """Average response/resolution time per bucket — RPT-2's trend half
+    (CONVENTIONS.md § 25 row 3, Line Chart — same shape as RPT-1's volume
+    trend). No `?series=`/`?dimension=` param: response and resolution are
+    always both returned, not a user-selectable axis.
+    """
+
+    permission_map = {"get": Permissions.REPORTS_VIEW}
+    csv_columns = (
+        ("bucket", _("Period")),
+        ("series", _("Dimension")),
+        ("value", _("Average minutes")),
+    )
+    csv_filename = "sla-trend"
+
+    def get_report(self, request, *, start, end, bucket):
+        return sla_trend(start, end, bucket)
+
+
+class SlaBreachRateReportView(BaseReportView):
+    """Breach rate and underlying met/breached/pending counts for
+    response and resolution — RPT-2's breach-rate half (CONVENTIONS.md
+    § 25 row 4, Gauge Chart). Ignores `?bucket=` — a rate over the whole
+    range has no time axis, the same `?bucket=`-parsed-but-unused
+    consistency `TicketBreakdownReportView` already establishes
+    (`views.py:102-104`).
+    """
+
+    permission_map = {"get": Permissions.REPORTS_VIEW}
+    csv_columns = (
+        ("key", _("Dimension")),
+        ("met", _("Met")),
+        ("breached", _("Breached")),
+        ("pending", _("Pending")),
+        ("rate", _("Breach rate")),
+    )
+    csv_filename = "sla-breach-rate"
+
+    def get_report(self, request, *, start, end, bucket):
+        return sla_breach_rate(start, end)

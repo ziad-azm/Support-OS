@@ -1,5 +1,21 @@
 {
   "title": "Ticket Reports",
+  "sidebarSla": "SLA Performance",
+  "trend": {
+    "title": "SLA response/resolution trend",
+    "description": "Average time to first response and to resolution, in minutes.",
+    "minutes": "Minutes",
+    "series": { "response": "Response", "resolution": "Resolution" }
+  },
+  "breachRate": {
+    "title": "SLA breach rate",
+    "description": "Share of tickets that missed their response/resolution target in the selected period.",
+    "met": "Met",
+    "breached": "Breached",
+    "pending": "Pending",
+    "rate": "Breach rate",
+    "noData": "No data yet"
+  },
   "volume": {
     "title": "Ticket volume over time",
     "description": "Tickets created in the selected period.",
@@ -39,6 +55,11 @@
     "web_form": "Web form",
     "direct": "Created directly"
   },
-  "fields": { "period": "Period", "series": "Series", "value": "Tickets" },
+  "fields": {
+    "period": "Period",
+    "series": "Series",
+    "value": "Tickets",
+    "dimension": "Dimension"
+  },
   "actions": { "exportCsv": "Export CSV", "exportFailed": "Could not export the report." }
 }

@@ -1859,3 +1859,11 @@ create-and-link form.
    anywhere west of Greenwich (verified: `'2026-01-01'` → "Dec 31, 2025"
    in `America/New_York`). Every bucket label passes
    `{ dateStyle: 'medium', timeZone: 'UTC' }`.
+10. **An average metric is never gap-filled with a false zero.**
+    `bucketed_counts`'s `value: 0` gap-fill (point 2 above) is correct
+    for a *count* — zero tickets is a real, meaningful zero — but wrong
+    for an *average*: `apps/reports/sla.py::sla_trend` reports average
+    response/resolution minutes, and a bucket with no achieved values in
+    it is **omitted** rather than reported as "0 minutes", which would
+    falsely claim instant response. Any future average-shaped report
+    follows this, not `bucketed_counts`'s gap-fill.

@@ -334,6 +334,14 @@ export const router = createBrowserRouter([
                   return { element: <TicketReportsPage /> }
                 },
               },
+              {
+                path: 'reports/sla',
+                lazy: async () => {
+                  const { SlaReportsPage } =
+                    await import('@/features/reports/components/SlaReportsPage')
+                  return { element: <SlaReportsPage /> }
+                },
+              },
             ],
           },
           {

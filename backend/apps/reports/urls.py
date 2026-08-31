@@ -1,6 +1,11 @@
 from django.urls import path
 
-from .views import TicketBreakdownReportView, TicketVolumeReportView
+from .views import (
+    SlaBreachRateReportView,
+    SlaTrendReportView,
+    TicketBreakdownReportView,
+    TicketVolumeReportView,
+)
 
 app_name = "reports"
 
@@ -13,4 +18,6 @@ urlpatterns = [
     path(
         "reports/tickets/breakdown/", TicketBreakdownReportView.as_view(), name="ticket-breakdown"
     ),
+    path("reports/sla/trend/", SlaTrendReportView.as_view(), name="sla-trend"),
+    path("reports/sla/breach-rate/", SlaBreachRateReportView.as_view(), name="sla-breach-rate"),
 ]

@@ -199,6 +199,12 @@ export function Sidebar() {
             label={t('reports:title')}
             collapsed={collapsed}
           />
+          <SidebarLink
+            to="/reports/sla"
+            icon={ChartNoAxesColumnIcon}
+            label={t('reports:sidebarSla')}
+            collapsed={collapsed}
+          />
         </Can>
         <Can permission="audit_log.view">
           <SidebarLink
