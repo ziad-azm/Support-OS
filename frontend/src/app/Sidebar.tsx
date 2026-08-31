@@ -217,6 +217,12 @@ export function Sidebar() {
             label={t('reports:sidebarCsat')}
             collapsed={collapsed}
           />
+          <SidebarLink
+            to="/reports/dashboard"
+            icon={ChartNoAxesColumnIcon}
+            label={t('reports:sidebarDashboard')}
+            collapsed={collapsed}
+          />
         </Can>
         <Can permission="audit_log.view">
           <SidebarLink

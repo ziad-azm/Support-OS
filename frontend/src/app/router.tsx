@@ -358,6 +358,14 @@ export const router = createBrowserRouter([
                   return { element: <CsatReportsPage /> }
                 },
               },
+              {
+                path: 'reports/dashboard',
+                lazy: async () => {
+                  const { ManagementDashboardPage } =
+                    await import('@/features/reports/components/ManagementDashboardPage')
+                  return { element: <ManagementDashboardPage /> }
+                },
+              },
             ],
           },
           {

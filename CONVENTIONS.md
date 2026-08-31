@@ -1867,3 +1867,17 @@ create-and-link form.
     it is **omitted** rather than reported as "0 minutes", which would
     falsely claim instant response. Any future average-shaped report
     follows this, not `bucketed_counts`'s gap-fill.
+11. **A gauge-shaped KPI can always reuse `GaugeChart` with zero code
+    changes — frame it as a 0-1 "badness" fraction.** `GaugeChart`'s
+    zone thresholds (`GOOD_THRESHOLD = 0.1`, `WARN_THRESHOLD = 0.25`)
+    and orientation (0 = best, 1 = worst) are fixed, not props. `RPT-5`'s
+    four dashboard KPIs — an open-ticket rate, a pooled SLA breach rate,
+    a CSAT *dissatisfaction* rate (the inverse of `RPT-3`'s own "%
+    satisfied"), and an unassigned-backlog rate — all fit this contract
+    by construction: whichever raw quantity a KPI starts from, define
+    its gauge input as *the share that is going wrong*, never *the
+    share that is going right*. This is why `CsatRisk` shows
+    dissatisfaction, not satisfaction, even though "% satisfied" is the
+    more intuitive framing in isolation — a single dashboard-wide
+    reading direction beats four gauges that each need to be read
+    differently.

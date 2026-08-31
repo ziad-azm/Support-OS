@@ -3,6 +3,19 @@
   "sidebarSla": "SLA Performance",
   "sidebarAgents": "Agent Performance",
   "sidebarCsat": "Customer Satisfaction",
+  "sidebarDashboard": "Management Dashboard",
+  "dashboard": {
+    "title": "Management dashboard",
+    "description": "At-a-glance KPIs for the selected period.",
+    "kpis": {
+      "open_rate": "Open ticket rate",
+      "sla_health": "SLA breach rate",
+      "csat_risk": "Customer dissatisfaction",
+      "agent_load": "Unassigned backlog rate"
+    },
+    "fields": { "kpi": "KPI", "value": "Value" },
+    "noData": "No data yet"
+  },
   "csat": {
     "trend": {
       "title": "Satisfaction trend",

@@ -22,6 +22,7 @@ from apps.tickets.models import Feedback, Ticket
 
 from .agents import agent_performance, parse_metric
 from .aggregation import bucketed_counts, grouped_counts, parse_bucket, parse_date_range
+from .dashboard import dashboard_kpis
 from .export import csv_response
 from .sla import sla_breach_rate, sla_trend
 from .tickets import DIMENSION_FIELDS, DIRECT_CHANNEL, parse_dimension, with_origin_channel
@@ -230,3 +231,21 @@ class CsatBreakdownReportView(BaseReportView):
     def get_report(self, request, *, start, end, bucket):
         queryset = Feedback.objects.filter(created_at__gte=start, created_at__lt=end)
         return grouped_counts(queryset, field="rating")
+
+
+class DashboardKpiReportView(BaseReportView):
+    """Four combined KPIs, one snapshot — RPT-5, EPIC 11's final report
+    (CONVENTIONS.md § 25 row 7, Bullet Chart grid). Ignores `?bucket=` —
+    a whole-period snapshot has no time axis, the same consistency
+    `SlaBreachRateReportView`/`AgentPerformanceReportView` already
+    establish. Every row's `value` is a 0-1 badness fraction, reused by
+    the frontend directly as `GaugeChart` input with NO chart code
+    change — see Story 60 `## Prerequisites`.
+    """
+
+    permission_map = {"get": Permissions.REPORTS_VIEW}
+    csv_columns = (("key", _("KPI")), ("value", _("Value")))
+    csv_filename = "dashboard-kpis"
+
+    def get_report(self, request, *, start, end, bucket):
+        return dashboard_kpis(start, end)

@@ -4,6 +4,7 @@ from .views import (
     AgentPerformanceReportView,
     CsatBreakdownReportView,
     CsatTrendReportView,
+    DashboardKpiReportView,
     SlaBreachRateReportView,
     SlaTrendReportView,
     TicketBreakdownReportView,
@@ -30,4 +31,5 @@ urlpatterns = [
     ),
     path("reports/csat/trend/", CsatTrendReportView.as_view(), name="csat-trend"),
     path("reports/csat/breakdown/", CsatBreakdownReportView.as_view(), name="csat-breakdown"),
+    path("reports/dashboard/kpis/", DashboardKpiReportView.as_view(), name="dashboard-kpis"),
 ]
