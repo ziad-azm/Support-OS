@@ -5,6 +5,7 @@ import * as z from 'zod'
 
 import { requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
+import { useUnsavedChangesGuard } from '@/shared/hooks/useUnsavedChangesGuard'
 import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
 import { FormErrorSummary, TextField, TextareaField, useAppForm } from '@/shared/ui/form'
@@ -65,6 +66,7 @@ function FaqForm({ mode, id, faq }: { mode: 'create' | 'edit'; id?: number; faq?
     schema,
     defaultValues: faq ? toDefaults(faq) : EMPTY_DEFAULTS,
   })
+  useUnsavedChangesGuard(form.formState.isDirty)
 
   const createMutation = useCreateFaq()
   const updateMutation = useUpdateFaq(id ?? 0)
@@ -77,6 +79,10 @@ function FaqForm({ mode, id, faq }: { mode: 'create' | 'edit'; id?: number; faq?
           tone: 'success',
           message: t(mode === 'create' ? 'manage.created' : 'manage.updated'),
         })
+        // Clears `isDirty` before navigating away — otherwise the unsaved-
+        // changes guard (added just above) would block this very
+        // navigation right after a successful save.
+        form.reset(values)
         navigate('/knowledge-base/manage')
       },
       onError: (error) => {

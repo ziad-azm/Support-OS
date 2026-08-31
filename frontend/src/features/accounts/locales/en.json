@@ -36,6 +36,8 @@
     "permissionCount": "{{count}} permission",
     "permissionCount_other": "{{count}} permissions",
     "permissionsHint": "Changes take effect immediately for anyone holding this role.",
+    "selectAllInGroup": "Select all",
+    "deselectAllInGroup": "Deselect all",
     "fields": {
       "name": "Name",
       "slug": "Slug",
@@ -47,7 +49,7 @@
     "actions": { "save": "Save", "delete": "Delete" },
     "delete": {
       "title": "Delete this role?",
-      "description": "This permanently removes the role. This cannot be undone."
+      "description": "Users holding this role lose its permissions immediately. This permanently removes the role and cannot be undone."
     },
     "created": "Role created.",
     "updated": "Role updated.",

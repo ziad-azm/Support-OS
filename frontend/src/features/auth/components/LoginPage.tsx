@@ -95,6 +95,7 @@ export function LoginPage() {
             {t('help.chat')}
           </Link>
         </div>
+        <span>{t('help.lockedOut')}</span>
       </div>
     </div>
   )

@@ -18,6 +18,7 @@ import type { ChartSeries } from '@/shared/ui/chart'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { useToast } from '@/shared/ui/toast/useToast'
 
+import { DateRangePresets } from './DateRangePresets'
 import { exportReport } from '../api/exportReport'
 import { useCsatBreakdown } from '../api/useCsatBreakdown'
 import { useCsatTrend } from '../api/useCsatTrend'
@@ -116,6 +117,12 @@ export function CsatReportsPage() {
             ))}
           </SelectContent>
         </Select>
+        <DateRangePresets
+          onSelect={({ from: presetFrom, to: presetTo }) => {
+            setFrom(presetFrom)
+            setTo(presetTo)
+          }}
+        />
       </div>
 
       <ChartFrame

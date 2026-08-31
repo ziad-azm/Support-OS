@@ -11,6 +11,7 @@
   "chat": {
     "title": "Live chat",
     "subtitle": "An agent will reply here shortly.",
+    "disconnected": "Reconnecting…",
     "placeholder": "Type a message",
     "empty": "No messages yet — say hello!",
     "send": "Send"

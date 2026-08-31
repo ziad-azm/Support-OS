@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/primitives/select'
+import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useSetTicketStatus } from '../api/useTicketMutations'
@@ -31,13 +32,23 @@ export function TicketStatusControl({
 }) {
   const { t } = useTranslation('tickets')
   const { toast } = useToast()
+  const { confirm } = useConfirm()
   const mutation = useSetTicketStatus(ticketId)
 
   const options: readonly TicketStatus[] = [status, ...TICKET_STATUS_TRANSITIONS[status]]
 
-  function onValueChange(next: string) {
+  async function onValueChange(next: string) {
     if (next === status) return
-    mutation.mutate(next as TicketStatus, {
+    const nextStatus = next as TicketStatus
+    if (TICKET_STATUS_TRANSITIONS[nextStatus].length === 0) {
+      const confirmed = await confirm({
+        title: t('status.terminalConfirmTitle', { status: t(`statuses.${nextStatus}`) }),
+        description: t('status.terminalConfirmDescription'),
+        destructive: true,
+      })
+      if (!confirmed) return
+    }
+    mutation.mutate(nextStatus, {
       onSuccess: () => toast({ tone: 'success', message: t('status.updated') }),
       // A failure is already toasted by the shared mutation error handler
       // — CONVENTIONS.md §21.
@@ -45,7 +56,11 @@ export function TicketStatusControl({
   }
 
   return (
-    <Select value={status} onValueChange={onValueChange} disabled={mutation.isPending}>
+    <Select
+      value={status}
+      onValueChange={(value) => void onValueChange(value)}
+      disabled={mutation.isPending}
+    >
       <SelectTrigger aria-label={t('fields.status')} size="sm">
         <SelectValue />
       </SelectTrigger>

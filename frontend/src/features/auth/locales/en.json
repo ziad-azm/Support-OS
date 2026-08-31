@@ -8,6 +8,7 @@
   "help": {
     "prompt": "Not a staff member?",
     "contact": "Submit a request",
-    "chat": "Start a live chat"
+    "chat": "Start a live chat",
+    "lockedOut": "Locked out or forgot your password? Ask an admin to reset it."
   }
 }

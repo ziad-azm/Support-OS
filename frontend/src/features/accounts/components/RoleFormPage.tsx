@@ -181,35 +181,59 @@ function RoleForm({ mode, id, role }: { mode: 'create' | 'edit'; id?: number; ro
                   <FormLabel>{t('roles.fields.permissions')}</FormLabel>
                   <FormDescription>{t('roles.permissionsHint')}</FormDescription>
                   <div className="flex flex-col gap-4">
-                    {groupByArea(catalogQuery.data ?? []).map(([area, permissions]) => (
-                      <div key={area} className="flex flex-col gap-2">
-                        <h3 className="text-sm font-medium">{areaLabel(area)}</h3>
-                        {permissions.map((permission) => (
-                          <div key={permission} className="flex items-center gap-2">
-                            <Checkbox
-                              checked={field.value.includes(permission)}
-                              onCheckedChange={(checked) =>
-                                field.onChange(
-                                  checked === true
-                                    ? [...field.value, permission]
-                                    : field.value.filter((p: string) => p !== permission),
-                                )
-                              }
-                            />
-                            <span className="font-mono text-sm">{permission}</span>
+                    {groupByArea(catalogQuery.data ?? []).map(([area, permissions]) => {
+                      const allSelected = permissions.every((permission) =>
+                        field.value.includes(permission),
+                      )
+                      function toggleGroup() {
+                        field.onChange(
+                          allSelected
+                            ? field.value.filter((p: string) => !permissions.includes(p))
+                            : [...new Set([...field.value, ...permissions])],
+                        )
+                      }
+                      return (
+                        <div key={area} className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium">{areaLabel(area)}</h3>
+                            <Button type="button" variant="ghost" size="sm" onClick={toggleGroup}>
+                              {t(
+                                allSelected ? 'roles.deselectAllInGroup' : 'roles.selectAllInGroup',
+                              )}
+                            </Button>
                           </div>
-                        ))}
-                      </div>
-                    ))}
+                          {permissions.map((permission) => (
+                            <div key={permission} className="flex items-center gap-2">
+                              <Checkbox
+                                checked={field.value.includes(permission)}
+                                onCheckedChange={(checked) =>
+                                  field.onChange(
+                                    checked === true
+                                      ? [...field.value, permission]
+                                      : field.value.filter((p: string) => p !== permission),
+                                  )
+                                }
+                              />
+                              <span className="font-mono text-sm">{permission}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
                   </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormErrorSummary errors={formErrors} />
-            <Button type="submit" disabled={mutation.isPending}>
-              {t('roles.actions.save')}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={mutation.isPending}>
+                {t('roles.actions.save')}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/roles')}>
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </div>
           </form>
         </Form>
       )}

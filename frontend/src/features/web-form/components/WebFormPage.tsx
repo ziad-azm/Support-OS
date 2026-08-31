@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { CheckCircle2Icon, MessageCircleIcon, SendIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -59,7 +60,6 @@ export function WebFormPage() {
 
 function WebForm({ onSubmitted }: { onSubmitted: (ticketId: number) => void }) {
   const { t } = useTranslation('webForm')
-  const [pending, setPending] = useState(false)
   const categoriesQuery = useWebFormCategories()
   const form = useAppForm({
     schema: webFormSchema,
@@ -72,21 +72,17 @@ function WebForm({ onSubmitted }: { onSubmitted: (ticketId: number) => void }) {
       label: category.name,
     })) ?? []
 
-  async function onSubmit(values: FormValues) {
-    setPending(true)
-    try {
-      const result = await submitWebForm({
+  const mutation = useMutation({
+    mutationFn: (values: FormValues) =>
+      submitWebForm({
         name: values.name,
         email: values.email,
         subject: values.subject,
         description: values.description,
         category: values.category === CATEGORY_NONE ? null : Number(values.category),
-      })
-      onSubmitted(result.ticket_id)
-    } finally {
-      setPending(false)
-    }
-  }
+      }),
+    onSuccess: (result) => onSubmitted(result.ticket_id),
+  })
 
   return (
     <div className="flex w-full max-w-xl flex-col gap-6">
@@ -100,7 +96,10 @@ function WebForm({ onSubmitted }: { onSubmitted: (ticketId: number) => void }) {
       <Card>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <form
+              onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+              className="flex flex-col gap-4"
+            >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField control={form.control} name="name" label={t('fields.name')} />
                 <TextField
@@ -125,7 +124,7 @@ function WebForm({ onSubmitted }: { onSubmitted: (ticketId: number) => void }) {
                   ...categoryOptions,
                 ]}
               />
-              <Button type="submit" size="lg" disabled={pending} className="w-full">
+              <Button type="submit" size="lg" disabled={mutation.isPending} className="w-full">
                 <SendIcon />
                 {t('action')}
               </Button>

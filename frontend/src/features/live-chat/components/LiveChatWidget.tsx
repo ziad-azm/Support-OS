@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { MessageCircleIcon, SendIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -43,20 +44,17 @@ export function LiveChatWidget() {
 
 function StartForm({ onStarted }: { onStarted: (session: LiveChatSession) => void }) {
   const { t } = useTranslation('liveChat')
-  const [pending, setPending] = useState(false)
   const form = useAppForm({ schema: startSchema, defaultValues: { name: '', email: '' } })
 
-  async function onSubmit(values: StartFormValues) {
-    setPending(true)
-    try {
-      const result = await startLiveChat({ name: values.name, email: values.email })
+  const mutation = useMutation({
+    mutationFn: (values: StartFormValues) =>
+      startLiveChat({ name: values.name, email: values.email }),
+    onSuccess: (result) => {
       const session = { ticketId: result.ticket_id, sessionToken: result.session_token }
       saveSession(session)
       onStarted(session)
-    } finally {
-      setPending(false)
-    }
-  }
+    },
+  })
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-6">
@@ -70,7 +68,10 @@ function StartForm({ onStarted }: { onStarted: (session: LiveChatSession) => voi
       <Card>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <form
+              onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+              className="flex flex-col gap-4"
+            >
               <TextField control={form.control} name="name" label={t('start.name')} />
               <TextField
                 control={form.control}
@@ -78,7 +79,7 @@ function StartForm({ onStarted }: { onStarted: (session: LiveChatSession) => voi
                 label={t('start.email')}
                 type="email"
               />
-              <Button type="submit" size="lg" disabled={pending} className="w-full">
+              <Button type="submit" size="lg" disabled={mutation.isPending} className="w-full">
                 <MessageCircleIcon />
                 {t('start.action')}
               </Button>
@@ -99,6 +100,7 @@ function StartForm({ onStarted }: { onStarted: (session: LiveChatSession) => voi
 function ChatPane({ session }: { session: LiveChatSession }) {
   const { t } = useTranslation('liveChat')
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [connected, setConnected] = useState(false)
   const socketRef = useRef<WebSocket | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const form = useAppForm({ schema: messageSchema, defaultValues: { body: '' } })
@@ -107,6 +109,9 @@ function ChatPane({ session }: { session: LiveChatSession }) {
     const socket = new WebSocket(
       getWebSocketUrl(`/ws/tickets/${session.ticketId}/?customer_token=${session.sessionToken}`),
     )
+    socket.onopen = () => setConnected(true)
+    socket.onclose = () => setConnected(false)
+    socket.onerror = () => setConnected(false)
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data) as ChatMessage
       setMessages((prev) => [...prev, message])
@@ -120,7 +125,8 @@ function ChatPane({ session }: { session: LiveChatSession }) {
   }, [messages])
 
   function onSubmit(values: MessageFormValues) {
-    socketRef.current?.send(JSON.stringify({ body: values.body }))
+    if (socketRef.current?.readyState !== WebSocket.OPEN) return
+    socketRef.current.send(JSON.stringify({ body: values.body }))
     form.reset({ body: '' })
   }
 
@@ -133,7 +139,7 @@ function ChatPane({ session }: { session: LiveChatSession }) {
             <h1>{t('chat.title')}</h1>
           </CardTitle>
         </div>
-        <CardDescription>{t('chat.subtitle')}</CardDescription>
+        <CardDescription>{connected ? t('chat.subtitle') : t('chat.disconnected')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-3 overflow-hidden">
         <ul className="flex flex-1 flex-col gap-2 overflow-y-auto">
@@ -177,7 +183,7 @@ function ChatPane({ session }: { session: LiveChatSession }) {
             <div className="flex-1">
               <TextField control={form.control} name="body" label={t('chat.placeholder')} />
             </div>
-            <Button type="submit" size="icon">
+            <Button type="submit" size="icon" disabled={!connected}>
               <SendIcon />
               <span className="sr-only">{t('chat.send')}</span>
             </Button>

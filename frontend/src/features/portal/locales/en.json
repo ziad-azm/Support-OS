@@ -43,6 +43,7 @@
     "actions": {
       "submit": "Submit"
     },
+    "submitting": "Submitting…",
     "created": "Your ticket has been submitted.",
     "statuses": {
       "open": "Open",
@@ -91,6 +92,7 @@
       "actions": {
         "submit": "Submit feedback"
       },
+      "submitting": "Submitting…",
       "created": "Thank you for your feedback."
     }
   }

@@ -55,7 +55,7 @@ export function ChartFrame<T>({
           <h2>{title}</h2>
         </CardTitle>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
-        {action}
+        {query.isSuccess && !isEmpty?.(query.data) ? action : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {query.isPending ? <Skeleton className="h-64 w-full" /> : null}

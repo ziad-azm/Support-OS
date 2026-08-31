@@ -10,6 +10,7 @@ import { ChartDataTable, ChartFrame, GaugeChart } from '@/shared/ui/chart'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { useToast } from '@/shared/ui/toast/useToast'
 
+import { DateRangePresets } from './DateRangePresets'
 import { exportReport } from '../api/exportReport'
 import { useDashboardKpis } from '../api/useDashboardKpis'
 import type { DashboardKpi } from '../types/dashboard'
@@ -63,6 +64,12 @@ export function ManagementDashboardPage() {
             onChange={(event) => setTo(event.target.value)}
           />
         </div>
+        <DateRangePresets
+          onSelect={({ from: presetFrom, to: presetTo }) => {
+            setFrom(presetFrom)
+            setTo(presetTo)
+          }}
+        />
       </div>
 
       <ChartFrame

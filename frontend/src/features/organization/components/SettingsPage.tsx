@@ -67,6 +67,7 @@ function StringListField({
   value: string[]
   onChange: (next: string[]) => void
 }) {
+  const { t } = useTranslation('organization')
   const [draft, setDraft] = useState('')
 
   function addItem() {
@@ -83,9 +84,15 @@ function StringListField({
         {value.map((item, index) => (
           <Badge key={`${item}-${index}`} variant="secondary" className="gap-1">
             {item}
-            <button type="button" onClick={() => onChange(value.filter((_, i) => i !== index))}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={t('settings.removeItem', { item })}
+              onClick={() => onChange(value.filter((_, i) => i !== index))}
+            >
               <XIcon className="size-3" />
-            </button>
+            </Button>
           </Badge>
         ))}
       </div>

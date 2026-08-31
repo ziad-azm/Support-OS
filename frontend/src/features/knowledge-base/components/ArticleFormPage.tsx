@@ -5,6 +5,7 @@ import * as z from 'zod'
 
 import { choice, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
+import { useUnsavedChangesGuard } from '@/shared/hooks/useUnsavedChangesGuard'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
@@ -109,6 +110,7 @@ function ArticleForm({
     schema,
     defaultValues: article ? toDefaults(article) : EMPTY_DEFAULTS,
   })
+  useUnsavedChangesGuard(form.formState.isDirty)
 
   const createMutation = useCreateArticle()
   const updateMutation = useUpdateArticle(id ?? 0)
@@ -121,6 +123,10 @@ function ArticleForm({
           tone: 'success',
           message: t(mode === 'create' ? 'articles.manage.created' : 'articles.manage.updated'),
         })
+        // Clears `isDirty` before navigating away — otherwise the
+        // unsaved-changes guard would block this very navigation right
+        // after a successful save.
+        form.reset(values)
         navigate('/knowledge-base/articles/manage')
       },
       onError: (error) => {

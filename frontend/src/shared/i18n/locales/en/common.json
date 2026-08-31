@@ -52,5 +52,9 @@
     "value": "Value",
     "period": "Period",
     "category": "Category"
+  },
+  "unsavedChanges": {
+    "title": "Leave without saving?",
+    "description": "You have unsaved changes that will be lost if you leave this page."
   }
 }

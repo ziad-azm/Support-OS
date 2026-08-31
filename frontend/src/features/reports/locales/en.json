@@ -68,6 +68,11 @@
     "title": "Tickets by {{dimension}}",
     "description": "Ticket counts for the selected period, highest first."
   },
+  "presets": {
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "thisMonth": "This month"
+  },
   "filters": {
     "from": "From",
     "to": "To",

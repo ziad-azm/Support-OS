@@ -17,6 +17,7 @@ import { BarChart, ChartDataTable, ChartFrame } from '@/shared/ui/chart'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { useToast } from '@/shared/ui/toast/useToast'
 
+import { DateRangePresets } from './DateRangePresets'
 import { exportReport } from '../api/exportReport'
 import { useAgentPerformance } from '../api/useAgentPerformance'
 import { AGENT_METRICS } from '../types/agent'
@@ -88,6 +89,12 @@ export function AgentReportsPage() {
             ))}
           </SelectContent>
         </Select>
+        <DateRangePresets
+          onSelect={({ from: presetFrom, to: presetTo }) => {
+            setFrom(presetFrom)
+            setTo(presetTo)
+          }}
+        />
       </div>
 
       <ChartFrame

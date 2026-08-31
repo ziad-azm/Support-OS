@@ -105,9 +105,14 @@ function CategoryForm({
             </CardContent>
           </Card>
           <FormErrorSummary errors={formErrors} />
-          <Button type="submit" disabled={mutation.isPending}>
-            {t('categories.actions.save')}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={mutation.isPending}>
+              {t('categories.actions.save')}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => navigate('/categories')}>
+              {t('actions.cancel', { ns: 'common' })}
+            </Button>
+          </div>
         </form>
       </Form>
     </div>

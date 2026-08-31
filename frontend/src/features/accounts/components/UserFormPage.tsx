@@ -161,9 +161,14 @@ function UserCreateForm() {
               </CardContent>
             </Card>
             <FormErrorSummary errors={formErrors} />
-            <Button type="submit" disabled={createMutation.isPending}>
-              {t('users.actions.save')}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={createMutation.isPending}>
+                {t('users.actions.save')}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/users')}>
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </div>
           </form>
         </Form>
       )}
@@ -252,9 +257,14 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
               </CardContent>
             </Card>
             <FormErrorSummary errors={formErrors} />
-            <Button type="submit" disabled={updateMutation.isPending}>
-              {t('users.actions.save')}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {t('users.actions.save')}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/users')}>
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </div>
           </form>
         </Form>
       )}

@@ -14,6 +14,7 @@
     "addBranch": "إضافة فرع",
     "newItemPlaceholder": "الاسم",
     "remove": "إزالة",
+    "removeItem": "إزالة {{item}}",
     "actions": { "save": "حفظ" }
   }
 }

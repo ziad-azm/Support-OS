@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Loader2Icon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
@@ -86,7 +87,10 @@ export function PortalFeedbackFormPage() {
           />
           <FormErrorSummary errors={formErrors} />
           <Button type="submit" disabled={mutation.isPending}>
-            {t('tickets.feedback.actions.submit')}
+            {mutation.isPending ? <Loader2Icon className="animate-spin" /> : null}
+            {mutation.isPending
+              ? t('tickets.feedback.submitting')
+              : t('tickets.feedback.actions.submit')}
           </Button>
         </form>
       </Form>

@@ -69,7 +69,9 @@
     "emptyDescription": "ستظهر هنا التذاكر المعيّنة لك."
   },
   "status": {
-    "updated": "تم تحديث الحالة."
+    "updated": "تم تحديث الحالة.",
+    "terminalConfirmTitle": "هل تريد التغيير إلى {{status}}؟",
+    "terminalConfirmDescription": "لا توجد انتقالات أخرى بعد هذه الحالة — لن تتمكن من إعادة فتح هذه التذكرة من هنا."
   },
   "escalation": {
     "escalated": "مُصعَّدة",

@@ -69,7 +69,9 @@
     "emptyDescription": "Tickets assigned to you will appear here."
   },
   "status": {
-    "updated": "Status updated."
+    "updated": "Status updated.",
+    "terminalConfirmTitle": "Move to {{status}}?",
+    "terminalConfirmDescription": "This status has no further transitions — you won't be able to reopen this ticket from here."
   },
   "escalation": {
     "escalated": "Escalated",
