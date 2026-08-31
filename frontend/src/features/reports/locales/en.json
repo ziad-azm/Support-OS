@@ -1,5 +1,6 @@
 {
   "title": "Ticket Reports",
+  "sidebarTickets": "Ticket Reports",
   "sidebarSla": "SLA Performance",
   "sidebarAgents": "Agent Performance",
   "sidebarCsat": "Customer Satisfaction",

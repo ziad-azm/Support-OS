@@ -52,7 +52,7 @@ export function AgentReportsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={t('title')} />
+      <PageHeader title={t('sidebarAgents')} />
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex flex-col gap-1">
           <Label htmlFor="agent-report-from" className="text-sm">

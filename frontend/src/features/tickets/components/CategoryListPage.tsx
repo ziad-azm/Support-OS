@@ -2,8 +2,10 @@ import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
+import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
@@ -23,7 +25,9 @@ export function CategoryListPage() {
     initialSort: { field: 'name', direction: 'asc' },
   })
 
-  const query = useCategoryList(params)
+  const { searchInput, setSearchInput, search } = useDebouncedSearch(setPage)
+
+  const query = useCategoryList({ ...params, ...(search ? { search } : {}) })
   const deleteMutation = useDeleteCategory()
 
   async function handleDelete(category: Category) {
@@ -73,6 +77,12 @@ export function CategoryListPage() {
           </Button>
         }
       />
+      <Input
+        value={searchInput}
+        onChange={(event) => setSearchInput(event.target.value)}
+        placeholder={t('categories.searchPlaceholder')}
+        aria-label={t('categories.search')}
+      />
       <DataTable
         columns={columns}
         query={query}
@@ -82,7 +92,11 @@ export function CategoryListPage() {
         onPageChange={setPage}
         caption={t('categories.title')}
         empty={
-          <Empty title={t('categories.empty')} description={t('categories.emptyDescription')} />
+          search ? (
+            <Empty title={t('categories.noSearchResults')} />
+          ) : (
+            <Empty title={t('categories.empty')} description={t('categories.emptyDescription')} />
+          )
         }
       />
     </div>

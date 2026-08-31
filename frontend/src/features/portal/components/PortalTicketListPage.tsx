@@ -46,6 +46,11 @@ export function PortalTicketListPage() {
     setPage(1)
   }, [statusFilter, setPage])
 
+  const selectedStatusLabel =
+    statusFilter === 'all'
+      ? t('tickets.filters.allStatuses')
+      : t(`tickets.statuses.${statusFilter as PortalTicketStatus}`)
+
   const query = usePortalTickets({
     ...params,
     ...(statusFilter !== 'all' ? { status: statusFilter as PortalTicketStatus } : {}),
@@ -113,7 +118,11 @@ export function PortalTicketListPage() {
         {t('tickets.list.viewHistory')}
       </Link>
       <Select value={statusFilter} onValueChange={setStatusFilter}>
-        <SelectTrigger aria-label={t('tickets.filters.status')} size="sm">
+        <SelectTrigger
+          aria-label={t('tickets.filters.status')}
+          title={selectedStatusLabel}
+          size="sm"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

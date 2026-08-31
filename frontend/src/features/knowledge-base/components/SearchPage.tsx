@@ -78,7 +78,8 @@ export function SearchPage() {
                     </CardHeader>
                     <CardContent>
                       <MarkdownPreview>
-                        {(isArabic ? result.headline_ar : result.headline_en) || ''}
+                        {(isArabic ? result.headline_ar : result.headline_en) ||
+                          t('search.noPreview')}
                       </MarkdownPreview>
                     </CardContent>
                   </Card>

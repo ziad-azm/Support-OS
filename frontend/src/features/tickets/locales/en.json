@@ -161,8 +161,11 @@
     "title": "Categories",
     "new": "New category",
     "edit": "Edit category",
+    "search": "Search categories",
+    "searchPlaceholder": "Name",
     "empty": "No categories yet",
     "emptyDescription": "Create the first category to get started.",
+    "noSearchResults": "No categories match that search.",
     "fields": {
       "name": "Name",
       "createdAt": "Created",

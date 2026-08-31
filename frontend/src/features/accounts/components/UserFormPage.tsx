@@ -115,7 +115,7 @@ function UserCreateForm() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+    <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t('users.new')}</h1>
       {rolesPending ? (
         <Loading />
@@ -213,7 +213,7 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+    <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t('users.edit')}</h1>
       {rolesPending ? (
         <Loading />

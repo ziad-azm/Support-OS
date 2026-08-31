@@ -4,7 +4,7 @@ import type { ServerTableParams } from '@/shared/ui/data-table/useServerTable'
 
 import type { Category } from '../types/category'
 
-export type CategoryListParams = ServerTableParams
+export type CategoryListParams = ServerTableParams & { search?: string }
 
 export function getCategoryList(params: CategoryListParams): Promise<Page<Category>> {
   return api.getPage<Category>('/categories/', { params })

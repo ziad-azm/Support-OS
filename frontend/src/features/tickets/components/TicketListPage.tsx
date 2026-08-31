@@ -128,6 +128,13 @@ export function TicketListPage() {
     },
   ]
 
+  const selectedCategoryLabel =
+    categoryFilter === 'all'
+      ? t('filters.allCategories')
+      : (categoriesQuery.data?.items ?? []).find(
+          (category) => String(category.id) === categoryFilter,
+        )?.name
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -151,7 +158,7 @@ export function TicketListPage() {
       />
       <div className="flex flex-wrap items-center gap-2">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger aria-label={t('filters.category')} size="sm">
+          <SelectTrigger aria-label={t('filters.category')} title={selectedCategoryLabel} size="sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

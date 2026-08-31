@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { Can } from '@/shared/auth'
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
+import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
@@ -23,7 +25,9 @@ export function RoleListPage() {
     initialSort: { field: 'name', direction: 'asc' },
   })
 
-  const query = useRoles(params)
+  const { searchInput, setSearchInput, search } = useDebouncedSearch(setPage)
+
+  const query = useRoles({ ...params, ...(search ? { search } : {}) })
   const deleteMutation = useDeleteRole()
 
   async function handleDelete(role: Role) {
@@ -87,6 +91,12 @@ export function RoleListPage() {
           </Can>
         }
       />
+      <Input
+        value={searchInput}
+        onChange={(event) => setSearchInput(event.target.value)}
+        placeholder={t('roles.searchPlaceholder')}
+        aria-label={t('roles.search')}
+      />
       <DataTable
         columns={columns}
         query={query}
@@ -95,7 +105,13 @@ export function RoleListPage() {
         onSortChange={setSort}
         onPageChange={setPage}
         caption={t('roles.title')}
-        empty={<Empty title={t('roles.empty')} description={t('roles.emptyDescription')} />}
+        empty={
+          search ? (
+            <Empty title={t('roles.noSearchResults')} />
+          ) : (
+            <Empty title={t('roles.empty')} description={t('roles.emptyDescription')} />
+          )
+        }
       />
     </div>
   )

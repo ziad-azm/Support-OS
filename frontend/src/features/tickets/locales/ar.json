@@ -161,8 +161,11 @@
     "title": "الفئات",
     "new": "فئة جديدة",
     "edit": "تعديل الفئة",
+    "search": "البحث عن الفئات",
+    "searchPlaceholder": "الاسم",
     "empty": "لا توجد فئات بعد",
     "emptyDescription": "أنشئ أول فئة للبدء.",
+    "noSearchResults": "لا توجد فئات مطابقة لهذا البحث.",
     "fields": {
       "name": "الاسم",
       "createdAt": "تاريخ الإنشاء",

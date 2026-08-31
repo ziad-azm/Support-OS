@@ -139,7 +139,13 @@ export function MyTicketsPage() {
         onSortChange={setSort}
         onPageChange={setPage}
         caption={t('myQueue.title')}
-        empty={<Empty title={t('myQueue.empty')} description={t('myQueue.emptyDescription')} />}
+        empty={
+          statusFilter !== 'all' || priorityFilter !== 'all' ? (
+            <Empty title={t('noSearchResults')} />
+          ) : (
+            <Empty title={t('myQueue.empty')} description={t('myQueue.emptyDescription')} />
+          )
+        }
       />
     </div>
   )

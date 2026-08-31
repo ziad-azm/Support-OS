@@ -84,7 +84,7 @@ export function SlaReportsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={t('title')} />
+      <PageHeader title={t('sidebarSla')} />
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex flex-col gap-1">
           <Label htmlFor="sla-report-from" className="text-sm">

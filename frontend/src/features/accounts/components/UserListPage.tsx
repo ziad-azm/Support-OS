@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
 import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { Can } from '@/shared/auth'
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
@@ -15,8 +15,6 @@ import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useUsers } from '../api/useUsers'
 import type { AdminUser } from '../types/user'
-
-const SEARCH_DEBOUNCE_MS = 300
 
 /**
  * The staff user-admin list screen. No delete action anywhere here —
@@ -30,17 +28,7 @@ export function UserListPage() {
     initialSort: { field: 'email', direction: 'asc' },
   })
 
-  const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
-
-  useEffect(() => {
-    const handle = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS)
-    return () => clearTimeout(handle)
-  }, [searchInput])
-
-  useEffect(() => {
-    setPage(1)
-  }, [search, setPage])
+  const { searchInput, setSearchInput, search } = useDebouncedSearch(setPage)
 
   const query = useUsers({ ...params, ...(search ? { search } : {}) })
 

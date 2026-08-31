@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
+import { Can } from '@/shared/auth'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
@@ -25,9 +26,19 @@ export function ArticleBrowsePage() {
       <PageHeader
         title={t('articles.title')}
         action={
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/knowledge-base/search">{t('search.title')}</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/knowledge-base">{t('title')}</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/knowledge-base/search">{t('search.title')}</Link>
+            </Button>
+            <Can permission="knowledge_base.manage">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/knowledge-base/articles/manage">{t('articles.manage.title')}</Link>
+              </Button>
+            </Can>
+          </div>
         }
       />
       <QueryBoundary

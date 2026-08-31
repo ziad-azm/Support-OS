@@ -1,21 +1,25 @@
 import { useState } from 'react'
 import {
+  BarChart3Icon,
   BookOpenIcon,
-  ChartNoAxesColumnIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
   ContactIcon,
   FileTextIcon,
+  GaugeIcon,
   HistoryIcon,
   InboxIcon,
+  LayoutDashboardIcon,
   ListTodoIcon,
   LogOutIcon,
   SearchIcon,
   SettingsIcon,
   ShieldCheckIcon,
+  SmileIcon,
   TagIcon,
   TicketIcon,
   UserCogIcon,
+  UsersIcon,
 } from 'lucide-react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -195,31 +199,31 @@ export function Sidebar() {
         <Can permission="reports.view">
           <SidebarLink
             to="/reports/tickets"
-            icon={ChartNoAxesColumnIcon}
-            label={t('reports:title')}
+            icon={BarChart3Icon}
+            label={t('reports:sidebarTickets')}
             collapsed={collapsed}
           />
           <SidebarLink
             to="/reports/sla"
-            icon={ChartNoAxesColumnIcon}
+            icon={GaugeIcon}
             label={t('reports:sidebarSla')}
             collapsed={collapsed}
           />
           <SidebarLink
             to="/reports/agents"
-            icon={ChartNoAxesColumnIcon}
+            icon={UsersIcon}
             label={t('reports:sidebarAgents')}
             collapsed={collapsed}
           />
           <SidebarLink
             to="/reports/csat"
-            icon={ChartNoAxesColumnIcon}
+            icon={SmileIcon}
             label={t('reports:sidebarCsat')}
             collapsed={collapsed}
           />
           <SidebarLink
             to="/reports/dashboard"
-            icon={ChartNoAxesColumnIcon}
+            icon={LayoutDashboardIcon}
             label={t('reports:sidebarDashboard')}
             collapsed={collapsed}
           />

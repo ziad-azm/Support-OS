@@ -37,6 +37,11 @@ export function TicketAssigneeControl({
   const agentsQuery = useAssignableAgents()
   const mutation = useAssignTicket(ticketId)
 
+  const selectedAgentLabel =
+    assignedAgent === null
+      ? t('fields.unassigned')
+      : ((agentsQuery.data ?? []).find((agent) => agent.id === assignedAgent)?.name ?? undefined)
+
   function onValueChange(next: string) {
     mutation.mutate(next === UNASSIGNED ? null : Number(next), {
       onSuccess: () => toast({ tone: 'success', message: t('assign.updated') }),
@@ -51,7 +56,7 @@ export function TicketAssigneeControl({
       onValueChange={onValueChange}
       disabled={mutation.isPending || agentsQuery.isPending}
     >
-      <SelectTrigger aria-label={t('assign.label')} size="sm">
+      <SelectTrigger aria-label={t('assign.label')} title={selectedAgentLabel} size="sm">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
