@@ -342,6 +342,14 @@ export const router = createBrowserRouter([
                   return { element: <SlaReportsPage /> }
                 },
               },
+              {
+                path: 'reports/agents',
+                lazy: async () => {
+                  const { AgentReportsPage } =
+                    await import('@/features/reports/components/AgentReportsPage')
+                  return { element: <AgentReportsPage /> }
+                },
+              },
             ],
           },
           {

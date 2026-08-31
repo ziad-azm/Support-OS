@@ -1,6 +1,18 @@
 {
   "title": "Ticket Reports",
   "sidebarSla": "SLA Performance",
+  "sidebarAgents": "Agent Performance",
+  "agents": {
+    "title": "Agent performance",
+    "description": "Top agents for the selected period and metric.",
+    "filters": { "metric": "Rank by" },
+    "metrics": {
+      "handled": "Tickets handled",
+      "resolution": "Average resolution time",
+      "csat": "Satisfaction rate"
+    },
+    "fields": { "agent": "Agent", "value": "Value" }
+  },
   "trend": {
     "title": "SLA response/resolution trend",
     "description": "Average time to first response and to resolution, in minutes.",

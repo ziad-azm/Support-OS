@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 from apps.core.permissions import HasPermission, Permissions
 from apps.tickets.models import Ticket
 
+from .agents import agent_performance, parse_metric
 from .aggregation import bucketed_counts, grouped_counts, parse_bucket, parse_date_range
 from .export import csv_response
 from .sla import sla_breach_rate, sla_trend
@@ -162,3 +163,23 @@ class SlaBreachRateReportView(BaseReportView):
 
     def get_report(self, request, *, start, end, bucket):
         return sla_breach_rate(start, end)
+
+
+class AgentPerformanceReportView(BaseReportView):
+    """Up to 15 agents, ranked by one metric — RPT-3 (CONVENTIONS.md § 25
+    row 5, Horizontal Bar Chart, "same as RPT-1's category row"). `?metric=`
+    is REQUIRED: `handled`, `resolution`, or `csat` — no sensible default,
+    the same reasoning `TicketBreakdownReportView`'s `?dimension=` uses.
+
+    Ignores `?bucket=` — a ranked snapshot has no time axis, the same
+    consistency `SlaBreachRateReportView` already establishes.
+    """
+
+    permission_map = {"get": Permissions.REPORTS_VIEW}
+    csv_columns = (("key", _("Agent ID")), ("label", _("Agent")), ("value", _("Value")))
+    csv_filename = "agent-performance"
+
+    def get_report(self, request, *, start, end, bucket):
+        metric = parse_metric(request.query_params)
+        self.csv_filename = f"agent-performance-{metric}"
+        return agent_performance(start, end, metric)
