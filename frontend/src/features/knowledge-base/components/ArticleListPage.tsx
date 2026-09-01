@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
+import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
@@ -12,6 +13,7 @@ import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { Empty } from '@/shared/ui/Empty'
 import { PageHeader } from '@/shared/ui/PageHeader'
 
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
 import { useDeleteArticle } from '../api/useArticleMutations'
 import { useArticles } from '../api/useArticles'
 import type { Article } from '../types/article'
@@ -23,8 +25,9 @@ export function ArticleListPage() {
   const { sort, setSort, setPage, params } = useServerTable({
     initialSort: { field: 'created_at', direction: 'desc' },
   })
+  const { searchInput, setSearchInput, search } = useDebouncedSearch(setPage)
 
-  const query = useArticles(params)
+  const query = useArticles({ ...params, ...(search ? { search } : {}) })
   const deleteMutation = useDeleteArticle()
 
   async function handleDelete(article: Article) {
@@ -91,6 +94,12 @@ export function ArticleListPage() {
           </Button>
         }
       />
+      <Input
+        value={searchInput}
+        onChange={(event) => setSearchInput(event.target.value)}
+        placeholder={t('articles.manage.searchPlaceholder')}
+        aria-label={t('articles.manage.search')}
+      />
       <DataTable
         columns={columns}
         query={query}
@@ -100,10 +109,14 @@ export function ArticleListPage() {
         onPageChange={setPage}
         caption={t('articles.manage.title')}
         empty={
-          <Empty
-            title={t('articles.manage.empty')}
-            description={t('articles.manage.emptyDescription')}
-          />
+          search ? (
+            <Empty title={t('articles.manage.noSearchResults')} />
+          ) : (
+            <Empty
+              title={t('articles.manage.empty')}
+              description={t('articles.manage.emptyDescription')}
+            />
+          )
         }
       />
       <Button asChild variant="ghost" size="sm" className="self-start">

@@ -81,13 +81,13 @@ export function PortalTicketDetailPage() {
                       </dt>
                       <dd>{date(ticket.created_at)}</dd>
                     </div>
+                    <div className="sm:col-span-2">
+                      <dt className="text-sm text-muted-foreground">
+                        {t('tickets.fields.description')}
+                      </dt>
+                      <dd className="whitespace-pre-wrap">{ticket.description}</dd>
+                    </div>
                   </dl>
-                  <div>
-                    <dt className="text-sm text-muted-foreground">
-                      {t('tickets.fields.description')}
-                    </dt>
-                    <dd className="whitespace-pre-wrap">{ticket.description}</dd>
-                  </div>
                 </CardContent>
               </Card>
               {!ticket.has_feedback &&

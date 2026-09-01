@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { Button } from '@/shared/ui/primitives/button'
+import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
@@ -10,6 +11,7 @@ import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { Empty } from '@/shared/ui/Empty'
 import { PageHeader } from '@/shared/ui/PageHeader'
 
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
 import { useDeleteFaq } from '../api/useFaqMutations'
 import { useFaqs } from '../api/useFaqs'
 import type { Faq } from '../types/faq'
@@ -20,8 +22,9 @@ export function FaqListPage() {
   const { sort, setSort, setPage, params } = useServerTable({
     initialSort: { field: 'order', direction: 'asc' },
   })
+  const { searchInput, setSearchInput, search } = useDebouncedSearch(setPage)
 
-  const query = useFaqs(params)
+  const query = useFaqs({ ...params, ...(search ? { search } : {}) })
   const deleteMutation = useDeleteFaq()
 
   async function handleDelete(faq: Faq) {
@@ -72,6 +75,12 @@ export function FaqListPage() {
           </Button>
         }
       />
+      <Input
+        value={searchInput}
+        onChange={(event) => setSearchInput(event.target.value)}
+        placeholder={t('manage.searchPlaceholder')}
+        aria-label={t('manage.search')}
+      />
       <DataTable
         columns={columns}
         query={query}
@@ -80,7 +89,13 @@ export function FaqListPage() {
         onSortChange={setSort}
         onPageChange={setPage}
         caption={t('manage.title')}
-        empty={<Empty title={t('manage.empty')} description={t('manage.emptyDescription')} />}
+        empty={
+          search ? (
+            <Empty title={t('manage.noSearchResults')} />
+          ) : (
+            <Empty title={t('manage.empty')} description={t('manage.emptyDescription')} />
+          )
+        }
       />
       <Button asChild variant="ghost" size="sm" className="self-start">
         <Link to="/knowledge-base">{t('title')}</Link>

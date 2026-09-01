@@ -80,6 +80,7 @@
       "cta": "Rate this ticket",
       "thanks": "Thanks for your feedback.",
       "title": "Rate your experience",
+      "backToTicket": "Back to ticket",
       "fields": {
         "rating": "How satisfied were you?",
         "comment": "Comments (optional)"

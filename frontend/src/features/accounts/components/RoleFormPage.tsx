@@ -195,7 +195,7 @@ function RoleForm({ mode, id, role }: { mode: 'create' | 'edit'; id?: number; ro
                       return (
                         <div key={area} className="flex flex-col gap-2">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-medium">{areaLabel(area)}</h3>
+                            <h2 className="text-sm font-medium">{areaLabel(area)}</h2>
                             <Button type="button" variant="ghost" size="sm" onClick={toggleGroup}>
                               {t(
                                 allSelected ? 'roles.deselectAllInGroup' : 'roles.selectAllInGroup',

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
 import { choice, optionalString } from '@/shared/validation/schemas'
@@ -71,6 +71,12 @@ export function PortalFeedbackFormPage() {
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
+      <Link
+        to={`/portal/tickets/${ticketId}`}
+        className="text-sm text-muted-foreground hover:underline"
+      >
+        {t('tickets.feedback.backToTicket')}
+      </Link>
       <h1 className="text-lg font-semibold">{t('tickets.feedback.title')}</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">

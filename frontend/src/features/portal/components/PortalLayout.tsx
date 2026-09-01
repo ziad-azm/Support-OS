@@ -1,8 +1,9 @@
-import { Link, Outlet } from 'react-router'
+import { NavLink, Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
 
 import { useAuth } from '@/shared/auth'
-import { Button } from '@/shared/ui/primitives/button'
+import { cn } from '@/shared/lib/cn'
+import { Button, buttonVariants } from '@/shared/ui/primitives/button'
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/shared/ui/ThemeToggle'
 
@@ -27,24 +28,74 @@ export function PortalLayout() {
         <div className="container mx-auto flex flex-wrap items-center gap-4 px-4 py-3">
           <span className="font-semibold">{t('shell.title')}</span>
           <nav className="flex items-center gap-1">
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/portal">{t('nav.home')}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/portal/faqs">{t('nav.faqs')}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/portal/articles">{t('nav.articles')}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/portal/tickets">{t('nav.myTickets')}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/portal/tickets/history">{t('nav.history')}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/portal/tickets/new">{t('nav.newTicket')}</Link>
-            </Button>
+            <NavLink
+              to="/portal"
+              end
+              className={({ isActive }) =>
+                cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  isActive && 'bg-accent text-accent-foreground',
+                )
+              }
+            >
+              {t('nav.home')}
+            </NavLink>
+            <NavLink
+              to="/portal/faqs"
+              className={({ isActive }) =>
+                cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  isActive && 'bg-accent text-accent-foreground',
+                )
+              }
+            >
+              {t('nav.faqs')}
+            </NavLink>
+            <NavLink
+              to="/portal/articles"
+              className={({ isActive }) =>
+                cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  isActive && 'bg-accent text-accent-foreground',
+                )
+              }
+            >
+              {t('nav.articles')}
+            </NavLink>
+            <NavLink
+              to="/portal/tickets"
+              end
+              className={({ isActive }) =>
+                cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  isActive && 'bg-accent text-accent-foreground',
+                )
+              }
+            >
+              {t('nav.myTickets')}
+            </NavLink>
+            <NavLink
+              to="/portal/tickets/history"
+              className={({ isActive }) =>
+                cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  isActive && 'bg-accent text-accent-foreground',
+                )
+              }
+            >
+              {t('nav.history')}
+            </NavLink>
+            <NavLink
+              to="/portal/tickets/new"
+              className={({ isActive }) =>
+                cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  isActive && 'bg-accent text-accent-foreground',
+                )
+              }
+            >
+              {t('nav.newTicket')}
+            </NavLink>
           </nav>
           <div className="ms-auto flex items-center gap-2">
             {user ? (

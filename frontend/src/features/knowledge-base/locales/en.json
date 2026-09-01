@@ -4,8 +4,11 @@
     "title": "Manage FAQs",
     "new": "New FAQ",
     "edit": "Edit FAQ",
+    "search": "Search FAQs",
+    "searchPlaceholder": "Question or answer",
     "empty": "No FAQs yet",
     "emptyDescription": "Create the first FAQ to get started.",
+    "noSearchResults": "No FAQs match that search.",
     "fields": {
       "question": "Question",
       "answer": "Answer",
@@ -34,8 +37,11 @@
       "title": "Manage articles",
       "new": "New article",
       "edit": "Edit article",
+      "search": "Search articles",
+      "searchPlaceholder": "Title or body",
       "empty": "No articles yet",
       "emptyDescription": "Create the first article to get started.",
+      "noSearchResults": "No articles match that search.",
       "sections": {
         "english": "English content",
         "arabic": "Arabic content"
@@ -77,7 +83,10 @@
     "browse": {
       "empty": "No articles yet",
       "emptyDescription": "Check back later.",
-      "readMore": "Read more"
+      "readMore": "Read more",
+      "filterCategory": "Filter by category",
+      "allCategories": "All categories",
+      "noCategoryResults": "No articles in this category."
     },
     "reader": {
       "backToList": "Back to help articles",

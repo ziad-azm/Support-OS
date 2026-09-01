@@ -20,6 +20,12 @@ export function PortalHomePage() {
         <Button asChild variant="outline">
           <Link to="/portal/faqs">{t('nav.faqs')}</Link>
         </Button>
+        <Button asChild variant="outline">
+          <Link to="/portal/articles">{t('nav.articles')}</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/portal/tickets/history">{t('nav.history')}</Link>
+        </Button>
       </div>
     </div>
   )

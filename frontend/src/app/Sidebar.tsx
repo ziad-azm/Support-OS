@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import {
   BarChart3Icon,
   BookOpenIcon,
@@ -21,13 +22,13 @@ import {
   UserCogIcon,
   UsersIcon,
 } from 'lucide-react'
-import { Link } from 'react-router'
+import { NavLink } from 'react-router'
 import { useTranslation } from 'react-i18next'
 
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 import { Can, useAuth } from '@/shared/auth'
 import { cn } from '@/shared/lib/cn'
-import { Button } from '@/shared/ui/primitives/button'
+import { Button, buttonVariants } from '@/shared/ui/primitives/button'
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/shared/ui/ThemeToggle'
 
@@ -54,31 +55,56 @@ function readCollapsed(): boolean {
  */
 function SidebarLink({
   to,
+  end,
   icon: Icon,
   label,
   collapsed,
 }: {
   to: string
+  end?: boolean
   icon: typeof ContactIcon
   label: string
   collapsed: boolean
 }) {
   return (
-    <Button
-      asChild
-      variant="ghost"
-      size="sm"
-      className={cn('justify-start gap-2', collapsed && 'justify-center px-0')}
+    <NavLink
+      to={to}
+      end={end}
+      aria-label={collapsed ? label : undefined}
+      title={collapsed ? label : undefined}
+      className={({ isActive }) =>
+        cn(
+          buttonVariants({ variant: 'ghost', size: 'sm' }),
+          'justify-start gap-2',
+          collapsed && 'justify-center px-0',
+          isActive && 'bg-accent text-accent-foreground',
+        )
+      }
     >
-      <Link
-        to={to}
-        aria-label={collapsed ? label : undefined}
-        title={collapsed ? label : undefined}
-      >
-        <Icon />
-        {collapsed ? null : label}
-      </Link>
-    </Button>
+      <Icon />
+      {collapsed ? null : label}
+    </NavLink>
+  )
+}
+
+/** Labeled wrapper around a multi-link nav group (`UX-002`) — the label
+ *  hides when `collapsed`, matching every other text label in this file. */
+function NavSection({
+  label,
+  collapsed,
+  children,
+}: {
+  label: string
+  collapsed: boolean
+  children: ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      {collapsed ? null : (
+        <span className="px-2 text-xs font-medium text-muted-foreground">{label}</span>
+      )}
+      {children}
+    </div>
   )
 }
 
@@ -140,6 +166,7 @@ export function Sidebar() {
         <Can permission="tickets.view">
           <SidebarLink
             to="/tickets"
+            end
             icon={TicketIcon}
             label={t('tickets:title')}
             collapsed={collapsed}
@@ -166,24 +193,27 @@ export function Sidebar() {
           collapsed={collapsed}
         />
         <Can permission="knowledge_base.view">
-          <SidebarLink
-            to="/knowledge-base"
-            icon={BookOpenIcon}
-            label={t('knowledgeBase:title')}
-            collapsed={collapsed}
-          />
-          <SidebarLink
-            to="/knowledge-base/articles"
-            icon={FileTextIcon}
-            label={t('knowledgeBase:articles.title')}
-            collapsed={collapsed}
-          />
-          <SidebarLink
-            to="/knowledge-base/search"
-            icon={SearchIcon}
-            label={t('knowledgeBase:search.title')}
-            collapsed={collapsed}
-          />
+          <NavSection label={t('knowledgeBase:title')} collapsed={collapsed}>
+            <SidebarLink
+              to="/knowledge-base"
+              end
+              icon={BookOpenIcon}
+              label={t('knowledgeBase:title')}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/knowledge-base/articles"
+              icon={FileTextIcon}
+              label={t('knowledgeBase:articles.title')}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/knowledge-base/search"
+              icon={SearchIcon}
+              label={t('knowledgeBase:search.title')}
+              collapsed={collapsed}
+            />
+          </NavSection>
         </Can>
         <Can permission="users.view">
           <SidebarLink
@@ -202,36 +232,38 @@ export function Sidebar() {
           />
         </Can>
         <Can permission="reports.view">
-          <SidebarLink
-            to="/reports/tickets"
-            icon={BarChart3Icon}
-            label={t('reports:sidebarTickets')}
-            collapsed={collapsed}
-          />
-          <SidebarLink
-            to="/reports/sla"
-            icon={GaugeIcon}
-            label={t('reports:sidebarSla')}
-            collapsed={collapsed}
-          />
-          <SidebarLink
-            to="/reports/agents"
-            icon={UsersIcon}
-            label={t('reports:sidebarAgents')}
-            collapsed={collapsed}
-          />
-          <SidebarLink
-            to="/reports/csat"
-            icon={SmileIcon}
-            label={t('reports:sidebarCsat')}
-            collapsed={collapsed}
-          />
-          <SidebarLink
-            to="/reports/dashboard"
-            icon={LayoutDashboardIcon}
-            label={t('reports:sidebarDashboard')}
-            collapsed={collapsed}
-          />
+          <NavSection label={t('reports:navSection')} collapsed={collapsed}>
+            <SidebarLink
+              to="/reports/tickets"
+              icon={BarChart3Icon}
+              label={t('reports:sidebarTickets')}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/reports/sla"
+              icon={GaugeIcon}
+              label={t('reports:sidebarSla')}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/reports/agents"
+              icon={UsersIcon}
+              label={t('reports:sidebarAgents')}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/reports/csat"
+              icon={SmileIcon}
+              label={t('reports:sidebarCsat')}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/reports/dashboard"
+              icon={LayoutDashboardIcon}
+              label={t('reports:sidebarDashboard')}
+              collapsed={collapsed}
+            />
+          </NavSection>
         </Can>
         <Can permission="audit_log.view">
           <SidebarLink

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DownloadIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
@@ -13,7 +14,18 @@ import { useToast } from '@/shared/ui/toast/useToast'
 import { DateRangePresets } from './DateRangePresets'
 import { exportReport } from '../api/exportReport'
 import { useDashboardKpis } from '../api/useDashboardKpis'
+import { DASHBOARD_KPIS } from '../types/dashboard'
 import type { DashboardKpi } from '../types/dashboard'
+
+// `UX-050`: each KPI drills into its own report. `GaugeChart` itself is
+// reused unchanged by other report pages (see its own doc comment), so the
+// drill-down links live here instead of inside the shared chart.
+const KPI_REPORT_ROUTES: Record<DashboardKpi, string> = {
+  open_rate: '/reports/tickets',
+  sla_health: '/reports/sla',
+  csat_risk: '/reports/csat',
+  agent_load: '/reports/agents',
+}
 
 export function ManagementDashboardPage() {
   const { t } = useTranslation('reports')
@@ -110,6 +122,14 @@ export function ManagementDashboardPage() {
           />
         )}
       </ChartFrame>
+
+      <div className="flex flex-wrap gap-2">
+        {DASHBOARD_KPIS.map((kpi) => (
+          <Button key={kpi} asChild variant="ghost" size="sm">
+            <Link to={KPI_REPORT_ROUTES[kpi]}>{t(`dashboard.kpis.${kpi}`)}</Link>
+          </Button>
+        ))}
+      </div>
     </div>
   )
 }
