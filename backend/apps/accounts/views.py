@@ -19,6 +19,7 @@ from apps.core.views import BaseModelViewSet
 from .models import AuditLog, Role
 from .serializers import (
     AuditLogSerializer,
+    ChangePasswordSerializer,
     InviteConfirmSerializer,
     LogoutSerializer,
     PasswordResetConfirmSerializer,
@@ -113,6 +114,27 @@ class PasswordResetConfirmView(APIView):
 
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(None, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    """SEC-8's change-password step. `IsAuthenticated` only — no
+    `authentication_classes` override, unlike every other view in this
+    file so far: this is the first credential action that requires the
+    caller already be signed in rather than anonymous, the same posture
+    `MeView` below already has. Passes `context={"request": request}`
+    explicitly when instantiating the serializer — the first plain
+    `APIView` in this codebase that needs to (`## Prerequisites`); a
+    `ModelViewSet`'s own `get_serializer()` would do this automatically,
+    but nothing here is a `ModelViewSet`.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(None, status=status.HTTP_200_OK)

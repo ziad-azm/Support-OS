@@ -768,6 +768,20 @@ token. This is the same technique Django's own `default_token_generator`
 uses; reach for it whenever this project needs a single-use token for a
 resource with no natural pending→active transition to check instead.
 
+**A plain `APIView` that needs `request` inside its serializer must pass
+`context={"request": request}` explicitly — a `ModelViewSet`'s
+`get_serializer()` does this for free, a bare `APIView` does not.**
+`ChangePasswordView` (Story 73, `SEC-8`) is the first plain `APIView` in
+this codebase whose serializer reads `self.context["request"].user`
+(`apps.portal.serializers.FeedbackSerializer.validate_ticket` did this
+earlier, but only ever through a `ModelViewSet`'s auto-injected context).
+Instantiating the serializer as
+`Serializer(data=request.data, context={"request": request})` is the whole
+fix — easy to forget once, since every existing `APIView` in
+`apps/accounts/views.py` before this story happened to resolve its target
+user from a signed token instead of from `request.user` directly, so
+none of them needed to.
+
 ---
 
 ## 22. Authorization (roles & permissions)

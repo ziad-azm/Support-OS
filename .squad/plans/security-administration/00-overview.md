@@ -13,9 +13,9 @@ Entry point for the **security-administration** feature. Stories execute in orde
 | 70 | [70-story-user-invitation-first-login-password-SUPPORTOS-107.md](70-story-user-invitation-first-login-password-SUPPORTOS-107.md) | New User Invitation & First-Login Password Setup | SUPPORTOS-107 | Story 48 (`SEC-1`), Story 31 (`SLA-4`, `../sla-automation/`) |
 | 71 | [71-story-user-account-deletion-SUPPORTOS-108.md](71-story-user-account-deletion-SUPPORTOS-108.md) | User Account Deletion | SUPPORTOS-108 | Story 48 (`SEC-1`), Story 52 (`SEC-3`) |
 | 72 | [72-story-forgot-password-self-service-reset-SUPPORTOS-109.md](72-story-forgot-password-self-service-reset-SUPPORTOS-109.md) | Forgot Password / Self-Service Reset | SUPPORTOS-109 | Story 08 (`AUTH-1`), Story 31 (`SLA-4`, `../sla-automation/`), Story 70 (`SEC-5`, reuses its token utility) |
-| — | _not yet planned_ | Change Password | `SEC-8` | AUTH-1, FORM |
+| 73 | [73-story-change-password-SUPPORTOS-110.md](73-story-change-password-SUPPORTOS-110.md) | Change Password | SUPPORTOS-110 | Story 08 (`AUTH-1`), Story 06/07 (`FORM`, `../internationalization-design-system/`) |
 
-`SEC-5` (Story 70), `SEC-6` (Story 71), and `SEC-7` (Story 72) are now all planned; only `SEC-8` remains backlog-only (`SupportOs backlog.MD`) with no `NN`/intake file, until it gets both via `/squad-new-story` → `/squad-plan`. All four are folded into this feature: `SEC-5`/`SEC-6` came from a short-lived `account-lifecycle` epic (both extend `SEC-1`'s own Users admin screen directly); `SEC-7`/`SEC-8` came from an even shorter-lived `Password Self-Service` epic that briefly held just those two before being dissolved back into this one — every `User`-account credential concern now lives in one place rather than split across epics.
+`SEC-5` (Story 70) through `SEC-8` (Story 73) are now all planned — every `User`-account credential concern this feature absorbed is fully planned end to end. `SEC-5`/`SEC-6` came from a short-lived `account-lifecycle` epic (both extend `SEC-1`'s own Users admin screen directly); `SEC-7`/`SEC-8` came from an even shorter-lived `Password Self-Service` epic that briefly held just those two before being dissolved back into this one — every `User`-account credential concern now lives in one place rather than split across epics.
 
 ## Dependency notes
 
@@ -27,6 +27,14 @@ This feature maps to **EPIC 12 — Security & Administration** in the Jira works
 - **Story 49 (`SEC-2`, `SUPPORTOS-73`)** — "Dependencies: SEC-1" per its own intake. Builds the role→permission mapping UI over `Role.permissions`, which Story 48 deliberately ships read-only.
 - **Story 52 (`SEC-3`, `SUPPORTOS-74`)** — Audit-log service + viewer over sensitive actions: every SEC-1/SEC-2 write (user create/role-change/status-change, role create/rename/permissions-change/delete) now writes an immutable `AuditLog` row, visible in a new filtered `/audit-log` screen.
 - **Story 53 (`SEC-4`, `SUPPORTOS-75`)** — Settings model + admin UI for org-level configuration (branding/departments/branches/SLA defaults) — independent of the other three (no `Dependencies:` line in its own intake). All four SEC stories are now planned.
+
+**Verified findings that shaped Story 73:**
+
+- **`ChangePasswordView` is the first plain `APIView` in this codebase that needs `context={"request": request}` passed explicitly to its serializer.** Every prior credential `APIView` (`InviteConfirmView`, `PasswordResetRequestView`/`PasswordResetConfirmView`) resolves its target user from a signed token, never from `request.user` directly, so none of them needed serializer context. The one existing `self.context["request"].user` read in this codebase (`apps.portal.serializers.FeedbackSerializer.validate_ticket`) always runs through a `ModelViewSet`'s `get_serializer()`, which injects that context automatically — a bare `APIView` does not. Documented as a new `CONVENTIONS.md` §21 entry for the next plain `APIView` that needs it.
+- **`validate_password` can be called with `user=` here, unlike SEC-5's/SEC-7's own confirm serializers — a real, available strengthening, not just consistency.** Those two flows only resolve their target user during object-level `validate()`, after a token lookup — too late for the field-level `validate_password` call to use it. This story's `ChangePasswordSerializer` already knows `request.user` before any field validator runs, so `UserAttributeSimilarityValidator` gets a real user to compare the new password against.
+- **No rate limiting on this endpoint — a deliberate scope boundary, not an oversight.** The intake explicitly asks for throttling on SEC-7's fully-anonymous request endpoint and says nothing about it here; this endpoint requires an already-authenticated session, a materially higher attack cost.
+- **No `AuditLog` entry** — consistent with `InviteConfirmSerializer.save()`/`PasswordResetConfirmSerializer.save()`, neither of which writes one either; `AuditLog` covers an admin acting on another account, not self-service actions on one's own.
+- **No schema migration.** No model changes; reuses `User.check_password`/`set_password` exactly as every other password-setting path in this app already does.
 
 **Verified findings that shaped Story 72:**
 

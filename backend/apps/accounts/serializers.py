@@ -277,6 +277,43 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return user
 
 
+class ChangePasswordSerializer(serializers.Serializer):
+    """SEC-8's change-password step — the only credential action needing
+    no token/email round-trip, since the caller is already authenticated.
+    Still requires the caller's current password: a valid access token
+    alone is not proof the person at the keyboard is the account owner (a
+    left-open or stolen session), and it is the one signal this endpoint
+    can check that the other confirm flows have no equivalent for.
+
+    `validate_new_password` passes `user=` to `validate_password` — unlike
+    `InviteConfirmSerializer`/`PasswordResetConfirmSerializer` above,
+    which cannot, because in both of those flows the target user is only
+    resolved during object-level `validate()`, after token verification.
+    Here `self.context["request"].user` is known from the start, so
+    `UserAttributeSimilarityValidator` gets a real user to compare
+    against. See the plan's `## Story Goal`.
+    """
+
+    current_password = serializers.CharField(write_only=True, style={"input_type": "password"})
+    new_password = serializers.CharField(write_only=True, style={"input_type": "password"})
+
+    def validate_current_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError(_("Current password is incorrect."))
+        return value
+
+    def validate_new_password(self, value):
+        validate_password(value, user=self.context["request"].user)
+        return value
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        user.set_password(self.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        return user
+
+
 class AuditLogSerializer(BaseModelSerializer):
     """Read-only — `AuditLogViewSet` has no write action for this to ever
     validate. `actor_name` uses the same verified-safe dotted-`source`

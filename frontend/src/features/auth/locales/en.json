@@ -41,5 +41,12 @@
     "signIn": "Sign in",
     "invalidTitle": "Invalid link",
     "invalidDescription": "This reset link is missing its token, invalid, or has expired. Request a new one."
+  },
+  "changePassword": {
+    "title": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "submit": "Change password",
+    "success": "Password changed."
   }
 }

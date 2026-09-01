@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
+import { ChangePasswordSection } from '@/features/auth/components/ChangePasswordSection'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/shared/ui/ThemeToggle'
@@ -11,7 +12,9 @@ import { PageHeader } from '@/shared/ui/PageHeader'
  * is an org-admin form gated behind `settings.manage`). Hosts the
  * `LanguageSwitcher`/`ThemeToggle` moved out of `Sidebar.tsx`'s footer
  * (SUPPORTOS-105 task 4) — both components are unchanged, still own their
- * state via `i18n.changeLanguage`/`useTheme()`, zero props either way.
+ * state via `i18n.changeLanguage`/`useTheme()`, zero props either way —
+ * plus `ChangePasswordSection` (SEC-8), the one remaining personal
+ * account setting this page was missing.
  */
 export function PreferencesPage() {
   const { t } = useTranslation()
@@ -31,6 +34,7 @@ export function PreferencesPage() {
           </div>
         </CardContent>
       </Card>
+      <ChangePasswordSection />
     </div>
   )
 }
