@@ -101,6 +101,15 @@ migration) — of the 12 findings originally catalogued as `content`/
 `bilingual`. No new finding was discovered during this story's
 implementation.
 
+**Story 68 (`DSN-13`), final verification:** every `critical`/`major`
+`Resolved` row (31 of 69) was re-verified against the actual current code
+in full; every `minor` `Resolved` row (31 of 69) was spot-checked; every
+`Deferred`/`Open` row (7 of 69) had its reasoning re-confirmed against
+current backend/frontend code. Zero regressions, zero stragglers, zero new
+`UX-0NN` findings. Static suite (`lint`/`format:check`/`check:rtl`/`build`,
+backend's 54 tests) all pass. No finding's Status column changes as a
+result of this story. See `## Sign-off` below.
+
 | ID | Screen | Category | Severity | Finding | Recommended fix | Owning story | Status |
 |---|---|---|---|---|---|---|---|
 | UX-001 | Shell — `Sidebar.tsx` (staff) and `PortalLayout.tsx` (portal) | IA | major | Neither nav uses `NavLink`/`aria-current` or any current-path check — `SidebarLink` (`Sidebar.tsx:46-74`) and every `<Link>` in `PortalLayout.tsx:30-47` render identically regardless of the active route. A user has no visual confirmation of where they are in either shell. | Swap `Link` for `NavLink` (or add a `useLocation` pathname check) in both `SidebarLink` and `PortalLayout`'s nav buttons; apply a distinct active style and `aria-current="page"`. | DSN-11 | Resolved (Story 66) |
@@ -172,3 +181,45 @@ implementation.
 | UX-067 | Shell — `frontend/src/app/RootLayout.tsx` + `Sidebar.tsx:36-42` | responsive | major | Discovered during Story 64 (`DSN-9`) planning, not by `DSN-6`'s original walk: `readCollapsed()` defaults to `false` (expanded, `w-56`/224px) whenever no preference is stored — every first-time visit on every device. At 375px this leaves `main` ~119px wide after padding. | Default to collapsed on narrow viewports (`matchMedia('(max-width: 639px)')`) only when no stored preference exists; never override an explicit user choice. | DSN-9 | Resolved (Story 64) |
 | UX-068 | Shell — `frontend/src/shared/ui/data-table/{types,DataTable}.tsx` | responsive | major | Discovered during Story 64 (`DSN-9`) planning: `table.tsx`'s `overflow-x-auto` (confirmed compliant by `DSN-2`) is the only small-screen behavior `DataTable` has — no column-priority/stacking mechanism exists, which the `DSN-9` intake's own Task 1 names as an acceptable alternative to a full card rewrite. | Add an opt-in `ColumnDef.priority: 'sm'` field; `DataTable` hides those columns below `sm:`. Applied to `TicketListPage`/`MyTicketsPage`/`CustomerListPage`/`PortalTicketListPage`/`PortalTicketHistoryPage`; the other 7 `DataTable` consumers keep the existing horizontal-scroll fallback. | DSN-9 | Resolved (Story 64) |
 | UX-069 | App-wide — 23 submit-button sites (see Story 65's own task 8 table) | form | major | Discovered during Story 65 (`DSN-10`) planning: `grep -rn 'type="submit".*disabled=\{.*[Pp]ending\}' frontend/src` finds 23 submit buttons; `DSN-8` (`UX-062`) added a spinner + label swap to only 2 of them (`PortalTicketFormPage.tsx`, `PortalFeedbackFormPage.tsx`), leaving those 2 visibly inconsistent with the other 21 — an inconsistency `DSN-8` itself introduced. No shared `SubmitButton` component existed. | Add `shared/ui/form/SubmitButton.tsx` (spinner + optional pending-label swap, forwards `Button` props); apply to all 23 sites app-wide, including refactoring the 2 `DSN-8` sites onto the same shared component. | DSN-10 | Resolved (Story 65) |
+
+---
+
+## Sign-off
+
+**`DSN-13` (Story 68) — final verification pass, completed.**
+
+- **62 `Resolved` findings**, all reconfirmed accurate against the actual
+  current code this session (31 `critical`/`major` read in full, 31
+  `minor` spot-checked). Zero regressions found — no earlier story's fix
+  was silently reverted or broken by a later story touching the same file
+  (checked explicitly for the highest-risk shared files: `Sidebar.tsx`
+  touched by Stories 62/64/66; `RoleFormPage.tsx` touched by 63/66/67;
+  `ArticleListPage.tsx` touched by 66/67; `PortalTicketDetailPage.tsx`
+  touched by 64/66; `PortalFeedbackFormPage.tsx` touched by 63/65/66).
+- **5 `Deferred` findings** (`UX-007, 019, 024, 030, 057`) — each needs a
+  real backend/data-model change the `DSN-6`–`DSN-13` frontend-only
+  guardrail forbids; all 5 reasons re-confirmed still true against current
+  backend code. Needs a dedicated non-`DSN` backend story or an explicit
+  guardrail exception per finding.
+- **2 `Open` findings** (`UX-016, UX-028`, both `minor`) — bulk row
+  actions, left open by product judgment (a feature addition, not
+  interaction-state polish) since Story 63; unchanged.
+- **Zero `critical` findings are `Open`.** One `critical` finding
+  (`UX-057`) remains `Deferred` — the customer portal's ticket detail page
+  still has no conversation-thread view — pending the same kind of
+  decision as the other deferred items. State both halves of this when
+  citing "zero open criticals": true by the register's own status
+  vocabulary, not the same claim as "every critical is resolved."
+- **Static suite, this session:** `npm run lint` (0 errors, 1 pre-existing
+  unrelated warning), `npm run format:check` / `npm run check:rtl` /
+  `npm run build` (all clean), `python manage.py test` (54/54).
+- **Live browser verification was not performed** — no
+  Playwright/browser-automation tool was available this session, the same
+  gap Stories 66 and 67 both recorded. See `CONVENTIONS.md` § 25 / this
+  story's own plan (`.squad/plans/design-intelligence-ui-ux-system/68-story-final-ux-verification-sign-off-SUPPORTOS-104.md`)
+  for the checklist to run once tooling is available.
+- **Sign-off:** the UI baseline this thread (`DSN-6`–`DSN-13`) produced is
+  verified consistent with the register's own claims, with the 7 named
+  exceptions above carried forward for a future, separately-scoped
+  decision. `EPIC 9` (Knowledge Base) and later epics may build on this
+  baseline.
