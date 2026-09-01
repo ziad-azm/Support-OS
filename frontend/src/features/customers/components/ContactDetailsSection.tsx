@@ -10,7 +10,13 @@ import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SelectField, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SelectField,
+  SubmitButton,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -181,9 +187,9 @@ function ContactDetailAddForm({ customerId }: { customerId: number }) {
           <TextField control={form.control} name="value" label={t('contacts.fields.value')} />
         </div>
         <FormErrorSummary errors={formErrors} />
-        <Button type="submit" disabled={mutation.isPending} className="self-start">
+        <SubmitButton pending={mutation.isPending} className="self-start">
           {t('contacts.actions.add')}
-        </Button>
+        </SubmitButton>
       </form>
     </Form>
   )
@@ -234,9 +240,9 @@ function ContactDetailEditForm({
           </div>
           <FormErrorSummary errors={formErrors} />
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={mutation.isPending}>
+            <SubmitButton pending={mutation.isPending} size="sm">
               {t('contacts.actions.save')}
-            </Button>
+            </SubmitButton>
             <Button type="button" variant="ghost" size="sm" onClick={onDone}>
               {t('contacts.actions.cancel')}
             </Button>

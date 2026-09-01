@@ -6,7 +6,6 @@ import { Link } from 'react-router'
 import * as z from 'zod'
 
 import { optionalEmail, requiredString } from '@/shared/validation/schemas'
-import { Button } from '@/shared/ui/primitives/button'
 import {
   Card,
   CardContent,
@@ -15,7 +14,7 @@ import {
   CardTitle,
 } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { SelectField, TextField, TextareaField, useAppForm } from '@/shared/ui/form'
+import { SelectField, SubmitButton, TextField, TextareaField, useAppForm } from '@/shared/ui/form'
 
 import { submitWebForm } from '../api/submitWebForm'
 import { useWebFormCategories } from '../api/useWebFormCategories'
@@ -114,20 +113,27 @@ function WebForm({ onSubmitted }: { onSubmitted: (ticketId: number) => void }) {
                 control={form.control}
                 name="description"
                 label={t('fields.description')}
+                maxLength={5000}
               />
               <SelectField
                 control={form.control}
                 name="category"
                 label={t('fields.category')}
+                disabled={categoriesQuery.isLoading}
+                description={categoriesQuery.isError ? t('fields.categoryLoadError') : undefined}
                 options={[
                   { value: CATEGORY_NONE, label: t('fields.noCategory') },
                   ...categoryOptions,
                 ]}
               />
-              <Button type="submit" size="lg" disabled={mutation.isPending} className="w-full">
-                <SendIcon />
+              <SubmitButton
+                pending={mutation.isPending}
+                size="lg"
+                className="w-full"
+                icon={<SendIcon />}
+              >
                 {t('action')}
-              </Button>
+              </SubmitButton>
             </form>
           </Form>
         </CardContent>

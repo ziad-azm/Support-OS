@@ -20,7 +20,8 @@ export function TextareaField<TFieldValues extends FieldValues>({
   description,
   placeholder,
   disabled,
-}: FieldProps<TFieldValues>) {
+  maxLength,
+}: FieldProps<TFieldValues> & { maxLength?: number }) {
   return (
     <FormField
       control={control}
@@ -29,9 +30,19 @@ export function TextareaField<TFieldValues extends FieldValues>({
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Textarea placeholder={placeholder} disabled={disabled} {...field} />
+            <Textarea
+              placeholder={placeholder}
+              disabled={disabled}
+              maxLength={maxLength}
+              {...field}
+            />
           </FormControl>
           {description ? <FormDescription>{description}</FormDescription> : null}
+          {maxLength ? (
+            <p className="text-end text-xs text-muted-foreground">
+              {String(field.value ?? '').length}/{maxLength}
+            </p>
+          ) : null}
           <FormMessage />
         </FormItem>
       )}

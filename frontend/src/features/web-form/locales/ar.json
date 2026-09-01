@@ -11,7 +11,8 @@
     "subject": "الموضوع",
     "description": "الوصف",
     "category": "الفئة",
-    "noCategory": "بدون فئة"
+    "noCategory": "بدون فئة",
+    "categoryLoadError": "تعذر تحميل الفئات. يمكنك الإرسال دون تحديد فئة."
   },
   "action": "إرسال",
   "success": {

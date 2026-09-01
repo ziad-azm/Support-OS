@@ -15,6 +15,7 @@ import type { FieldProps } from './types'
 type TextFieldProps<TFieldValues extends FieldValues> = FieldProps<TFieldValues> & {
   type?: 'text' | 'email' | 'password' | 'number' | 'datetime-local'
   autoComplete?: string
+  autoFocus?: boolean
 }
 
 /**
@@ -32,6 +33,7 @@ export function TextField<TFieldValues extends FieldValues>({
   disabled,
   type = 'text',
   autoComplete,
+  autoFocus,
 }: TextFieldProps<TFieldValues>) {
   return (
     <FormField
@@ -46,6 +48,7 @@ export function TextField<TFieldValues extends FieldValues>({
               placeholder={placeholder}
               disabled={disabled}
               autoComplete={autoComplete}
+              autoFocus={autoFocus}
               {...field}
             />
           </FormControl>

@@ -7,10 +7,15 @@ import { applyServerErrors, isValidationError } from '@/shared/validation/server
 import { Can } from '@/shared/auth'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
-import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SelectField, TextareaField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SelectField,
+  SubmitButton,
+  TextareaField,
+  useAppForm,
+} from '@/shared/ui/form'
 import {
   Select,
   SelectContent,
@@ -169,9 +174,9 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
         />
         <TextareaField control={form.control} name="body" label={t('conversation.fields.body')} />
         <FormErrorSummary errors={formErrors} />
-        <Button type="submit" disabled={mutation.isPending} className="self-start">
+        <SubmitButton pending={mutation.isPending} className="self-start">
           {t('conversation.actions.send')}
-        </Button>
+        </SubmitButton>
       </form>
     </Form>
   )

@@ -6,9 +6,14 @@ import * as z from 'zod'
 import { requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { useUnsavedChangesGuard } from '@/shared/hooks/useUnsavedChangesGuard'
-import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextField, TextareaField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SubmitButton,
+  TextField,
+  TextareaField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
@@ -109,9 +114,7 @@ function FaqForm({ mode, id, faq }: { mode: 'create' | 'edit'; id?: number; faq?
             label={t('manage.fields.order')}
           />
           <FormErrorSummary errors={formErrors} />
-          <Button type="submit" disabled={mutation.isPending}>
-            {t('manage.actions.save')}
-          </Button>
+          <SubmitButton pending={mutation.isPending}>{t('manage.actions.save')}</SubmitButton>
         </form>
       </Form>
     </div>

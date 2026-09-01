@@ -11,6 +11,7 @@
     "subject": "الموضوع",
     "description": "الوصف",
     "customer": "العميل",
+    "customerSearchHint": "تُعرض أول 100 عميل. إذا لم تجد العميل المطلوب، تواصل مع أحد المسؤولين أو راجع قائمة العملاء.",
     "category": "الفئة",
     "noCategory": "بدون فئة",
     "assignedAgent": "المسؤول",

@@ -8,10 +8,9 @@ import * as z from 'zod'
 import { useAuth } from '@/shared/auth'
 import { email, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
-import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
 
 const schema = z.object({
   email: email(),
@@ -66,6 +65,7 @@ export function LoginPage() {
                 label={t('login.email')}
                 type="email"
                 autoComplete="email"
+                autoFocus
               />
               <TextField
                 control={form.control}
@@ -75,9 +75,9 @@ export function LoginPage() {
                 autoComplete="current-password"
               />
               <FormErrorSummary errors={formErrors} />
-              <Button type="submit" size="lg" className="w-full" disabled={mutation.isPending}>
+              <SubmitButton pending={mutation.isPending} size="lg" className="w-full">
                 {t('login.submit')}
-              </Button>
+              </SubmitButton>
             </form>
           </Form>
         </CardContent>

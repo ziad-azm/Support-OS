@@ -11,6 +11,7 @@
     "subject": "Subject",
     "description": "Description",
     "customer": "Customer",
+    "customerSearchHint": "Showing the first 100 customers. If you don't see the one you need, ask an admin or check the customer list.",
     "category": "Category",
     "noCategory": "No category",
     "assignedAgent": "Assignee",

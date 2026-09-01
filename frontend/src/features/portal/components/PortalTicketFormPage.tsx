@@ -1,14 +1,18 @@
 import { useState } from 'react'
-import { Loader2Icon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import * as z from 'zod'
 
 import { requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
-import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextField, TextareaField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SubmitButton,
+  TextField,
+  TextareaField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useCreatePortalTicket } from '../api/usePortalTicketMutations'
@@ -64,10 +68,9 @@ export function PortalTicketFormPage() {
             label={t('tickets.fields.description')}
           />
           <FormErrorSummary errors={formErrors} />
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? <Loader2Icon className="animate-spin" /> : null}
-            {mutation.isPending ? t('tickets.submitting') : t('tickets.actions.submit')}
-          </Button>
+          <SubmitButton pending={mutation.isPending} pendingLabel={t('tickets.submitting')}>
+            {t('tickets.actions.submit')}
+          </SubmitButton>
         </form>
       </Form>
     </div>

@@ -6,10 +6,15 @@ import * as z from 'zod'
 import { choice, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { useUnsavedChangesGuard } from '@/shared/hooks/useUnsavedChangesGuard'
-import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SelectField, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SelectField,
+  SubmitButton,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { Loading } from '@/shared/ui/Loading'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -206,9 +211,9 @@ function ArticleForm({
               }))}
             />
             <FormErrorSummary errors={formErrors} />
-            <Button type="submit" disabled={mutation.isPending}>
+            <SubmitButton pending={mutation.isPending}>
               {t('articles.manage.actions.save')}
-            </Button>
+            </SubmitButton>
           </form>
         </Form>
       )}

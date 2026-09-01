@@ -9,7 +9,7 @@ import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextareaField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SubmitButton, TextareaField, useAppForm } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -133,9 +133,9 @@ function NoteAddForm({ customerId }: { customerId: number }) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3 border-t pt-4">
         <TextareaField control={form.control} name="body" label={t('notes.fields.body')} />
         <FormErrorSummary errors={formErrors} />
-        <Button type="submit" disabled={mutation.isPending} className="self-start">
+        <SubmitButton pending={mutation.isPending} className="self-start">
           {t('notes.actions.add')}
-        </Button>
+        </SubmitButton>
       </form>
     </Form>
   )
@@ -175,9 +175,9 @@ function NoteEditForm({
           <TextareaField control={form.control} name="body" label={t('notes.fields.body')} />
           <FormErrorSummary errors={formErrors} />
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={mutation.isPending}>
+            <SubmitButton pending={mutation.isPending} size="sm">
               {t('notes.actions.save')}
-            </Button>
+            </SubmitButton>
             <Button type="button" variant="ghost" size="sm" onClick={onDone}>
               {t('notes.actions.cancel')}
             </Button>

@@ -5,9 +5,8 @@ import * as z from 'zod'
 
 import { nullableEmail, optionalString, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
-import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
@@ -125,9 +124,7 @@ function CustomerForm({
           <TextField control={form.control} name="phone" label={t('fields.phone')} />
           <TextField control={form.control} name="company" label={t('fields.company')} />
           <FormErrorSummary errors={formErrors} />
-          <Button type="submit" disabled={mutation.isPending}>
-            {t('actions.save')}
-          </Button>
+          <SubmitButton pending={mutation.isPending}>{t('actions.save')}</SubmitButton>
         </form>
       </Form>
     </div>

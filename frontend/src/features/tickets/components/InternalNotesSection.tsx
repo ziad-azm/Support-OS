@@ -11,7 +11,7 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Checkbox } from '@/shared/ui/primitives/checkbox'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextareaField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SubmitButton, TextareaField, useAppForm } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -195,9 +195,9 @@ function NoteAddForm({ ticketId }: { ticketId: number }) {
         <TextareaField control={form.control} name="body" label={t('internalNotes.fields.body')} />
         <MentionPicker selectedIds={mentionedIds} onChange={setMentionedIds} />
         <FormErrorSummary errors={formErrors} />
-        <Button type="submit" disabled={mutation.isPending} className="self-start">
+        <SubmitButton pending={mutation.isPending} className="self-start">
           {t('internalNotes.actions.add')}
-        </Button>
+        </SubmitButton>
       </form>
     </Form>
   )
@@ -246,9 +246,9 @@ function NoteEditForm({
           <MentionPicker selectedIds={mentionedIds} onChange={setMentionedIds} />
           <FormErrorSummary errors={formErrors} />
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={mutation.isPending}>
+            <SubmitButton pending={mutation.isPending} size="sm">
               {t('internalNotes.actions.save')}
-            </Button>
+            </SubmitButton>
             <Button type="button" variant="ghost" size="sm" onClick={onDone}>
               {t('internalNotes.actions.cancel')}
             </Button>

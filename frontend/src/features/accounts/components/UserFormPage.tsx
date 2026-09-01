@@ -8,7 +8,14 @@ import { applyServerErrors, isValidationError } from '@/shared/validation/server
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SelectField, SwitchField, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SelectField,
+  SubmitButton,
+  SwitchField,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { Loading } from '@/shared/ui/Loading'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -162,9 +169,9 @@ function UserCreateForm() {
             </Card>
             <FormErrorSummary errors={formErrors} />
             <div className="flex gap-2">
-              <Button type="submit" disabled={createMutation.isPending}>
+              <SubmitButton pending={createMutation.isPending}>
                 {t('users.actions.save')}
-              </Button>
+              </SubmitButton>
               <Button type="button" variant="outline" onClick={() => navigate('/users')}>
                 {t('actions.cancel', { ns: 'common' })}
               </Button>
@@ -258,9 +265,9 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
             </Card>
             <FormErrorSummary errors={formErrors} />
             <div className="flex gap-2">
-              <Button type="submit" disabled={updateMutation.isPending}>
+              <SubmitButton pending={updateMutation.isPending}>
                 {t('users.actions.save')}
-              </Button>
+              </SubmitButton>
               <Button type="button" variant="outline" onClick={() => navigate('/users')}>
                 {t('actions.cancel', { ns: 'common' })}
               </Button>

@@ -130,6 +130,7 @@ export function TicketReportsPage() {
             type="date"
             value={to}
             onChange={(event) => setTo(event.target.value)}
+            min={from || undefined}
           />
         </div>
         <Select value={bucket} onValueChange={(value) => setBucket(value as Bucket)}>

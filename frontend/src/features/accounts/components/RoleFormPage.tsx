@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
 import { Loading } from '@/shared/ui/Loading'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -227,9 +227,7 @@ function RoleForm({ mode, id, role }: { mode: 'create' | 'edit'; id?: number; ro
             />
             <FormErrorSummary errors={formErrors} />
             <div className="flex gap-2">
-              <Button type="submit" disabled={mutation.isPending}>
-                {t('roles.actions.save')}
-              </Button>
+              <SubmitButton pending={mutation.isPending}>{t('roles.actions.save')}</SubmitButton>
               <Button type="button" variant="outline" onClick={() => navigate('/roles')}>
                 {t('actions.cancel', { ns: 'common' })}
               </Button>

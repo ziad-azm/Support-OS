@@ -11,7 +11,8 @@
     "subject": "Subject",
     "description": "Description",
     "category": "Category",
-    "noCategory": "No category"
+    "noCategory": "No category",
+    "categoryLoadError": "Could not load categories. You can still submit without one."
   },
   "action": "Submit",
   "success": {

@@ -58,7 +58,9 @@
       "editorTabs": {
         "write": "الكتابة",
         "preview": "معاينة",
-        "previewEmpty": "لا يوجد شيء لمعاينته بعد."
+        "previewEmpty": "لا يوجد شيء لمعاينته بعد.",
+        "markdownSupported": "Markdown مدعوم.",
+        "markdownGuide": "دليل الصياغة"
       },
       "actions": {
         "save": "حفظ",

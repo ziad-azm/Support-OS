@@ -5,11 +5,11 @@ import * as z from 'zod'
 
 import { choice, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
-import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
 import {
   FormErrorSummary,
   SelectField,
+  SubmitButton,
   TextField,
   TextareaField,
   useAppForm,
@@ -167,6 +167,7 @@ function TicketForm({
               control={form.control}
               name="customer"
               label={t('fields.customer')}
+              description={t('fields.customerSearchHint')}
               options={customerOptions}
             />
             <SelectField
@@ -188,9 +189,7 @@ function TicketForm({
               }))}
             />
             <FormErrorSummary errors={formErrors} />
-            <Button type="submit" disabled={mutation.isPending}>
-              {t('actions.save')}
-            </Button>
+            <SubmitButton pending={mutation.isPending}>{t('actions.save')}</SubmitButton>
           </form>
         </Form>
       )}

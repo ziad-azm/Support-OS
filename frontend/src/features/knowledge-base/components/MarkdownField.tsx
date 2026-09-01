@@ -27,6 +27,17 @@ export function MarkdownField<TFieldValues extends FieldValues>({
       </TabsList>
       <TabsContent value="write">
         <TextareaField control={control} name={name} label={label} />
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t('articles.manage.editorTabs.markdownSupported')}{' '}
+          <a
+            href="https://commonmark.org/help/"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            {t('articles.manage.editorTabs.markdownGuide')}
+          </a>
+        </p>
       </TabsContent>
       <TabsContent value="preview">
         {value ? (

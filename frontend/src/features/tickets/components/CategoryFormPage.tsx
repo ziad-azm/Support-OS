@@ -8,7 +8,7 @@ import { applyServerErrors, isValidationError } from '@/shared/validation/server
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
@@ -106,9 +106,7 @@ function CategoryForm({
           </Card>
           <FormErrorSummary errors={formErrors} />
           <div className="flex gap-2">
-            <Button type="submit" disabled={mutation.isPending}>
-              {t('categories.actions.save')}
-            </Button>
+            <SubmitButton pending={mutation.isPending}>{t('categories.actions.save')}</SubmitButton>
             <Button type="button" variant="outline" onClick={() => navigate('/categories')}>
               {t('actions.cancel', { ns: 'common' })}
             </Button>

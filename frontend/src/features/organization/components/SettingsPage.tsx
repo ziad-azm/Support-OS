@@ -10,7 +10,7 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Input } from '@/shared/ui/primitives/input'
 import { Form, FormField, FormItem, FormLabel } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, TextField, useAppForm } from '@/shared/ui/form'
+import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -201,9 +201,7 @@ function SettingsForm({ settings }: { settings: OrganizationSettings }) {
             )}
           />
           <FormErrorSummary errors={formErrors} />
-          <Button type="submit" disabled={mutation.isPending}>
-            {t('settings.actions.save')}
-          </Button>
+          <SubmitButton pending={mutation.isPending}>{t('settings.actions.save')}</SubmitButton>
         </form>
       </Form>
     </>

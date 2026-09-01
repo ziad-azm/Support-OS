@@ -7,7 +7,7 @@ import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FileField, useAppForm } from '@/shared/ui/form'
+import { FileField, SubmitButton, useAppForm } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -171,9 +171,9 @@ function AttachmentUploadForm({ customerId }: { customerId: number }) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3 border-t pt-4">
         <FileField control={form.control} name="file" label={t('attachments.fields.file')} />
-        <Button type="submit" disabled={mutation.isPending} className="self-start">
+        <SubmitButton pending={mutation.isPending} className="self-start">
           {t('attachments.actions.upload')}
-        </Button>
+        </SubmitButton>
       </form>
     </Form>
   )

@@ -62,6 +62,7 @@ export function ManagementDashboardPage() {
             type="date"
             value={to}
             onChange={(event) => setTo(event.target.value)}
+            min={from || undefined}
           />
         </div>
         <DateRangePresets

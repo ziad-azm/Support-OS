@@ -1,14 +1,18 @@
 import { useState } from 'react'
-import { Loader2Icon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
 import { choice, optionalString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
-import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, RadioGroupField, TextareaField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  RadioGroupField,
+  SubmitButton,
+  TextareaField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useCreatePortalFeedback } from '../api/usePortalFeedbackMutations'
@@ -39,12 +43,11 @@ export function PortalFeedbackFormPage() {
 
   const form = useAppForm({
     schema,
-    // 'satisfied' as the initial radio selection, matching the precedent
-    // `TicketFormPage`'s own priority Select sets (a concrete default, not
-    // an empty one) — see Story 47 `## Explicitly out of scope`'s note
-    // that a real product might prefer no pre-selection to avoid biasing
-    // responses; not built here, since no story asks for it.
-    defaultValues: { rating: 'satisfied', comment: '' },
+    // No pre-selected rating — DSN-10 (Story 65, UX-060): a pre-selected
+    // 'satisfied' let a customer submit without deliberately choosing,
+    // skewing CSAT data. Submitting with `rating` still unset now fails
+    // the required-enum validation instead of silently succeeding.
+    defaultValues: { rating: undefined, comment: '' },
   })
 
   const mutation = useCreatePortalFeedback()
@@ -86,12 +89,12 @@ export function PortalFeedbackFormPage() {
             label={t('tickets.feedback.fields.comment')}
           />
           <FormErrorSummary errors={formErrors} />
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? <Loader2Icon className="animate-spin" /> : null}
-            {mutation.isPending
-              ? t('tickets.feedback.submitting')
-              : t('tickets.feedback.actions.submit')}
-          </Button>
+          <SubmitButton
+            pending={mutation.isPending}
+            pendingLabel={t('tickets.feedback.submitting')}
+          >
+            {t('tickets.feedback.actions.submit')}
+          </SubmitButton>
         </form>
       </Form>
     </div>

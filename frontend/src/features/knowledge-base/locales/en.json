@@ -58,7 +58,9 @@
       "editorTabs": {
         "write": "Write",
         "preview": "Preview",
-        "previewEmpty": "Nothing to preview yet."
+        "previewEmpty": "Nothing to preview yet.",
+        "markdownSupported": "Markdown is supported.",
+        "markdownGuide": "Syntax guide"
       },
       "actions": {
         "save": "Save",

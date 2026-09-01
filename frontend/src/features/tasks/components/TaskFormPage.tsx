@@ -10,6 +10,7 @@ import { Form } from '@/shared/ui/primitives/form'
 import {
   FormErrorSummary,
   SelectField,
+  SubmitButton,
   TextField,
   TextareaField,
   useAppForm,
@@ -164,9 +165,7 @@ function TaskForm({ mode, id, task }: { mode: 'create' | 'edit'; id?: number; ta
             />
             <FormErrorSummary errors={formErrors} />
             <div className="flex gap-2">
-              <Button type="submit" disabled={mutation.isPending}>
-                {t('actions.save')}
-              </Button>
+              <SubmitButton pending={mutation.isPending}>{t('actions.save')}</SubmitButton>
               <Button type="button" variant="outline" onClick={() => navigate('/tasks')}>
                 {t('actions.cancel', { ns: 'common' })}
               </Button>

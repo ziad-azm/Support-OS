@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { TextField, useAppForm } from '@/shared/ui/form'
+import { SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
 import { getWebSocketUrl } from '@/shared/lib/ws'
 
 import { startLiveChat } from '../api/startLiveChat'
@@ -79,10 +79,14 @@ function StartForm({ onStarted }: { onStarted: (session: LiveChatSession) => voi
                 label={t('start.email')}
                 type="email"
               />
-              <Button type="submit" size="lg" disabled={mutation.isPending} className="w-full">
-                <MessageCircleIcon />
+              <SubmitButton
+                pending={mutation.isPending}
+                size="lg"
+                className="w-full"
+                icon={<MessageCircleIcon />}
+              >
                 {t('start.action')}
-              </Button>
+              </SubmitButton>
             </form>
           </Form>
         </CardContent>
