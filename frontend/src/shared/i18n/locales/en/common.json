@@ -41,7 +41,11 @@
   },
   "sidebar": {
     "collapse": "Collapse sidebar",
-    "expand": "Expand sidebar"
+    "expand": "Expand sidebar",
+    "sections": {
+      "support": "Support",
+      "administration": "Administration"
+    }
   },
   "preferences": {
     "title": "Preferences"

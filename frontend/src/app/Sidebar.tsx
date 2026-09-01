@@ -119,7 +119,9 @@ export function Sidebar() {
     'organization',
     'reports',
   ])
-  const { user, logout } = useAuth()
+  const { user, logout, can } = useAuth()
+  const showAdministration =
+    can('users.view') || can('roles.manage') || can('audit_log.view') || can('settings.manage')
   const [collapsed, setCollapsed] = useState(readCollapsed)
 
   function toggleCollapsed() {
@@ -162,35 +164,37 @@ export function Sidebar() {
             collapsed={collapsed}
           />
         </Can>
-        <Can permission="tickets.view">
+        <NavSection label={t('sidebar.sections.support')} collapsed={collapsed}>
+          <Can permission="tickets.view">
+            <SidebarLink
+              to="/tickets"
+              end
+              icon={TicketIcon}
+              label={t('tickets:title')}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/tickets/my-tickets"
+              icon={InboxIcon}
+              label={t('tickets:myQueue.title')}
+              collapsed={collapsed}
+            />
+          </Can>
+          <Can permission="tickets.manage">
+            <SidebarLink
+              to="/categories"
+              icon={TagIcon}
+              label={t('tickets:categories.title')}
+              collapsed={collapsed}
+            />
+          </Can>
           <SidebarLink
-            to="/tickets"
-            end
-            icon={TicketIcon}
-            label={t('tickets:title')}
+            to="/tasks"
+            icon={ListTodoIcon}
+            label={t('tasks:title')}
             collapsed={collapsed}
           />
-          <SidebarLink
-            to="/tickets/my-tickets"
-            icon={InboxIcon}
-            label={t('tickets:myQueue.title')}
-            collapsed={collapsed}
-          />
-        </Can>
-        <Can permission="tickets.manage">
-          <SidebarLink
-            to="/categories"
-            icon={TagIcon}
-            label={t('tickets:categories.title')}
-            collapsed={collapsed}
-          />
-        </Can>
-        <SidebarLink
-          to="/tasks"
-          icon={ListTodoIcon}
-          label={t('tasks:title')}
-          collapsed={collapsed}
-        />
+        </NavSection>
         <Can permission="knowledge_base.view">
           <NavSection label={t('knowledgeBase:title')} collapsed={collapsed}>
             <SidebarLink
@@ -222,22 +226,42 @@ export function Sidebar() {
             </Can>
           </NavSection>
         </Can>
-        <Can permission="users.view">
-          <SidebarLink
-            to="/users"
-            icon={UserCogIcon}
-            label={t('accounts:users.title')}
-            collapsed={collapsed}
-          />
-        </Can>
-        <Can permission="roles.manage">
-          <SidebarLink
-            to="/roles"
-            icon={ShieldCheckIcon}
-            label={t('accounts:roles.title')}
-            collapsed={collapsed}
-          />
-        </Can>
+        {showAdministration ? (
+          <NavSection label={t('sidebar.sections.administration')} collapsed={collapsed}>
+            <Can permission="users.view">
+              <SidebarLink
+                to="/users"
+                icon={UserCogIcon}
+                label={t('accounts:users.title')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="roles.manage">
+              <SidebarLink
+                to="/roles"
+                icon={ShieldCheckIcon}
+                label={t('accounts:roles.title')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="audit_log.view">
+              <SidebarLink
+                to="/audit-log"
+                icon={HistoryIcon}
+                label={t('auditLog:title')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="settings.manage">
+              <SidebarLink
+                to="/settings"
+                icon={SettingsIcon}
+                label={t('organization:settings.title')}
+                collapsed={collapsed}
+              />
+            </Can>
+          </NavSection>
+        ) : null}
         <Can permission="reports.view">
           <NavSection label={t('reports:navSection')} collapsed={collapsed}>
             <SidebarLink
@@ -272,22 +296,7 @@ export function Sidebar() {
             />
           </NavSection>
         </Can>
-        <Can permission="audit_log.view">
-          <SidebarLink
-            to="/audit-log"
-            icon={HistoryIcon}
-            label={t('auditLog:title')}
-            collapsed={collapsed}
-          />
-        </Can>
-        <Can permission="settings.manage">
-          <SidebarLink
-            to="/settings"
-            icon={SettingsIcon}
-            label={t('organization:settings.title')}
-            collapsed={collapsed}
-          />
-        </Can>
+        <div className="my-1 border-t" />
         <SidebarLink
           to="/preferences"
           icon={Settings2Icon}
