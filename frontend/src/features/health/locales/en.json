@@ -1,8 +1,0 @@
-{
-  "title": "System health",
-  "status": "Status",
-  "database": "Database",
-  "value": { "ok": "OK", "degraded": "Degraded", "error": "Error" },
-  "testToast": "Test toast",
-  "toastFired": "Toast system is wired up."
-}

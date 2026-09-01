@@ -50,8 +50,8 @@ export const router = createBrowserRouter([
           {
             index: true,
             lazy: async () => {
-              const { HealthPage } = await import('@/features/health/components/HealthPage')
-              return { element: <HealthPage /> }
+              const { HomePage } = await import('@/app/HomePage')
+              return { element: <HomePage /> }
             },
           },
           {

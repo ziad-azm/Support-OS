@@ -6,8 +6,6 @@ import authAr from '@/features/auth/locales/ar.json'
 import authEn from '@/features/auth/locales/en.json'
 import customersAr from '@/features/customers/locales/ar.json'
 import customersEn from '@/features/customers/locales/en.json'
-import healthAr from '@/features/health/locales/ar.json'
-import healthEn from '@/features/health/locales/en.json'
 import knowledgeBaseAr from '@/features/knowledge-base/locales/ar.json'
 import knowledgeBaseEn from '@/features/knowledge-base/locales/en.json'
 import liveChatAr from '@/features/live-chat/locales/ar.json'
@@ -47,7 +45,6 @@ export const resources = {
     common: enCommon,
     errors: enErrors,
     validation: enValidation,
-    health: healthEn,
     auth: authEn,
     auditLog: auditLogEn,
     accounts: accountsEn,
@@ -66,7 +63,6 @@ export const resources = {
     common: arCommon,
     errors: arErrors,
     validation: arValidation,
-    health: healthAr,
     auth: authAr,
     auditLog: auditLogAr,
     accounts: accountsAr,

@@ -8,7 +8,9 @@
     "close": "Close",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "logout": "Log out"
+    "logout": "Log out",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "states": {
     "loading": "Loading…",
@@ -49,6 +51,32 @@
   },
   "preferences": {
     "title": "Preferences"
+  },
+  "home": {
+    "greeting": "Welcome back, {{name}}",
+    "subtitle": "Here's where you can pick up.",
+    "stats": {
+      "openTickets": "Open tickets assigned to you",
+      "openTasks": "Open tasks",
+      "unreadNotifications": "Unread notifications"
+    },
+    "upcomingTasks": {
+      "title": "Tasks due soon",
+      "empty": "No open tasks — you're all caught up."
+    },
+    "recentTickets": {
+      "title": "Your recent tickets",
+      "empty": "No tickets assigned to you yet."
+    },
+    "links": {
+      "myTickets": "Jump into your assigned tickets.",
+      "tasks": "See what's due and follow up.",
+      "customers": "Look up a customer's profile.",
+      "knowledgeBase": "Browse FAQs and help articles.",
+      "dashboardTitle": "Management Dashboard",
+      "dashboard": "See open tickets, SLA health, and CSAT at a glance.",
+      "users": "Manage staff accounts."
+    }
   },
   "chart": {
     "showTable": "Show data table",

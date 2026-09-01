@@ -1,5 +1,9 @@
+import { useState } from 'react'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
 import type { FieldValues } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 
+import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
 import {
   FormControl,
@@ -39,6 +43,12 @@ export function TextField<TFieldValues extends FieldValues>({
   autoFocus,
   dir,
 }: TextFieldProps<TFieldValues>) {
+  const { t } = useTranslation()
+  // Shared at this level, not per-screen: every password field in the app
+  // (login, user admin, and the ACCT-1/2/3 flows) gets the toggle for free.
+  const [visible, setVisible] = useState(false)
+  const isPassword = type === 'password'
+
   return (
     <FormField
       control={control}
@@ -47,15 +57,40 @@ export function TextField<TFieldValues extends FieldValues>({
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input
-              type={type}
-              placeholder={placeholder}
-              disabled={disabled}
-              autoComplete={autoComplete}
-              autoFocus={autoFocus}
-              dir={dir}
-              {...field}
-            />
+            {isPassword ? (
+              <div className="relative">
+                <Input
+                  type={visible ? 'text' : 'password'}
+                  placeholder={placeholder}
+                  disabled={disabled}
+                  autoComplete={autoComplete}
+                  autoFocus={autoFocus}
+                  dir={dir}
+                  className="pe-9"
+                  {...field}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute inset-e-0 top-0 text-muted-foreground hover:bg-transparent"
+                  onClick={() => setVisible((current) => !current)}
+                  aria-label={t(visible ? 'actions.hidePassword' : 'actions.showPassword')}
+                >
+                  {visible ? <EyeOffIcon /> : <EyeIcon />}
+                </Button>
+              </div>
+            ) : (
+              <Input
+                type={type}
+                placeholder={placeholder}
+                disabled={disabled}
+                autoComplete={autoComplete}
+                autoFocus={autoFocus}
+                dir={dir}
+                {...field}
+              />
+            )}
           </FormControl>
           {description ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage />
