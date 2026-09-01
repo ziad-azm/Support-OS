@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/shared/ui/primitives/select'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
@@ -61,7 +62,7 @@ export function PortalTicketListPage() {
       id: 'subject',
       header: t('tickets.fields.subject'),
       sortable: true,
-      cell: (row) => <Link to={`/portal/tickets/${row.id}`}>{row.subject}</Link>,
+      cell: (row) => <TableLink to={`/portal/tickets/${row.id}`}>{row.subject}</TableLink>,
     },
     {
       id: 'category_name',

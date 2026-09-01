@@ -8,6 +8,7 @@ import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
@@ -54,7 +55,7 @@ export function CustomerListPage() {
       id: 'name',
       header: t('fields.name'),
       sortable: true,
-      cell: (row) => <Link to={`/customers/${row.id}`}>{row.name}</Link>,
+      cell: (row) => <TableLink to={`/customers/${row.id}`}>{row.name}</TableLink>,
     },
     {
       id: 'email',

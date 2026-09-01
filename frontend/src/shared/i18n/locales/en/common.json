@@ -43,6 +43,9 @@
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar"
   },
+  "preferences": {
+    "title": "Preferences"
+  },
   "chart": {
     "showTable": "Show data table",
     "hideTable": "Hide data table",

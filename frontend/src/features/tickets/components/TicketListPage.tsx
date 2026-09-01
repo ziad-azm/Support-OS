@@ -18,6 +18,7 @@ import {
 } from '@/shared/ui/primitives/select'
 import { Switch } from '@/shared/ui/primitives/switch'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
@@ -78,7 +79,7 @@ export function TicketListPage() {
       id: 'subject',
       header: t('fields.subject'),
       sortable: true,
-      cell: (row) => <Link to={`/tickets/${row.id}`}>{row.subject}</Link>,
+      cell: (row) => <TableLink to={`/tickets/${row.id}`}>{row.subject}</TableLink>,
     },
     {
       id: 'customer_name',

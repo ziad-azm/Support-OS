@@ -417,6 +417,13 @@ export const router = createBrowserRouter([
               return { element: <TaskFormPage /> }
             },
           },
+          {
+            path: 'preferences',
+            lazy: async () => {
+              const { PreferencesPage } = await import('./PreferencesPage')
+              return { element: <PreferencesPage /> }
+            },
+          },
         ],
       },
       {

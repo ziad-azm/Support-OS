@@ -5,6 +5,8 @@ import { Link } from 'react-router'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { DeleteRowButton } from '@/shared/ui/data-table/DeleteRowButton'
+import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
@@ -42,7 +44,9 @@ export function FaqListPage() {
       id: 'question',
       header: t('manage.fields.question'),
       sortable: true,
-      cell: (row) => <Link to={`/knowledge-base/manage/${row.id}/edit`}>{row.question}</Link>,
+      cell: (row) => (
+        <TableLink to={`/knowledge-base/manage/${row.id}/edit`}>{row.question}</TableLink>
+      ),
     },
     {
       id: 'order',
@@ -55,9 +59,9 @@ export function FaqListPage() {
       id: 'actions',
       header: t('manage.fields.actions'),
       cell: (row) => (
-        <Button size="sm" variant="ghost" onClick={() => void handleDelete(row)}>
+        <DeleteRowButton onClick={() => void handleDelete(row)}>
           {t('manage.actions.delete')}
-        </Button>
+        </DeleteRowButton>
       ),
     },
   ]

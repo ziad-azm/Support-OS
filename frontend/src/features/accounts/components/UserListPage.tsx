@@ -8,6 +8,7 @@ import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
@@ -37,7 +38,7 @@ export function UserListPage() {
       id: 'email',
       header: t('users.fields.email'),
       sortable: true,
-      cell: (row) => <Link to={`/users/${row.id}/edit`}>{row.email}</Link>,
+      cell: (row) => <TableLink to={`/users/${row.id}/edit`}>{row.email}</TableLink>,
     },
     {
       id: 'first_name',

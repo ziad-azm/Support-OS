@@ -1,10 +1,16 @@
+import {
+  CartesianGrid,
+  Line,
+  LineChart as RechartsLineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+
 import { useDirection } from '@/shared/i18n/useDirection'
 
 import type { ChartSeries } from './types'
-
-const WIDTH = 600
-const HEIGHT = 280
-const PADDING = 32
 
 // Distinct dash pattern per series, applied alongside `--chart-N` — never
 // hue alone (CONVENTIONS.md § 25 line 1629). `undefined` means a solid
@@ -23,24 +29,17 @@ function bucketDomain(series: readonly ChartSeries[]): readonly string[] {
   return [...buckets].sort()
 }
 
-function valueRange(series: readonly ChartSeries[]): { min: number; max: number } {
-  let min = 0
-  let max = 0
-  let seen = false
-  for (const s of series) {
-    for (const point of s.points) {
-      if (!seen) {
-        min = point.value
-        max = point.value
-        seen = true
-      } else {
-        min = Math.min(min, point.value)
-        max = Math.max(max, point.value)
-      }
+type RechartsRow = { bucket: string } & Record<string, number | string>
+
+function toRows(series: readonly ChartSeries[]): RechartsRow[] {
+  return bucketDomain(series).map((bucket) => {
+    const row: RechartsRow = { bucket }
+    for (const s of series) {
+      const point = s.points.find((p) => p.bucket === bucket)
+      if (point) row[s.key] = point.value
     }
-  }
-  if (!seen) return { min: 0, max: 1 }
-  return { min: Math.min(0, min), max }
+    return row
+  })
 }
 
 type LineChartProps = {
@@ -50,8 +49,15 @@ type LineChartProps = {
 }
 
 /**
- * Plain SVG line chart — CONVENTIONS.md § 25 rows 1/3/6 (RPT-1/RPT-2/RPT-4
- * trends). No chart library; see Story 55 `## Product rules` for why.
+ * `recharts`-based line chart — CONVENTIONS.md § 25 rows 1/3/6 (RPT-1/RPT-2/
+ * RPT-4 trends). Replaces the hand-built SVG version (SUPPORTOS-105 task 3,
+ * a product decision to adopt a real charting library). `GaugeChart`/
+ * `WaffleChart` stay hand-built — recharts has no native gauge-zone-bar or
+ * waffle-grid primitive.
+ *
+ * RTL: `XAxis`'s own `reversed` prop mirrors the bucket axis — the same
+ * effect `GaugeChart.tsx`'s manual `xFor()` achieves by hand, but native to
+ * the library, so no per-point coordinate math is needed here.
  */
 export function LineChart({
   series,
@@ -59,73 +65,45 @@ export function LineChart({
   formatBucket = (b) => b,
 }: LineChartProps) {
   const direction = useDirection()
-  const buckets = bucketDomain(series)
-  const { min, max } = valueRange(series)
-  const range = max - min || 1
-  const plotWidth = WIDTH - PADDING * 2
-  const plotHeight = HEIGHT - PADDING * 2
-
-  function xForIndex(index: number): number {
-    const t = buckets.length > 1 ? index / (buckets.length - 1) : 0.5
-    const offset = t * plotWidth
-    return direction === 'rtl' ? WIDTH - PADDING - offset : PADDING + offset
-  }
-
-  function yForValue(value: number): number {
-    return HEIGHT - PADDING - ((value - min) / range) * plotHeight
-  }
+  const rows = toRows(series)
 
   return (
     <div className="flex flex-col gap-2">
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        preserveAspectRatio="none"
-        className="h-64 w-full"
-        role="img"
-      >
-        {series.map((s, seriesIndex) => {
-          const sortedPoints = [...s.points].sort((a, b) => a.bucket.localeCompare(b.bucket))
-          const color = colorFor(seriesIndex)
-          const dash = SERIES_DASH[seriesIndex % SERIES_DASH.length]
-
-          const path = sortedPoints
-            .map((point, pointIndex) => {
-              const bucketIndex = buckets.indexOf(point.bucket)
-              const x = xForIndex(bucketIndex)
-              const y = yForValue(point.value)
-              return `${pointIndex === 0 ? 'M' : 'L'}${x},${y}`
-            })
-            .join(' ')
-
-          return (
-            <g key={s.key}>
-              {sortedPoints.length > 1 ? (
-                <path d={path} fill="none" stroke={color} strokeWidth={2} strokeDasharray={dash} />
-              ) : null}
-              {sortedPoints.map((point) => {
-                const bucketIndex = buckets.indexOf(point.bucket)
-                const x = xForIndex(bucketIndex)
-                const y = yForValue(point.value)
-                const label = `${s.label}, ${formatBucket(point.bucket)}: ${formatValue(point.value)}`
-                return (
-                  <circle
-                    key={point.bucket}
-                    cx={x}
-                    cy={y}
-                    r={4}
-                    fill={color}
-                    tabIndex={0}
-                    role="img"
-                    aria-label={label}
-                  >
-                    <title>{label}</title>
-                  </circle>
-                )
-              })}
-            </g>
-          )
-        })}
-      </svg>
+      <ResponsiveContainer width="100%" height={256}>
+        <RechartsLineChart data={rows} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis
+            dataKey="bucket"
+            reversed={direction === 'rtl'}
+            tickFormatter={formatBucket}
+            tick={{ fontSize: 12 }}
+            stroke="var(--muted-foreground)"
+          />
+          <YAxis
+            tickFormatter={(value) => formatValue(Number(value))}
+            tick={{ fontSize: 12 }}
+            stroke="var(--muted-foreground)"
+          />
+          <Tooltip
+            formatter={(value) => formatValue(Number(value))}
+            labelFormatter={(label) => formatBucket(String(label))}
+          />
+          {series.map((s, seriesIndex) => (
+            <Line
+              key={s.key}
+              type="monotone"
+              dataKey={s.key}
+              name={s.label}
+              stroke={colorFor(seriesIndex)}
+              strokeWidth={2}
+              strokeDasharray={SERIES_DASH[seriesIndex % SERIES_DASH.length]}
+              dot={{ r: 4 }}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+          ))}
+        </RechartsLineChart>
+      </ResponsiveContainer>
       {series.length > 1 ? (
         <ul className="flex flex-wrap gap-4">
           {series.map((s, seriesIndex) => (

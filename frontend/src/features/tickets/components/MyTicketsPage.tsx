@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
 
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
@@ -12,6 +11,7 @@ import {
   SelectValue,
 } from '@/shared/ui/primitives/select'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
@@ -62,7 +62,7 @@ export function MyTicketsPage() {
       id: 'subject',
       header: t('fields.subject'),
       sortable: true,
-      cell: (row) => <Link to={`/tickets/${row.id}`}>{row.subject}</Link>,
+      cell: (row) => <TableLink to={`/tickets/${row.id}`}>{row.subject}</TableLink>,
     },
     {
       id: 'customer_name',

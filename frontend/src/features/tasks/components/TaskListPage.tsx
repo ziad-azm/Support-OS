@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from '@/shared/ui/primitives/select'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { DeleteRowButton } from '@/shared/ui/data-table/DeleteRowButton'
+import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
@@ -75,13 +77,17 @@ export function TaskListPage() {
       id: 'title',
       header: t('fields.title'),
       sortable: true,
-      cell: (row) => <Link to={`/tasks/${row.id}/edit`}>{row.title}</Link>,
+      cell: (row) => <TableLink to={`/tasks/${row.id}/edit`}>{row.title}</TableLink>,
     },
     {
       id: 'ticket_subject',
       header: t('fields.ticket'),
       cell: (row) =>
-        row.ticket === null ? '—' : <Link to={`/tickets/${row.ticket}`}>{row.ticket_subject}</Link>,
+        row.ticket === null ? (
+          '—'
+        ) : (
+          <TableLink to={`/tickets/${row.ticket}`}>{row.ticket_subject}</TableLink>
+        ),
     },
     {
       id: 'due_at',
@@ -119,9 +125,9 @@ export function TaskListPage() {
               {t('actions.reopen')}
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={() => void handleDelete(row)}>
+          <DeleteRowButton onClick={() => void handleDelete(row)}>
             {t('actions.delete')}
-          </Button>
+          </DeleteRowButton>
         </div>
       ),
     },

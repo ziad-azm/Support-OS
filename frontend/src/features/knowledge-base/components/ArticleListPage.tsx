@@ -7,6 +7,8 @@ import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { DeleteRowButton } from '@/shared/ui/data-table/DeleteRowButton'
+import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { useConfirm } from '@/shared/ui/confirm/useConfirm'
@@ -47,9 +49,9 @@ export function ArticleListPage() {
       header: t('articles.manage.fields.title'),
       sortable: true,
       cell: (row) => (
-        <Link to={`/knowledge-base/articles/manage/${row.id}/edit`}>
+        <TableLink to={`/knowledge-base/articles/manage/${row.id}/edit`}>
           {isArabic ? row.title_ar : row.title_en}
-        </Link>
+        </TableLink>
       ),
     },
     {
@@ -77,9 +79,9 @@ export function ArticleListPage() {
       id: 'actions',
       header: t('articles.manage.fields.actions'),
       cell: (row) => (
-        <Button size="sm" variant="ghost" onClick={() => void handleDelete(row)}>
+        <DeleteRowButton onClick={() => void handleDelete(row)}>
           {t('articles.manage.actions.delete')}
-        </Button>
+        </DeleteRowButton>
       ),
     },
   ]

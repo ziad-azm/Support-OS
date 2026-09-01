@@ -124,7 +124,7 @@ function ContactDetailRow({ customerId, contact }: { customerId: number; contact
   return (
     <li className="flex items-center justify-between gap-2 rounded-md border p-2">
       <div className="flex items-center gap-2">
-        <Badge variant="secondary">{t(`contacts.channels.${contact.channel}`)}</Badge>
+        <Badge variant="outline">{t(`contacts.channels.${contact.channel}`)}</Badge>
         {/* Latin-script value (an email, a phone number) inside an Arabic
             document needs an explicit LTR wrap — CONVENTIONS.md §18. */}
         <span dir="ltr">{contact.value}</span>

@@ -14,6 +14,7 @@ import {
   ListTodoIcon,
   LogOutIcon,
   SearchIcon,
+  Settings2Icon,
   SettingsIcon,
   ShieldCheckIcon,
   SmileIcon,
@@ -29,8 +30,6 @@ import { NotificationBell } from '@/features/notifications/components/Notificati
 import { Can, useAuth } from '@/shared/auth'
 import { cn } from '@/shared/lib/cn'
 import { Button, buttonVariants } from '@/shared/ui/primitives/button'
-import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
-import { ThemeToggle } from '@/shared/ui/ThemeToggle'
 
 const COLLAPSE_STORAGE_KEY = 'supportos.sidebar.collapsed'
 
@@ -281,8 +280,14 @@ export function Sidebar() {
             collapsed={collapsed}
           />
         </Can>
+        <SidebarLink
+          to="/preferences"
+          icon={Settings2Icon}
+          label={t('preferences.title')}
+          collapsed={collapsed}
+        />
       </nav>
-      <div className="mt-auto flex flex-col gap-3 border-t p-3">
+      <div className="mt-auto flex flex-col gap-2 border-t p-2">
         {user ? (
           <div className={cn('flex items-center gap-2', collapsed && 'flex-col')}>
             <NotificationBell />
@@ -293,10 +298,6 @@ export function Sidebar() {
             )}
           </div>
         ) : null}
-        <div className={cn('flex items-center gap-2', collapsed ? 'flex-col' : 'justify-between')}>
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
         {user ? (
           <Button
             variant="ghost"
