@@ -1,5 +1,8 @@
 {
   "title": "Knowledge base",
+  "faqs": {
+    "title": "FAQs"
+  },
   "manage": {
     "title": "Manage FAQs",
     "new": "New FAQ",

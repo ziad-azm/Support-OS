@@ -48,7 +48,7 @@ export function ArticleBrowsePage() {
         action={
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm">
-              <Link to="/knowledge-base">{t('title')}</Link>
+              <Link to="/knowledge-base">{t('faqs.title')}</Link>
             </Button>
             <Button asChild variant="ghost" size="sm">
               <Link to="/knowledge-base/search">{t('search.title')}</Link>

@@ -23,7 +23,7 @@ export function FaqBrowsePage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={t('title')}
+        title={t('faqs.title')}
         action={
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm">

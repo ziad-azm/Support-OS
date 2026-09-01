@@ -102,7 +102,7 @@ export function FaqListPage() {
         }
       />
       <Button asChild variant="ghost" size="sm" className="self-start">
-        <Link to="/knowledge-base">{t('title')}</Link>
+        <Link to="/knowledge-base">{t('faqs.title')}</Link>
       </Button>
     </div>
   )

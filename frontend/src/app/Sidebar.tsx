@@ -201,7 +201,7 @@ export function Sidebar() {
               to="/knowledge-base"
               end
               icon={BookOpenIcon}
-              label={t('knowledgeBase:title')}
+              label={t('knowledgeBase:faqs.title')}
               collapsed={collapsed}
             />
             <SidebarLink
