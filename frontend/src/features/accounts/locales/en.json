@@ -16,10 +16,15 @@
       "firstName": "First name",
       "lastName": "Last name",
       "role": "Role",
-      "status": "Status"
+      "status": "Status",
+      "actions": "Actions"
     },
     "status": { "active": "Active", "inactive": "Inactive" },
-    "actions": { "save": "Save" },
+    "actions": { "save": "Save", "delete": "Delete" },
+    "delete": {
+      "title": "Delete this user?",
+      "description": "This permanently removes {{email}}. Their notifications are removed too. If they still own any tasks, the deletion is blocked until those are resolved."
+    },
     "inviteSent": "Invitation sent.",
     "updated": "User updated.",
     "notFound": "That user could not be found."

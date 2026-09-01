@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.agents.models import Task
 from apps.core.permissions import Permissions
 from apps.core.views import BaseModelViewSet
 
@@ -83,23 +84,23 @@ class MeView(APIView):
 
 
 class UserViewSet(BaseModelViewSet):
-    """Staff user administration — SEC-1. The identity half of the
-    management screens Story 09 deferred; `RoleViewSet` below is the other
-    half.
+    """Staff user administration — SEC-1, extended by SEC-5 (invite-only
+    creation) and SEC-6 (this story, hard delete).
 
-    No `destroy`: `accounts.User` is referenced by `agents.Task.owner` and
-    `notifications.Notification.recipient` with `on_delete=CASCADE`
-    (verified by grep across every `settings.AUTH_USER_MODEL` migration —
-    see `## Story Goal`), so a hard delete would silently wipe a person's
-    tasks and notifications. `http_method_names` drops "delete" entirely
-    rather than leaving `destroy` unmapped in `permission_map` — the
-    grant-on-omission rule (CONVENTIONS.md §22) means an unmapped action is
-    authenticated-only, NOT forbidden, which would make this worse.
-    Deactivation (`is_active=False` via `update`) is the sanctioned way to
-    remove someone's access without touching their history.
+    `destroy` is real: `agents.Task.owner` and
+    `notifications.Notification.recipient` are still the only two
+    `on_delete=CASCADE` relationships to `accounts.User` (re-verified —
+    see `## Prerequisites`). `Notification` rows are safe to let cascade —
+    they have no meaning without their recipient (their own model
+    docstring). `Task` rows are not: `Task.owner` is required and, per
+    `apps/agents/models.py`'s own docstring, a task is never reassigned —
+    so `destroy()` below blocks the delete instead, the same PROTECT-style
+    guard `RoleViewSet.destroy` already uses for a system role. It also
+    refuses to let a caller delete their own account — a new guard, not
+    forced by any CASCADE risk; see `## Story Goal` finding 2.
     """
 
-    http_method_names = ["get", "post", "put", "patch", "head", "options"]
+    http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
     serializer_class = UserAdminSerializer
 
     permission_map = {
@@ -108,6 +109,7 @@ class UserViewSet(BaseModelViewSet):
         "create": Permissions.USERS_MANAGE,
         "update": Permissions.USERS_MANAGE,
         "partial_update": Permissions.USERS_MANAGE,
+        "destroy": Permissions.USERS_MANAGE,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -168,6 +170,36 @@ class UserViewSet(BaseModelViewSet):
                 from_value=_("Active") if old_is_active else _("Inactive"),
                 to_value=_("Active") if user.is_active else _("Inactive"),
             )
+
+    def destroy(self, request, *args, **kwargs):
+        """Hard-deletes a User — SEC-6. See the class docstring for the
+        CASCADE/PROTECT-style reasoning. Both guards below raise before
+        `super().destroy()` ever runs, so neither a self-delete attempt
+        nor a still-has-tasks user is ever partially deleted.
+        """
+        user = self.get_object()
+        if user.id == request.user.id:
+            raise ValidationError({"non_field_errors": [_("You cannot delete your own account.")]})
+        if Task.objects.filter(owner=user).exists():
+            raise ValidationError(
+                {
+                    "non_field_errors": [
+                        _(
+                            "This user still owns tasks. Complete or remove "
+                            "them before deleting this account."
+                        )
+                    ]
+                }
+            )
+        user_label = user.get_full_name()
+        response = super().destroy(request, *args, **kwargs)
+        AuditLog.objects.create(
+            actor=request.user,
+            action=AuditLog.Action.USER_DELETED,
+            target_user=None,
+            target_label=user_label,
+        )
+        return response
 
 
 class RoleViewSet(BaseModelViewSet):

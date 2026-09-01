@@ -11,11 +11,11 @@ Entry point for the **security-administration** feature. Stories execute in orde
 | 52 | [52-story-audit-logs-SUPPORTOS-74.md](52-story-audit-logs-SUPPORTOS-74.md) | Audit Logs | SUPPORTOS-74 | Story 48 (`SEC-1`), Story 49 (`SEC-2`) |
 | 53 | [53-story-system-configuration-SUPPORTOS-75.md](53-story-system-configuration-SUPPORTOS-75.md) | System Configuration | SUPPORTOS-75 | None (independent of SEC-1/2/3) |
 | 70 | [70-story-user-invitation-first-login-password-SUPPORTOS-107.md](70-story-user-invitation-first-login-password-SUPPORTOS-107.md) | New User Invitation & First-Login Password Setup | SUPPORTOS-107 | Story 48 (`SEC-1`), Story 31 (`SLA-4`, `../sla-automation/`) |
-| — | _not yet planned_ | User Account Deletion | `SEC-6` | Story 48 (`SEC-1`) |
+| 71 | [71-story-user-account-deletion-SUPPORTOS-108.md](71-story-user-account-deletion-SUPPORTOS-108.md) | User Account Deletion | SUPPORTOS-108 | Story 48 (`SEC-1`), Story 52 (`SEC-3`) |
 | — | _not yet planned_ | Forgot Password / Self-Service Reset | `SEC-7` | `SEC-5` (reuses its token utility) |
 | — | _not yet planned_ | Change Password | `SEC-8` | AUTH-1, FORM |
 
-`SEC-5` (Story 70, now planned) through `SEC-8` all came from the backlog (`SupportOs backlog.MD`) with no `NN`/intake file, until `SEC-5` got both via `/squad-new-story` → `/squad-plan`. All four are folded into this feature: `SEC-5`/`SEC-6` came from a short-lived `account-lifecycle` epic (both extend `SEC-1`'s own Users admin screen directly); `SEC-7`/`SEC-8` came from an even shorter-lived `Password Self-Service` epic that briefly held just those two before being dissolved back into this one — every `User`-account credential concern now lives in one place rather than split across epics. `SEC-6`/`SEC-7`/`SEC-8` remain backlog-only; plan them the normal way when it's time to build them.
+`SEC-5` (Story 70) and `SEC-6` (Story 71) are now both planned; `SEC-7`/`SEC-8` remain backlog-only (`SupportOs backlog.MD`) with no `NN`/intake file, until each gets both via `/squad-new-story` → `/squad-plan`. All four are folded into this feature: `SEC-5`/`SEC-6` came from a short-lived `account-lifecycle` epic (both extend `SEC-1`'s own Users admin screen directly); `SEC-7`/`SEC-8` came from an even shorter-lived `Password Self-Service` epic that briefly held just those two before being dissolved back into this one — every `User`-account credential concern now lives in one place rather than split across epics.
 
 ## Dependency notes
 
@@ -27,6 +27,13 @@ This feature maps to **EPIC 12 — Security & Administration** in the Jira works
 - **Story 49 (`SEC-2`, `SUPPORTOS-73`)** — "Dependencies: SEC-1" per its own intake. Builds the role→permission mapping UI over `Role.permissions`, which Story 48 deliberately ships read-only.
 - **Story 52 (`SEC-3`, `SUPPORTOS-74`)** — Audit-log service + viewer over sensitive actions: every SEC-1/SEC-2 write (user create/role-change/status-change, role create/rename/permissions-change/delete) now writes an immutable `AuditLog` row, visible in a new filtered `/audit-log` screen.
 - **Story 53 (`SEC-4`, `SUPPORTOS-75`)** — Settings model + admin UI for org-level configuration (branding/departments/branches/SLA defaults) — independent of the other three (no `Dependencies:` line in its own intake). All four SEC stories are now planned.
+
+**Verified findings that shaped Story 71:**
+
+- **"Reassign" was never a real option for `agents.Task.owner` — only "block" or "cascade" were.** `Task.owner` is a required FK, and `Task`'s own model docstring rules out reassignment ("owned by exactly one agent, never shared or assigned to anyone else"). The product decision this story makes: block the delete while the target still owns any `Task` (a `ValidationError`, mirroring `RoleViewSet.destroy`'s `is_system` guard), but let `notifications.Notification.recipient` cascade silently — that model's own docstring already treats "a notification has no meaning without its recipient" as correct, not a hazard.
+- **Self-delete is a new, deliberate guard — asymmetric with Story 48's own accepted self-*deactivation* gap, on purpose.** Deactivation is trivially reversible by any other admin; a hard delete is not. The frontend never renders the delete control on the caller's own row; the backend refuses it independently either way.
+- **There is no in-app admin path to another user's `Task` rows today** — `TaskViewSet` (Story 32) is hard-scoped to `request.user`'s own rows, and `TaskAdmin`'s own docstring calls itself "read-only ops visibility, not a config UI" even though Django admin's default delete/edit permissions are not actually disabled there. An admin who hits the task-owning block has to go through Django admin directly — a real, flagged gap, not solved by this story.
+- **No schema migration** — only a metadata-only `AlterField` for `AuditLog.Action`'s new `USER_DELETED` choice (choices aren't DB-enforced on a plain `CharField`, so no `ALTER TABLE`).
 
 **Verified findings that shaped Story 70:**
 

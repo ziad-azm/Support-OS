@@ -173,6 +173,7 @@ class AuditLog(TimeStampedModel):
         USER_CREATED = "user_created", _("User created")
         USER_ROLE_CHANGED = "user_role_changed", _("User role changed")
         USER_STATUS_CHANGED = "user_status_changed", _("User status changed")
+        USER_DELETED = "user_deleted", _("User deleted")
         ROLE_CREATED = "role_created", _("Role created")
         ROLE_RENAMED = "role_renamed", _("Role renamed")
         ROLE_PERMISSIONS_CHANGED = "role_permissions_changed", _("Role permissions changed")

@@ -2,29 +2,35 @@ import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
-import { Can } from '@/shared/auth'
+import { Can, useAuth } from '@/shared/auth'
 import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
+import { DeleteRowButton } from '@/shared/ui/data-table/DeleteRowButton'
 import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
+import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { Empty } from '@/shared/ui/Empty'
 import { PageHeader } from '@/shared/ui/PageHeader'
 
+import { useDeleteUser } from '../api/useUserMutations'
 import { useUsers } from '../api/useUsers'
 import type { AdminUser } from '../types/user'
 
 /**
- * The staff user-admin list screen. No delete action anywhere here —
- * `UserViewSet` has no `destroy` action (see the plan's `## Story Goal` for
- * the verified CASCADE finding); deactivation via the edit form is the
- * sanctioned way to remove someone's access.
+ * The staff user-admin list screen. A `users.manage`-gated destructive
+ * delete per row (SEC-6) — never rendered on the signed-in admin's own
+ * row (see the plan's `## Story Goal` finding 2; the backend refuses a
+ * self-delete independently either way). Deactivation via the edit form
+ * remains the reversible alternative for every other row.
  */
 export function UserListPage() {
   const { t } = useTranslation('accounts')
+  const { user: currentUser } = useAuth()
+  const { confirm } = useConfirm()
   const { sort, setSort, setPage, params } = useServerTable({
     initialSort: { field: 'email', direction: 'asc' },
   })
@@ -32,6 +38,17 @@ export function UserListPage() {
   const { searchInput, setSearchInput, search } = useDebouncedSearch(setPage)
 
   const query = useUsers({ ...params, ...(search ? { search } : {}) })
+  const deleteMutation = useDeleteUser()
+
+  async function handleDelete(user: AdminUser) {
+    const confirmed = await confirm({
+      title: t('users.delete.title'),
+      description: t('users.delete.description', { email: user.email }),
+      destructive: true,
+    })
+    if (!confirmed) return
+    await deleteMutation.mutateAsync(user.id)
+  }
 
   const columns: readonly ColumnDef<AdminUser>[] = [
     {
@@ -70,6 +87,18 @@ export function UserListPage() {
           {row.is_active ? t('users.status.active') : t('users.status.inactive')}
         </Badge>
       ),
+    },
+    {
+      id: 'actions',
+      header: t('users.fields.actions'),
+      cell: (row) =>
+        row.id === currentUser?.id ? null : (
+          <Can permission="users.manage">
+            <DeleteRowButton onClick={() => void handleDelete(row)}>
+              {t('users.actions.delete')}
+            </DeleteRowButton>
+          </Can>
+        ),
     },
   ]
 

@@ -3,6 +3,7 @@ export const AUDIT_LOG_ACTIONS = [
   'user_created',
   'user_role_changed',
   'user_status_changed',
+  'user_deleted',
   'role_created',
   'role_renamed',
   'role_permissions_changed',

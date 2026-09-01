@@ -1464,6 +1464,21 @@ project has followed. `MeView` (Story 08) is the closer-to-hand precedent
 for the *API* shape this pairs with: a `GET`/`PATCH` endpoint with no id
 in the URL, because there is exactly one relevant object.
 
+**A verb removed for a CASCADE risk (§ 23's own earlier entry) can be
+reinstated once the risk is actually guarded, not just documented.**
+`UserViewSet` (Story 48, `SEC-1`) dropped `"delete"` from
+`http_method_names` because a hard delete would have silently cascaded
+onto `agents.Task.owner`. Story 71 (`SEC-6`) adds `"delete"` back — not by
+loosening anything, but by making the one still-real CASCADE risk
+(`Task`, which cannot be reassigned — its own model docstring rules that
+out) a `ValidationError` raised *before* `super().destroy()` runs, the
+same PROTECT-style guard `RoleViewSet.destroy` already uses for a system
+role. The other CASCADE relationship, `notifications.Notification.recipient`,
+needed no guard at all — its own docstring already treats "deleted with
+its recipient" as correct, not a hazard. The lesson: a removed HTTP verb
+is not necessarily a permanent decision — re-examine it once a real guard
+exists, rather than treating "we once removed this verb" as settled.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

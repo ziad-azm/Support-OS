@@ -22,6 +22,7 @@
     "user_created": "User created",
     "user_role_changed": "User role changed",
     "user_status_changed": "User status changed",
+    "user_deleted": "User deleted",
     "role_created": "Role created",
     "role_renamed": "Role renamed",
     "role_permissions_changed": "Role permissions changed",
