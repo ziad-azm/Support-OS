@@ -194,6 +194,32 @@ export const router = createBrowserRouter([
                   return { element: <ArticleFormPage /> }
                 },
               },
+              {
+                path: 'knowledge-base/categories',
+                lazy: async () => {
+                  const { CategoryListPage } =
+                    await import('@/features/knowledge-base/components/CategoryListPage')
+                  return { element: <CategoryListPage /> }
+                },
+              },
+              {
+                // Must stay before `knowledge-base/categories/:id`, same
+                // reason as `roles/new`.
+                path: 'knowledge-base/categories/new',
+                lazy: async () => {
+                  const { CategoryFormPage } =
+                    await import('@/features/knowledge-base/components/CategoryFormPage')
+                  return { element: <CategoryFormPage /> }
+                },
+              },
+              {
+                path: 'knowledge-base/categories/:id/edit',
+                lazy: async () => {
+                  const { CategoryFormPage } =
+                    await import('@/features/knowledge-base/components/CategoryFormPage')
+                  return { element: <CategoryFormPage /> }
+                },
+              },
             ],
           },
           {

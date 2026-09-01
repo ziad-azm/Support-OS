@@ -94,6 +94,31 @@
       "notFound": "That article could not be found."
     }
   },
+  "categories": {
+    "title": "Article categories",
+    "new": "New category",
+    "edit": "Edit category",
+    "search": "Search categories",
+    "searchPlaceholder": "Name",
+    "empty": "No categories yet",
+    "emptyDescription": "Create the first category to get started.",
+    "noSearchResults": "No categories match that search.",
+    "fields": {
+      "name": "Name",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete this category?",
+      "description": "Articles using this category become uncategorized. This cannot be undone."
+    },
+    "created": "Category created.",
+    "updated": "Category updated."
+  },
   "search": {
     "title": "Search knowledge base",
     "placeholder": "Search FAQs and articles…",

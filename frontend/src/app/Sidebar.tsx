@@ -212,6 +212,14 @@ export function Sidebar() {
               label={t('knowledgeBase:search.title')}
               collapsed={collapsed}
             />
+            <Can permission="knowledge_base.manage">
+              <SidebarLink
+                to="/knowledge-base/categories"
+                icon={TagIcon}
+                label={t('knowledgeBase:categories.title')}
+                collapsed={collapsed}
+              />
+            </Can>
           </NavSection>
         </Can>
         <Can permission="users.view">
