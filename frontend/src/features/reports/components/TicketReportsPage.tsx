@@ -36,9 +36,12 @@ type Bucket = (typeof BUCKETS)[number]
 // since only a volume split can produce more than 5 series in this screen.
 const MAX_SERIES = 5
 
-function toChartSeries(rows: VolumePoint[], allTicketsLabel: string): ChartSeries[] {
+function toChartSeries(
+  rows: VolumePoint[],
+  allTicketsLabel: string,
+): { series: ChartSeries[]; totalCount: number } {
   if (rows.length === 0 || rows[0].series === undefined) {
-    return [{ key: 'total', label: allTicketsLabel, points: rows }]
+    return { series: [{ key: 'total', label: allTicketsLabel, points: rows }], totalCount: 1 }
   }
   const bySeries = new Map<string, VolumePoint[]>()
   for (const row of rows) {
@@ -50,9 +53,12 @@ function toChartSeries(rows: VolumePoint[], allTicketsLabel: string): ChartSerie
       bySeries.set(key, [row])
     }
   }
-  return [...bySeries.entries()]
-    .slice(0, MAX_SERIES)
-    .map(([key, points]) => ({ key, label: key, points }))
+  return {
+    series: [...bySeries.entries()]
+      .slice(0, MAX_SERIES)
+      .map(([key, points]) => ({ key, label: key, points })),
+    totalCount: bySeries.size,
+  }
 }
 
 export function TicketReportsPage() {
@@ -82,6 +88,10 @@ export function TicketReportsPage() {
     ...(series !== 'none' ? { series } : {}),
   }
   const volumeQuery = useTicketVolume(volumeParams)
+  const { series: volumeSeries, totalCount: volumeSeriesCount } = toChartSeries(
+    volumeQuery.data ?? [],
+    t('volume.allTickets'),
+  )
 
   const breakdownParams = {
     ...(from ? { from } : {}),
@@ -171,7 +181,11 @@ export function TicketReportsPage() {
 
       <ChartFrame
         title={t('volume.title')}
-        description={t('volume.description')}
+        description={
+          volumeSeriesCount > MAX_SERIES
+            ? t('volume.seriesTruncated', { shown: MAX_SERIES, total: volumeSeriesCount })
+            : t('volume.description')
+        }
         query={volumeQuery}
         isEmpty={(rows) => rows.every((row) => row.value === 0)}
         action={
@@ -194,12 +208,7 @@ export function TicketReportsPage() {
           />
         )}
       >
-        {(rows) => (
-          <LineChart
-            series={toChartSeries(rows, t('volume.allTickets'))}
-            formatBucket={(b) => formatBucket(date, b)}
-          />
-        )}
+        {() => <LineChart series={volumeSeries} formatBucket={(b) => formatBucket(date, b)} />}
       </ChartFrame>
 
       <div className="flex flex-wrap items-end gap-2">

@@ -63,6 +63,7 @@
   "volume": {
     "title": "Ticket volume over time",
     "description": "Tickets created in the selected period.",
+    "seriesTruncated": "Showing top {{shown}} of {{total}} series.",
     "allTickets": "All tickets"
   },
   "breakdown": {

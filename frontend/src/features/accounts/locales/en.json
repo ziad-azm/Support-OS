@@ -38,6 +38,39 @@
     "permissionsHint": "Changes take effect immediately for anyone holding this role.",
     "selectAllInGroup": "Select all",
     "deselectAllInGroup": "Deselect all",
+    "permissionDescriptions": {
+      "users": {
+        "view": "View staff user accounts",
+        "manage": "Create, edit, and deactivate staff user accounts"
+      },
+      "roles": {
+        "manage": "Create and edit roles and their permissions"
+      },
+      "customers": {
+        "view": "View customer profiles and records",
+        "manage": "Create, edit, and delete customer profiles"
+      },
+      "tickets": {
+        "view": "View tickets and their details",
+        "manage": "Create, edit, assign, and reply to tickets"
+      },
+      "knowledge_base": {
+        "view": "View FAQs and help articles",
+        "manage": "Create, edit, and publish FAQs and help articles"
+      },
+      "portal": {
+        "access": "Access the customer self-service portal"
+      },
+      "audit_log": {
+        "view": "View the system audit log"
+      },
+      "settings": {
+        "manage": "Edit organization settings"
+      },
+      "reports": {
+        "view": "View reports and analytics dashboards"
+      }
+    },
     "fields": {
       "name": "Name",
       "slug": "Slug",

@@ -63,6 +63,7 @@
   "volume": {
     "title": "حجم التذاكر عبر الزمن",
     "description": "التذاكر التي أُنشئت خلال الفترة المحددة.",
+    "seriesTruncated": "يعرض أفضل {{shown}} من أصل {{total}} سلسلة.",
     "allTickets": "كل التذاكر"
   },
   "breakdown": {

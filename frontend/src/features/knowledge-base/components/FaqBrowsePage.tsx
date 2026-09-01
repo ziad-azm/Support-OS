@@ -8,6 +8,7 @@ import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { Empty } from '@/shared/ui/Empty'
 import { PageHeader } from '@/shared/ui/PageHeader'
 
+import { MarkdownPreview } from './MarkdownPreview'
 import { useFaqs } from '../api/useFaqs'
 import type { Faq } from '../types/faq'
 
@@ -51,8 +52,8 @@ export function FaqBrowsePage() {
                 <CardHeader>
                   <CardTitle>{faq.question}</CardTitle>
                 </CardHeader>
-                <CardContent className="whitespace-pre-wrap text-sm text-muted-foreground">
-                  {faq.answer}
+                <CardContent>
+                  <MarkdownPreview>{faq.answer}</MarkdownPreview>
                 </CardContent>
               </Card>
             ))}

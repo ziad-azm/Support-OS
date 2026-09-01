@@ -47,6 +47,7 @@
         "arabic": "Arabic content"
       },
       "fields": {
+        "title": "Title",
         "titleEn": "Title (English)",
         "titleAr": "Title (Arabic)",
         "bodyEn": "Body (English)",

@@ -19,7 +19,8 @@ import { useArticles } from '../api/useArticles'
 import type { Article } from '../types/article'
 
 export function ArticleListPage() {
-  const { t } = useTranslation('knowledgeBase')
+  const { t, i18n } = useTranslation('knowledgeBase')
+  const isArabic = i18n.language.startsWith('ar')
   const { date } = useFormatters()
   const { confirm } = useConfirm()
   const { sort, setSort, setPage, params } = useServerTable({
@@ -43,10 +44,12 @@ export function ArticleListPage() {
   const columns: readonly ColumnDef<Article>[] = [
     {
       id: 'title_en',
-      header: t('articles.manage.fields.titleEn'),
+      header: t('articles.manage.fields.title'),
       sortable: true,
       cell: (row) => (
-        <Link to={`/knowledge-base/articles/manage/${row.id}/edit`}>{row.title_en}</Link>
+        <Link to={`/knowledge-base/articles/manage/${row.id}/edit`}>
+          {isArabic ? row.title_ar : row.title_en}
+        </Link>
       ),
     },
     {

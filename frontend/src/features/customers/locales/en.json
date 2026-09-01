@@ -82,6 +82,11 @@
     "fields": {
       "file": "File"
     },
+    "units": {
+      "bytes": "{{value}} B",
+      "kilobytes": "{{value}} KB",
+      "megabytes": "{{value}} MB"
+    },
     "actions": {
       "upload": "Upload",
       "download": "Download",

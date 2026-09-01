@@ -154,7 +154,7 @@
       "cancel": "Cancel"
     },
     "delete": {
-      "title": "Delete this note?",
+      "title": "Remove this note?",
       "description": "This permanently removes the note. This cannot be undone."
     },
     "created": "Note added.",

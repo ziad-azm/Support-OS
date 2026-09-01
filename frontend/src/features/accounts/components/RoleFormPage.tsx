@@ -89,6 +89,14 @@ function areaLabel(area: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
+/** `<area>.<action>` → `roles.permissionDescriptions.<area>.<action>`, a
+ * nested locale key mirroring the permission string's own shape — avoids
+ * i18next treating a literal `.` inside a flat key as a path separator. */
+function permissionDescriptionKey(permission: string): string {
+  const [area, action] = permission.split('.')
+  return `roles.permissionDescriptions.${area}.${action}`
+}
+
 /** One component for both create and edit, per CONVENTIONS.md §20 — the
  * field set here is identical between modes, unlike `UserFormPage`. */
 export function RoleFormPage() {
@@ -214,7 +222,12 @@ function RoleForm({ mode, id, role }: { mode: 'create' | 'edit'; id?: number; ro
                                   )
                                 }
                               />
-                              <span className="font-mono text-sm">{permission}</span>
+                              <div className="flex flex-col">
+                                <span className="font-mono text-sm">{permission}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {t(permissionDescriptionKey(permission), { defaultValue: '' })}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>

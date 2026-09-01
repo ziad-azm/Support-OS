@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
 
@@ -32,10 +33,12 @@ type AttachmentFormValues = z.output<typeof attachmentSchema>
 // value at all here.
 const EMPTY_DEFAULTS = { file: null } as unknown as AttachmentFormValues
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+function formatSize(bytes: number, t: TFunction<'customers'>): string {
+  if (bytes < 1024) return t('attachments.units.bytes', { value: bytes })
+  if (bytes < 1024 * 1024) {
+    return t('attachments.units.kilobytes', { value: (bytes / 1024).toFixed(1) })
+  }
+  return t('attachments.units.megabytes', { value: (bytes / (1024 * 1024)).toFixed(1) })
 }
 
 export function AttachmentsSection({ customerId }: { customerId: number }) {
@@ -112,7 +115,7 @@ function AttachmentRow({ customerId, attachment }: { customerId: number; attachm
             or phone value (CONVENTIONS.md §18). */}
         <span dir="ltr">{attachment.original_filename}</span>
         <span className="text-sm text-muted-foreground">
-          {formatSize(attachment.size)}
+          {formatSize(attachment.size, t)}
           {' · '}
           {attachment.uploaded_by_name ?? t('notes.unknownAuthor')}
           {' · '}

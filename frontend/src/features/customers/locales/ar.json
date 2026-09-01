@@ -82,6 +82,11 @@
     "fields": {
       "file": "الملف"
     },
+    "units": {
+      "bytes": "{{value}} بايت",
+      "kilobytes": "{{value}} كيلوبايت",
+      "megabytes": "{{value}} ميغابايت"
+    },
     "actions": {
       "upload": "رفع",
       "download": "تنزيل",

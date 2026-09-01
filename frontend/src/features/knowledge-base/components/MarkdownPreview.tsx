@@ -1,4 +1,5 @@
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 /**
  * The one place `react-markdown` is imported. No `rehype-raw` / no
@@ -7,11 +8,14 @@ import Markdown from 'react-markdown'
  * with zero extra sanitization. `prose`/`prose-invert` (from
  * `@tailwindcss/typography`) style the output; `dir="auto"` lets the
  * browser pick per-paragraph direction for mixed English/Arabic content.
+ * `remark-gfm` adds GitHub-Flavored-Markdown syntax (tables, strikethrough,
+ * task lists, autolinked URLs) — without it these render as literal text
+ * (`UX-027`).
  */
 export function MarkdownPreview({ children }: { children: string }) {
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none" dir="auto">
-      <Markdown>{children}</Markdown>
+      <Markdown remarkPlugins={[remarkGfm]}>{children}</Markdown>
     </div>
   )
 }

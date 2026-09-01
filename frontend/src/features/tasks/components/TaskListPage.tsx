@@ -39,6 +39,12 @@ export function TaskListPage() {
 
   const [completedFilter, setCompletedFilter] = useState<CompletedFilter>('pending')
 
+  const completedFilterLabel = {
+    pending: t('filters.pending'),
+    completed: t('filters.completedOnly'),
+    all: t('filters.all'),
+  }[completedFilter]
+
   useEffect(() => {
     setPage(1)
   }, [completedFilter, setPage])
@@ -138,7 +144,12 @@ export function TaskListPage() {
         value={completedFilter}
         onValueChange={(value) => setCompletedFilter(value as CompletedFilter)}
       >
-        <SelectTrigger aria-label={t('filters.completed')} size="sm" className="w-40">
+        <SelectTrigger
+          aria-label={t('filters.completed')}
+          title={completedFilterLabel}
+          size="sm"
+          className="w-40"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
