@@ -184,11 +184,13 @@ function ArticleForm({
                   control={form.control}
                   name="title_ar"
                   label={t('articles.manage.fields.titleAr')}
+                  dir="auto"
                 />
                 <MarkdownField
                   control={form.control}
                   name="body_ar"
                   label={t('articles.manage.fields.bodyAr')}
+                  dir="auto"
                 />
               </CardContent>
             </Card>

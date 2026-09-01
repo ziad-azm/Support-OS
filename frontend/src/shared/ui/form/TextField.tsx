@@ -16,6 +16,9 @@ type TextFieldProps<TFieldValues extends FieldValues> = FieldProps<TFieldValues>
   type?: 'text' | 'email' | 'password' | 'number' | 'datetime-local'
   autoComplete?: string
   autoFocus?: boolean
+  /** `"auto"` for a field whose content's script (e.g. Arabic) doesn't
+   * follow the UI language — see `ArticleFormPage`'s `title_ar`. */
+  dir?: 'auto' | 'ltr' | 'rtl'
 }
 
 /**
@@ -34,6 +37,7 @@ export function TextField<TFieldValues extends FieldValues>({
   type = 'text',
   autoComplete,
   autoFocus,
+  dir,
 }: TextFieldProps<TFieldValues>) {
   return (
     <FormField
@@ -49,6 +53,7 @@ export function TextField<TFieldValues extends FieldValues>({
               disabled={disabled}
               autoComplete={autoComplete}
               autoFocus={autoFocus}
+              dir={dir}
               {...field}
             />
           </FormControl>

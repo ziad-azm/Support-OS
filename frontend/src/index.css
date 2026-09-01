@@ -177,6 +177,11 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
+  body {
+    @apply h-full overflow-hidden;
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
     /* `dir` on <html> drives this; never set direction per component.

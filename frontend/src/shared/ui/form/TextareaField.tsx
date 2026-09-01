@@ -21,7 +21,13 @@ export function TextareaField<TFieldValues extends FieldValues>({
   placeholder,
   disabled,
   maxLength,
-}: FieldProps<TFieldValues> & { maxLength?: number }) {
+  dir,
+}: FieldProps<TFieldValues> & {
+  maxLength?: number
+  /** `"auto"` for a field whose content's script (e.g. Arabic) doesn't
+   * follow the UI language — see `ArticleFormPage`'s `body_ar`. */
+  dir?: 'auto' | 'ltr' | 'rtl'
+}) {
   return (
     <FormField
       control={control}
@@ -34,6 +40,7 @@ export function TextareaField<TFieldValues extends FieldValues>({
               placeholder={placeholder}
               disabled={disabled}
               maxLength={maxLength}
+              dir={dir}
               {...field}
             />
           </FormControl>

@@ -11,10 +11,14 @@ export function MarkdownField<TFieldValues extends FieldValues>({
   control,
   name,
   label,
+  dir,
 }: {
   control: Control<TFieldValues>
   name: Path<TFieldValues>
   label: string
+  /** `"auto"` for a field whose content's script (e.g. Arabic) doesn't
+   * follow the UI language — see `ArticleFormPage`'s `body_ar`. */
+  dir?: 'auto' | 'ltr' | 'rtl'
 }) {
   const { t } = useTranslation('knowledgeBase')
   const value = useWatch({ control, name }) as string
@@ -26,7 +30,7 @@ export function MarkdownField<TFieldValues extends FieldValues>({
         <TabsTrigger value="preview">{t('articles.manage.editorTabs.preview')}</TabsTrigger>
       </TabsList>
       <TabsContent value="write">
-        <TextareaField control={control} name={name} label={label} />
+        <TextareaField control={control} name={name} label={label} dir={dir} />
         <p className="mt-1 text-xs text-muted-foreground">
           {t('articles.manage.editorTabs.markdownSupported')}{' '}
           <a
