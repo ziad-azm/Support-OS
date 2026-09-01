@@ -9,7 +9,7 @@ import Markdown from 'react-markdown'
  */
 export function PortalMarkdownPreview({ children }: { children: string }) {
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none" dir="auto">
+    <div className="prose prose-sm dark:prose-invert max-w-none overflow-x-auto" dir="auto">
       <Markdown>{children}</Markdown>
     </div>
   )

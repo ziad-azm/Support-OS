@@ -131,7 +131,7 @@ function ChatPane({ session }: { session: LiveChatSession }) {
   }
 
   return (
-    <Card className="flex w-full max-w-sm flex-col" style={{ height: '32rem' }}>
+    <Card className="flex h-[min(32rem,calc(100dvh-3rem))] w-full max-w-sm flex-col">
       <CardHeader className="border-b pb-4">
         <div className="flex items-center gap-2">
           <MessageCircleIcon className="size-5 text-primary" />

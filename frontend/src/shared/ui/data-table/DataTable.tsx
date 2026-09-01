@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ApiRequestError } from '@/shared/lib/api/errors'
 import type { Page } from '@/shared/lib/api/types'
+import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/primitives/button'
 import { Skeleton } from '@/shared/ui/primitives/skeleton'
 import {
@@ -76,7 +77,10 @@ export function DataTable<T>({
               <TableHead
                 key={column.id}
                 aria-sort={column.sortable ? sortAria(column.id, sort) : undefined}
-                className={column.align === 'end' ? 'text-end' : undefined}
+                className={cn(
+                  column.align === 'end' && 'text-end',
+                  column.priority === 'sm' && 'hidden sm:table-cell',
+                )}
               >
                 {column.sortable ? (
                   <Button
@@ -155,7 +159,10 @@ export function DataTable<T>({
                   {columns.map((column) => (
                     <TableCell
                       key={column.id}
-                      className={column.align === 'end' ? 'text-end' : undefined}
+                      className={cn(
+                        column.align === 'end' && 'text-end',
+                        column.priority === 'sm' && 'hidden sm:table-cell',
+                      )}
                     >
                       {column.cell(row)}
                     </TableCell>

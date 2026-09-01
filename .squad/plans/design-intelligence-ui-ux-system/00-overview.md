@@ -15,6 +15,7 @@ Entry point for the **design-intelligence-ui-ux-system** feature. Stories execut
 | 61 | [61-story-full-ui-ux-audit-issue-register-SUPPORTOS-97.md](61-story-full-ui-ux-audit-issue-register-SUPPORTOS-97.md) | Full UI/UX Audit & Issue Register | SUPPORTOS-97 | Story 35 (`DSN-0`), Story 50 (`DSN-4`), Story 51 (`DSN-5`) |
 | 62 | [62-story-cross-feature-consistency-remediation-SUPPORTOS-98.md](62-story-cross-feature-consistency-remediation-SUPPORTOS-98.md) | Cross-Feature Consistency Remediation | SUPPORTOS-98 | Story 61 (`DSN-6`) |
 | 63 | [63-story-interaction-state-feedback-polish-SUPPORTOS-99.md](63-story-interaction-state-feedback-polish-SUPPORTOS-99.md) | Interaction, State & Feedback Polish | SUPPORTOS-99 | Story 61 (`DSN-6`); complements Story 50 (`DSN-4`)/Story 51 (`DSN-5`) |
+| 64 | [64-story-responsive-mobile-ux-remediation-SUPPORTOS-100.md](64-story-responsive-mobile-ux-remediation-SUPPORTOS-100.md) | Responsive & Mobile UX Remediation | SUPPORTOS-100 | Story 51 (`DSN-5`), Story 61 (`DSN-6`) |
 
 ## Dependency notes
 
@@ -57,6 +58,16 @@ The two critical findings this story resolved (`UX-005`, `UX-009`) both converte
 
 `git diff --stat` is confined to `frontend/` and `design-system/supportos/UX-AUDIT.md` — no backend file changed, `python manage.py test` (54/54) unaffected.
 
-**`EPIC 8 — Design Intelligence & UI/UX System` is fully planned through `DSN-8`; `DSN-0` through `DSN-8` are all implemented. `DSN-9` through `DSN-13` remain unplanned** — each consumes a different category of `UX-AUDIT.md` findings and needs its own intake. `UX-030`, Task's portion of `UX-038`, and `UX-007` all need a product decision (a dedicated non-`DSN` backend story, or an explicit guardrail exception) before they can be resolved; `UX-016`/`UX-028` need a decision on whether bulk row actions deserve their own story.
+**Story 64 (`DSN-9`, Responsive & Mobile UX Remediation) is implemented.** Resolved all 5 `responsive`-category rows of `UX-AUDIT.md` (`UX-008, UX-014, UX-021, UX-064, UX-065`) plus two new findings (`UX-067`, `UX-068`) discovered during planning that directly implement the intake's own two named tasks, which the register's original walk didn't catch:
+- **`UX-067`** — the staff shell's `Sidebar` defaulted to fully expanded (`w-56`/224px) on every first visit with no stored preference, leaving `main` roughly 119px wide at a 375px viewport. `readCollapsed()` now defaults to collapsed on narrow viewports only when no preference is stored, never overriding an explicit user choice.
+- **`UX-068`** — `DataTable` had no small-screen column strategy beyond the already-`DSN-2`-compliant horizontal scroll. Added an opt-in `ColumnDef.priority: 'sm'` field (hides a column below the `sm` breakpoint in both header and body cells), applied to the 5 densest/most mobile-relevant of `DataTable`'s 13 consumers (`TicketListPage`, `MyTicketsPage`, `CustomerListPage`, `PortalTicketListPage`, `PortalTicketHistoryPage`) — a deliberate, recorded scope decision, not a silent gap; the other 8 keep the compliant scroll fallback.
+
+**`UX-021`'s recommended fix was corrected during planning.** The register said to standardize `grid-cols-1 sm:grid-cols-2` across `TicketDetailPage.tsx`, `TicketSlaSection.tsx`, and `CustomerContextPanel.tsx` alike — but `TicketDetailPage.tsx:80`'s own grid (`lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]`) puts `CustomerContextPanel` in a side column as narrow as 280px even on desktop. Since Tailwind's `sm:` is viewport-width-based, not container-width-based, applying it there would have switched to 2 columns at any ≥640px screen regardless of the panel's own width — a regression, not a fix. Only the two main-column `dl`s were converged; `CustomerContextPanel`'s existing always-stacked layout was confirmed correct for its context and left unchanged.
+
+Three things intake Task 2 names ("dialogs," "chart placeholders," "touch targets") were verified already handled, no task needed: `dialog.tsx:65` is already `w-full max-w-[calc(100%-2rem)] sm:max-w-lg`; no chart component has a hardcoded width/height; `DSN-2` already confirmed `icon-xs` (24px) meets WCAG 2.2's touch-target minimum.
+
+`git diff --stat` is confined to `frontend/` and `design-system/supportos/UX-AUDIT.md` — no backend file changed, `python manage.py test` (54/54) unaffected.
+
+**`EPIC 8 — Design Intelligence & UI/UX System` is fully planned through `DSN-9`; `DSN-0` through `DSN-9` are all implemented. `DSN-10` through `DSN-13` remain unplanned** — each consumes a different category of `UX-AUDIT.md` findings and needs its own intake. `UX-030`, Task's portion of `UX-038`, and `UX-007` all need a product decision (a dedicated non-`DSN` backend story, or an explicit guardrail exception) before they can be resolved; `UX-016`/`UX-028` need a decision on whether bulk row actions deserve their own story.
 
 **`EPIC 9 — Knowledge Base`** (renumbered from `EPIC 8` when this epic was inserted ahead of it) now lists Design Intelligence (`DSN`) as an explicit dependency (`SupportOs backlog.MD:531-532`) — plan it after this feature, not before.

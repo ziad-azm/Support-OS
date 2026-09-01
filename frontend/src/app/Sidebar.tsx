@@ -35,10 +35,15 @@ const COLLAPSE_STORAGE_KEY = 'supportos.sidebar.collapsed'
 
 function readCollapsed(): boolean {
   try {
-    return localStorage.getItem(COLLAPSE_STORAGE_KEY) === 'true'
+    const stored = localStorage.getItem(COLLAPSE_STORAGE_KEY)
+    if (stored !== null) return stored === 'true'
   } catch {
-    return false
+    // Fall through to the viewport check below.
   }
+  // No stored preference yet (first visit, or storage blocked) — default to
+  // collapsed on narrow viewports so the sidebar doesn't eat most of a
+  // phone's width before the user ever gets to toggle it themselves.
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
 }
 
 /**

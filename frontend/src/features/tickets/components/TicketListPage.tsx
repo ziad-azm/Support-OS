@@ -94,6 +94,7 @@ export function TicketListPage() {
       // joined/derived display column, not in the viewset's
       // `ordering_fields`. See Story 18 `## Prerequisites`.
       cell: (row) => row.category_name ?? t('fields.noCategory'),
+      priority: 'sm',
     },
     {
       id: 'assigned_agent_name',
@@ -125,6 +126,7 @@ export function TicketListPage() {
       header: t('fields.createdAt'),
       sortable: true,
       cell: (row) => date(row.created_at),
+      priority: 'sm',
     },
   ]
 

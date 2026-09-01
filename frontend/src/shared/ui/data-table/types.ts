@@ -21,4 +21,9 @@ export type ColumnDef<T> = {
    * logical start/end text-alignment utility — never a physical one.
    */
   align?: 'start' | 'end'
+  /** Hide this column below the `sm` breakpoint (640px). Omit (default:
+   *  always visible) for columns essential at every width. Purely a
+   *  presentation hint — the column's data is still in `query.data`,
+   *  still exportable, still reachable via the row's own detail page. */
+  priority?: 'always' | 'sm'
 }

@@ -58,7 +58,7 @@ export function CustomerProfilePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  <dl className="grid grid-cols-2 gap-4">
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <dt className="text-sm text-muted-foreground">{t('fields.email')}</dt>
                       <dd>{customer.email ?? '—'}</dd>

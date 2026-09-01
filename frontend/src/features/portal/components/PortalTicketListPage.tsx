@@ -67,11 +67,13 @@ export function PortalTicketListPage() {
       id: 'category_name',
       header: t('tickets.fields.category'),
       cell: (row) => row.category_name ?? t('tickets.fields.noCategory'),
+      priority: 'sm',
     },
     {
       id: 'assigned_agent_name',
       header: t('tickets.fields.assignedAgent'),
       cell: (row) => row.assigned_agent_name ?? t('tickets.fields.unassigned'),
+      priority: 'sm',
     },
     {
       id: 'status',

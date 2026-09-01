@@ -73,12 +73,14 @@ export function CustomerListPage() {
       header: t('fields.company'),
       sortable: true,
       cell: (row) => row.company,
+      priority: 'sm',
     },
     {
       id: 'created_at',
       header: t('fields.createdAt'),
       sortable: true,
       cell: (row) => date(row.created_at),
+      priority: 'sm',
     },
   ]
 

@@ -73,6 +73,7 @@ export function MyTicketsPage() {
       id: 'category_name',
       header: t('fields.category'),
       cell: (row) => row.category_name ?? t('fields.noCategory'),
+      priority: 'sm',
     },
     {
       id: 'status',
@@ -97,6 +98,7 @@ export function MyTicketsPage() {
       header: t('fields.createdAt'),
       sortable: true,
       cell: (row) => date(row.created_at),
+      priority: 'sm',
     },
   ]
 
