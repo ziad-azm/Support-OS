@@ -749,7 +749,70 @@
 
 ---
 
-# EPIC 12 — AI Features
+# EPIC 12 — Security & Administration
+
+**Description:** User/role administration UI, permission management, audit logs, system configuration, and the full account-credential lifecycle (invitation, password recovery, password change, deletion) over the `AUTHZ` foundation. Builds on the reusable activity-log pattern. `SEC-5` through `SEC-8` were absorbed from a short-lived, now-removed `Account Lifecycle`/`Password Self-Service` epic — every one of them is a `User`-account concern, so they live here rather than split across a separate epic.
+**Depends on:** EPIC 2, SLA-4 (email delivery, for `SEC-5`/`SEC-7`), FORM.
+
+### STORY (SEC-1) — Users & Roles Admin
+
+- **Task: User/role admin API + UI** — Implement management screens over `AUTHZ` models. Outcome: manage users/roles.
+
+### STORY (SEC-2) — Permissions Management
+
+**Dependencies:** SEC-1.
+
+- **Task: Permission config API + UI** — Implement role→permission mapping UI enforced by `AUTHZ`. Outcome: granular access control.
+
+### STORY (SEC-3) — Audit Logs
+
+- **Task: Audit-log service + viewer** 🔑 (reuses activity-log pattern) — Implement immutable logging of sensitive actions + filtered viewer. Outcome: traceability.
+
+### STORY (SEC-4) — System Configuration
+
+- **Task: Settings model + admin UI** 🔑 (backs branding/departments/branches/SLA defaults) — Implement central configurable settings. Outcome: org-level configuration.
+
+### STORY (SEC-5) — New User Invitation & First-Login Password Setup
+
+**As a newly-added staff member, I want to set my own password the first time I sign in, so that my credentials are never known to anyone else.**
+**Description:** Moved here from the former `Account Lifecycle & Credential Management` epic (was `ACCT-1`) — it extends this epic's own `SEC-1` screen directly. Verified gap: `UserAdminSerializer`/`UserFormPage.tsx`'s create form has a required `password` field the *admin* fills in directly — there is no invite email, no temporary/forced-reset password, and no self-service "set your password" step. The admin ends up knowing (and having to relay out-of-band) every new user's first password. This story replaces that with an invite: the admin creates the account with no password, the new user gets a signed, time-limited "set your password" link by email, and the account stays unusable until they do.
+**Dependencies:** SEC-1, SLA-4 (email delivery), AUTH-1.
+
+- **Task: Backend invite issuance & first-password-set endpoint** 🔑 (the token mechanism the `Password Self-Service` epic's forgot-password story reuses) — Implement `UserAdminSerializer`'s create path so a new `User` is created with an unusable password and `is_active=False` (or an equivalent "pending" state) until first login is completed; issue a signed, time-limited invite token sent via `SLA-4`'s email delivery; add a confirm endpoint (token + new password) that sets the password and activates the account, through the standard `API` envelope/error model. Constraints: token single-use and expiring; reuse `SLA-4`'s email delivery — no second email-sending mechanism. Outcome: a new account is unusable until its owner sets their own password.
+- **Task: Frontend invite-confirm UI & admin-form update** — Implement a "set your password" page (opened from the emailed link) via `FORM`; update `UserFormPage.tsx`'s create form to drop the direct `password` field, since the admin no longer sets one. Outcome: admins create accounts without ever handling a new user's password.
+
+### STORY (SEC-6) — User Account Deletion
+
+**As an admin, I want to permanently delete a user account, so that stale or mistaken accounts don't linger indefinitely.**
+**Description:** Moved here from the former `Account Lifecycle & Credential Management` epic (was `ACCT-4`) — it extends this epic's own `SEC-1` screen directly. `SEC-1` deliberately shipped deactivation-only for `User` — a hard `DELETE` would cascade onto `agents.Task.owner` and `notifications.Notification.recipient` (both `on_delete=CASCADE`), silently destroying unrelated data (see `security-administration/48-story-users-roles-admin-SUPPORTOS-72.md`'s own verified finding). Verified against every FK to `User` in the codebase — `Task.owner`/`Notification.recipient` are the *only* two `CASCADE` relationships; every other reference (`Customer.user`, `Note.author`, `Attachment.uploaded_by`, `Ticket.assigned_agent`, `TicketActivity.actor`, `InternalNote.author`, `AssignmentRule.last_assigned_agent`, `AuditLog.actor`/`target_user`) is already `SET_NULL` and safe. This story completes the lifecycle by adding a *safe* delete path instead of leaving deactivation as the permanent ceiling.
+**Dependencies:** SEC-1.
+
+- **Task: Safe user-deletion backend flow** — Implement a delete action on `UserViewSet` that first reassigns or nullifies the target's owned `Task` and `Notification` rows (or blocks the delete with a clear error while unhandled dependent records exist — a product decision to confirm before building), writes an audit-log entry via `SEC-3`'s pattern recording the deletion and what happened to dependent data, then removes the `User` row. Constraints: reuse `AUTHZ` permissions, `API` envelope, `SEC-3`'s audit-log pattern; must never silently cascade-delete a customer's own ticket/interaction history through any indirect FK. Outcome: a user can be permanently removed without silently destroying unrelated data.
+- **Task: Delete-user UI & confirmation** — Implement a destructive "Delete" action on the Users admin screen (`SEC-1`) with a confirmation dialog (reusing the shared confirm pattern) that states plainly what happens to the user's owned tasks/notifications before the irreversible action proceeds. Outcome: admins remove accounts with an explicit, informed confirmation.
+
+### STORY (SEC-7) — Forgot Password / Self-Service Reset
+
+**As a user, I want to reset my own password when I forget it, so that I'm not locked out waiting on an admin.**
+**Description:** Moved here from the now-removed `Password Self-Service` epic (was `ACCT-1`). `AUTH-1` shipped login/refresh/logout only; `LoginPage`'s current "Locked out or forgot your password? Ask an admin to reset it" copy is the whole story today. This story adds a real self-service flow: request a reset by email, receive a time-limited link, set a new password. Shares its token mechanism with `SEC-5`'s invite flow — one signed-token utility, two triggers (admin invite vs. self-service "forgot").
+**Dependencies:** AUTH-1, SLA-4, SEC-5 (reuses its token utility).
+
+- **Task: Backend password-reset request & confirm endpoints** — Implement a request-reset endpoint (email → signed, time-limited token, sent via `SLA-4`'s existing email delivery, reusing `SEC-5`'s token utility) and a confirm-reset endpoint (token + new password) through the standard `API` envelope/error model. Constraints: rate-limit the request endpoint; never reveal whether an email is registered; no second token/email mechanism. Outcome: secure, working self-service password reset.
+- **Task: Frontend forgot/reset password UI** — Implement a "Forgot password?" link on `LoginPage` → request form (`FORM`) → a confirmation screen, plus a reset-confirm page (opened from the emailed link) to set a new password. Constraints: reuse `FORM`/`UI`/`I18N`; update `LoginPage`'s existing admin-reset copy once this ships. Outcome: users recover access without admin involvement.
+
+### STORY (SEC-8) — Change Password
+
+**As a signed-in user, I want to change my own password, so that I can update my credentials without having to forget them first.**
+**Description:** Moved here from the now-removed `Password Self-Service` epic (was `ACCT-2`). Verified gap: `PreferencesPage.tsx` (the personal, ungated settings screen every authenticated user reaches) has only language and theme — no password field at all. This is the one credential action that doesn't require a token/email round-trip, since the user is already authenticated; it belongs beside `SEC-7`, not folded into it.
+**Dependencies:** AUTH-1, FORM.
+
+- **Task: Change-password endpoint** — Implement a `POST` action (current password + new password) on the authenticated user's own account, through the standard `API` envelope/error model. Constraints: require the current password; reuse `AUTHZ`'s existing password-hashing/validation, no new mechanism. Outcome: a signed-in user can change their password directly.
+- **Task: Change-password UI in Preferences** — Add a change-password form to `PreferencesPage.tsx` via `FORM`, alongside the existing language/theme controls. Outcome: one place for every personal account setting, credentials included.
+
+---
+
+---
+
+# EPIC 13 — AI Features
 
 **Description:** AI assistance — ticket summaries, suggested replies, auto-categorization, suggested solutions, and a customer chatbot. Built on a shared AI-service foundation grounded in the knowledge base.
 **Depends on:** Ticket Management, Knowledge Base, Communication Channels.
@@ -791,7 +854,7 @@
 
 ---
 
-# EPIC 13 — Integrations
+# EPIC 14 — Integrations
 
 **Description:** Public API, ERP, messaging-provider config, and outbound webhooks — reusing existing endpoints and provider config patterns.
 **Depends on:** foundations, relevant domains.
@@ -817,33 +880,6 @@
 **Dependencies:** SLA-0.
 
 - **Task: Webhook subscriptions + dispatch + UI** — Implement event subscriptions firing async on domain events. Outcome: external systems notified.
-
----
-
----
-
-# EPIC 14 — Security & Administration
-
-**Description:** User/role administration UI, permission management, audit logs, and system configuration. Builds admin surfaces on the `AUTHZ` foundation and the reusable activity-log pattern.
-**Depends on:** EPIC 2.
-
-### STORY (SEC-1) — Users & Roles Admin
-
-- **Task: User/role admin API + UI** — Implement management screens over `AUTHZ` models. Outcome: manage users/roles.
-
-### STORY (SEC-2) — Permissions Management
-
-**Dependencies:** SEC-1.
-
-- **Task: Permission config API + UI** — Implement role→permission mapping UI enforced by `AUTHZ`. Outcome: granular access control.
-
-### STORY (SEC-3) — Audit Logs
-
-- **Task: Audit-log service + viewer** 🔑 (reuses activity-log pattern) — Implement immutable logging of sensitive actions + filtered viewer. Outcome: traceability.
-
-### STORY (SEC-4) — System Configuration
-
-- **Task: Settings model + admin UI** 🔑 (backs branding/departments/branches/SLA defaults) — Implement central configurable settings. Outcome: org-level configuration.
 
 ---
 
@@ -912,7 +948,7 @@
 - UX issue register (`design-system/supportos/UX-AUDIT.md`) → EPIC 8 (DSN-6); consumed by DSN-7–DSN-13
 - Shared form UX behavior (validation timing, error summary, focus) → EPIC 8 (DSN-10), extends `FORM`
 - Responsive table/shell patterns → EPIC 8 (DSN-9), extend `UI`/`DSN-5`
-- AI service foundation (AI-0) → EPIC 12
-- Org scoping pattern (ORG-1), System config (SEC-4) → EPIC 14/15
+- AI service foundation (AI-0) → EPIC 13
+- System config (SEC-4) → EPIC 12; Org scoping pattern (ORG-1) → EPIC 15
 
 **Rule for every later task:** consume these foundations by reference; never re-implement them.
