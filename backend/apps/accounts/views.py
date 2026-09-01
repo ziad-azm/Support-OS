@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -20,6 +21,8 @@ from .serializers import (
     AuditLogSerializer,
     InviteConfirmSerializer,
     LogoutSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     RoleAdminSerializer,
     UserAdminSerializer,
     UserSerializer,
@@ -67,6 +70,49 @@ class InviteConfirmView(APIView):
 
     def post(self, request):
         serializer = InviteConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(None, status=status.HTTP_200_OK)
+
+
+class PasswordResetRequestView(APIView):
+    """SEC-7's "forgot password" first step. Never reveals whether
+    `email` belongs to a real, active account — returns the identical
+    `200` either way; `PasswordResetRequestSerializer.save()` is a silent
+    no-op for a non-existent, inactive, or already-unusable-password
+    account. Rate limited (`throttle_scope`, `DEFAULT_THROTTLE_RATES` in
+    `config/settings/base.py`) — the one thing that actually needs a
+    limit here, since an unlimited version could be abused to spam a
+    given inbox or as a brute-force enumeration timing oracle at volume.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset_request"
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(None, status=status.HTTP_200_OK)
+
+
+class PasswordResetConfirmView(APIView):
+    """SEC-7's reset-confirm step: exchanges the token mailed by
+    `send_password_reset_email` (apps/accounts/tasks.py) for a new
+    password on an already-active account — the opposite precondition
+    from `InviteConfirmView` above, which only ever accepts a pending,
+    `is_active=False` one. No Authorization header — the token IS the
+    credential, the same reasoning `LogoutView` above documents. Not
+    throttled — see `## Story Goal` finding 2.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(None, status=status.HTTP_200_OK)

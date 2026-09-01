@@ -3,13 +3,13 @@
     "title": "Sign in",
     "email": "Email",
     "password": "Password",
-    "submit": "Sign in"
+    "submit": "Sign in",
+    "forgotPassword": "Forgot password?"
   },
   "help": {
     "prompt": "Not a staff member?",
     "contact": "Submit a request",
-    "chat": "Start a live chat",
-    "lockedOut": "Locked out or forgot your password? Ask an admin to reset it."
+    "chat": "Start a live chat"
   },
   "setPassword": {
     "title": "Set your password",
@@ -21,5 +21,25 @@
     "signIn": "Sign in",
     "invalidTitle": "Invalid link",
     "invalidDescription": "This invite link is missing its token. Check the link in your email, or ask an admin to resend the invite."
+  },
+  "forgotPassword": {
+    "title": "Reset your password",
+    "subtitle": "Enter your email and we'll send you a link to reset it.",
+    "email": "Email",
+    "submit": "Send reset link",
+    "successTitle": "Check your email",
+    "successDescription": "If an account exists for that email, a reset link is on its way.",
+    "backToSignIn": "Back to sign in"
+  },
+  "resetPassword": {
+    "title": "Choose a new password",
+    "subtitle": "Enter a new password for your account.",
+    "password": "New password",
+    "submit": "Reset password",
+    "successTitle": "Password reset",
+    "successDescription": "Your password has been changed.",
+    "signIn": "Sign in",
+    "invalidTitle": "Invalid link",
+    "invalidDescription": "This reset link is missing its token, invalid, or has expired. Request a new one."
   }
 }

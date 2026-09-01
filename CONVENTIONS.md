@@ -752,6 +752,22 @@ used" signal. Reach for this pattern whenever a token grants a one-time
 state transition on a field a normal admin action can also independently
 flip.
 
+**When a token's account has no natural "already used" state to gate on,
+bake a digest of that state into the token's own payload instead.**
+SEC-5's invite token (the entry directly above) is single-use because the
+account itself transitions from pending to active. SEC-7's password-reset
+token has no such transition available — the account is already active,
+with a usable password, throughout. `password_fingerprint`
+(`apps/accounts/tokens.py`) closes this by embedding a one-way digest of
+`user.password` in the signed payload: once `set_password()` changes that
+value, every previously-issued token's baked-in digest silently stops
+matching, with no second stored "used" flag anywhere. The digest, never
+the hash (or a slice of it) directly — `signing.dumps` signs, it does not
+encrypt, so anything in the payload is visible to whoever holds the
+token. This is the same technique Django's own `default_token_generator`
+uses; reach for it whenever this project needs a single-use token for a
+resource with no natural pending→active transition to check instead.
+
 ---
 
 ## 22. Authorization (roles & permissions)

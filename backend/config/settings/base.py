@@ -271,6 +271,13 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.AllowAny",
     ],
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
+    # SEC-7: the request endpoint is the only throttled view in this
+    # project today. Keyed by IP for an anonymous caller (DRF's own
+    # `ScopedRateThrottle` default `get_ident` behavior) — a plain
+    # constant, not an ENV var, the same internal-tuning-knob reasoning
+    # `apps.accounts.tokens.RESET_TOKEN_MAX_AGE_SECONDS` documents for
+    # itself.
+    "DEFAULT_THROTTLE_RATES": {"password_reset_request": "5/hour"},
 }
 
 

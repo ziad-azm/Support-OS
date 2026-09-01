@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
@@ -7,9 +9,16 @@ from apps.core.permissions import ALL_PERMISSIONS, permissions_for
 from apps.core.serializers import BaseModelSerializer
 
 from .models import AuditLog, Role
-from .tokens import read_password_token
+from .tasks import send_password_reset_email
+from .tokens import (
+    RESET_SALT,
+    RESET_TOKEN_MAX_AGE_SECONDS,
+    password_fingerprint,
+    read_password_token,
+)
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -197,6 +206,74 @@ class InviteConfirmSerializer(serializers.Serializer):
         user.set_password(self.validated_data["password"])
         user.is_active = True
         user.save(update_fields=["password", "is_active"])
+        return user
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """SEC-7's "forgot password" request step. Deliberately reveals
+    nothing about whether `email` belongs to a real, active account:
+    `save()` is a silent no-op for a non-existent, inactive, or
+    already-unusable-password email — `PasswordResetRequestView` returns
+    the identical `200` in every case, whatever `save()` did or didn't do.
+    """
+
+    email = serializers.EmailField()
+
+    def save(self, **kwargs):
+        # Exact-match `email=`, not `iexact` — deliberately matching
+        # Django's own `ModelBackend`/`get_by_natural_key` login lookup,
+        # which is already case-sensitive on the stored value. Making
+        # only this endpoint case-insensitive would let a mis-cased email
+        # request (and complete) a reset for an account it still couldn't
+        # log into afterward — a worse inconsistency than staying
+        # case-sensitive throughout.
+        user = User.objects.filter(email=self.validated_data["email"], is_active=True).first()
+        if user is None or not user.has_usable_password():
+            return
+        try:
+            send_password_reset_email.delay(user.id)
+        except Exception:
+            logger.exception("Failed to queue password-reset email for user %s", user.id)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """SEC-7's reset-confirm step — the forgot-password counterpart to
+    `InviteConfirmSerializer`, above, with the precondition flipped: this
+    only ever accepts an ALREADY-active account (`is_active=True`), never
+    a pending one, and checks `password_fingerprint` equality instead of
+    `has_usable_password()` for single-use — see `apps.accounts.tokens`'s
+    own module docstring for why an active account needs a different
+    single-use mechanism than a pending one.
+    """
+
+    token = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, style={"input_type": "password"})
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def validate(self, attrs):
+        payload = read_password_token(
+            attrs["token"], salt=RESET_SALT, max_age=RESET_TOKEN_MAX_AGE_SECONDS
+        )
+        user = None
+        if isinstance(payload, list) and len(payload) == 2:
+            user_id, fingerprint = payload
+            candidate = User.objects.filter(pk=user_id, is_active=True).first()
+            if candidate is not None and password_fingerprint(candidate) == fingerprint:
+                user = candidate
+        if user is None:
+            raise serializers.ValidationError(
+                {"token": [_("This reset link is invalid or has expired.")]}
+            )
+        attrs["user"] = user
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.validated_data["user"]
+        user.set_password(self.validated_data["password"])
+        user.save(update_fields=["password"])
         return user
 
 

@@ -74,6 +74,14 @@ export function LoginPage() {
                 type="password"
                 autoComplete="current-password"
               />
+              <div className="text-end">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  {t('login.forgotPassword')}
+                </Link>
+              </div>
               <FormErrorSummary errors={formErrors} />
               <SubmitButton pending={mutation.isPending} size="lg" className="w-full">
                 {t('login.submit')}
@@ -95,7 +103,6 @@ export function LoginPage() {
             {t('help.chat')}
           </Link>
         </div>
-        <span>{t('help.lockedOut')}</span>
       </div>
     </div>
   )

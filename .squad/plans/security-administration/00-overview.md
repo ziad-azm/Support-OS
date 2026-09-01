@@ -12,10 +12,10 @@ Entry point for the **security-administration** feature. Stories execute in orde
 | 53 | [53-story-system-configuration-SUPPORTOS-75.md](53-story-system-configuration-SUPPORTOS-75.md) | System Configuration | SUPPORTOS-75 | None (independent of SEC-1/2/3) |
 | 70 | [70-story-user-invitation-first-login-password-SUPPORTOS-107.md](70-story-user-invitation-first-login-password-SUPPORTOS-107.md) | New User Invitation & First-Login Password Setup | SUPPORTOS-107 | Story 48 (`SEC-1`), Story 31 (`SLA-4`, `../sla-automation/`) |
 | 71 | [71-story-user-account-deletion-SUPPORTOS-108.md](71-story-user-account-deletion-SUPPORTOS-108.md) | User Account Deletion | SUPPORTOS-108 | Story 48 (`SEC-1`), Story 52 (`SEC-3`) |
-| — | _not yet planned_ | Forgot Password / Self-Service Reset | `SEC-7` | `SEC-5` (reuses its token utility) |
+| 72 | [72-story-forgot-password-self-service-reset-SUPPORTOS-109.md](72-story-forgot-password-self-service-reset-SUPPORTOS-109.md) | Forgot Password / Self-Service Reset | SUPPORTOS-109 | Story 08 (`AUTH-1`), Story 31 (`SLA-4`, `../sla-automation/`), Story 70 (`SEC-5`, reuses its token utility) |
 | — | _not yet planned_ | Change Password | `SEC-8` | AUTH-1, FORM |
 
-`SEC-5` (Story 70) and `SEC-6` (Story 71) are now both planned; `SEC-7`/`SEC-8` remain backlog-only (`SupportOs backlog.MD`) with no `NN`/intake file, until each gets both via `/squad-new-story` → `/squad-plan`. All four are folded into this feature: `SEC-5`/`SEC-6` came from a short-lived `account-lifecycle` epic (both extend `SEC-1`'s own Users admin screen directly); `SEC-7`/`SEC-8` came from an even shorter-lived `Password Self-Service` epic that briefly held just those two before being dissolved back into this one — every `User`-account credential concern now lives in one place rather than split across epics.
+`SEC-5` (Story 70), `SEC-6` (Story 71), and `SEC-7` (Story 72) are now all planned; only `SEC-8` remains backlog-only (`SupportOs backlog.MD`) with no `NN`/intake file, until it gets both via `/squad-new-story` → `/squad-plan`. All four are folded into this feature: `SEC-5`/`SEC-6` came from a short-lived `account-lifecycle` epic (both extend `SEC-1`'s own Users admin screen directly); `SEC-7`/`SEC-8` came from an even shorter-lived `Password Self-Service` epic that briefly held just those two before being dissolved back into this one — every `User`-account credential concern now lives in one place rather than split across epics.
 
 ## Dependency notes
 
@@ -27,6 +27,13 @@ This feature maps to **EPIC 12 — Security & Administration** in the Jira works
 - **Story 49 (`SEC-2`, `SUPPORTOS-73`)** — "Dependencies: SEC-1" per its own intake. Builds the role→permission mapping UI over `Role.permissions`, which Story 48 deliberately ships read-only.
 - **Story 52 (`SEC-3`, `SUPPORTOS-74`)** — Audit-log service + viewer over sensitive actions: every SEC-1/SEC-2 write (user create/role-change/status-change, role create/rename/permissions-change/delete) now writes an immutable `AuditLog` row, visible in a new filtered `/audit-log` screen.
 - **Story 53 (`SEC-4`, `SUPPORTOS-75`)** — Settings model + admin UI for org-level configuration (branding/departments/branches/SLA defaults) — independent of the other three (no `Dependencies:` line in its own intake). All four SEC stories are now planned.
+
+**Verified findings that shaped Story 72:**
+
+- **SEC-5's token utility (`apps/accounts/tokens.py`) could not be reused literally unmodified — its single-use guarantee doesn't transfer to an already-active account.** SEC-5's invite token is single-use because the account's own state transitions (pending → active); a forgot-password token has no such transition to gate on, since the account is active with a usable password throughout. The fix widens `make_password_token`/`read_password_token` from "sign/verify an int" to "sign/verify any JSON-serialisable payload" (SEC-5's own existing call site is unaffected) and adds one new pure function, `password_fingerprint(user)` — a one-way digest of `user.password` embedded in the reset token, so a successful `set_password()` silently invalidates every previously-issued token for that account. The same technique Django's own `default_token_generator` uses, reimplemented on this project's own signing utility.
+- **Only the request endpoint is throttled, not confirm** — matching the intake's precise wording and `InviteConfirmView`'s own (also-unthrottled) precedent, since a signed, single-use, short-lived token is already the confirm endpoint's real protection.
+- **No new dependency for rate limiting.** DRF's own built-in `ScopedRateThrottle` is sufficient, and the envelope/error-code plumbing for a `429 throttled` response — including the frontend's translated toast message — was already fully wired and tested (`test_throttled_keeps_retry_after_header`, `errors.json`'s `throttled` key) before this story, unused until now.
+- **No schema migration.** No model changes; `password_fingerprint` reads `user.password`, it does not add a field.
 
 **Verified findings that shaped Story 71:**
 
