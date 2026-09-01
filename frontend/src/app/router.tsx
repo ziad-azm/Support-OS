@@ -244,6 +244,18 @@ export const router = createBrowserRouter([
                   return { element: <UserListPage /> }
                 },
               },
+            ],
+          },
+          {
+            // Split from the `users.view`-gated list route above: create/edit
+            // are writes (`POST`/`PATCH /api/users/`), gated server-side by
+            // `users.manage`, not `users.view` — a `users.view`-only holder
+            // (e.g. the seeded `manager` role) could previously navigate to
+            // and fill out these forms only to have every submit 403 as a
+            // guaranteed dead end. Matches `roles`'s own single-permission
+            // gate below, just split across two permissions instead of one.
+            element: <RequirePermission permission="users.manage" />,
+            children: [
               {
                 // Must stay before `users/:id`, same reason as `customers/new`.
                 path: 'users/new',

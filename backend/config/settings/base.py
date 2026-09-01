@@ -167,7 +167,14 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # attachments are served exclusively through AttachmentViewSet.download
 # (permission-gated), never through Django's own unguarded static/media
 # serving. See Story 21 `## Prerequisites`.
-MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
+# `.strip() or ...` rather than `default=...`: `.env`/`.env.example` both
+# ship `MEDIA_ROOT=` (present but blank), and django-environ treats a
+# present-blank value as set, so a plain `default=` never fires — the same
+# footgun `JWT_SIGNING_KEY` below already guards against. Without this,
+# `MEDIA_ROOT` silently resolved to the process's cwd (e.g.
+# `backend/attachments/...` instead of `backend/media/attachments/...`) —
+# confirmed live, and outside `.gitignore`'s `backend/media/` exclusion.
+MEDIA_ROOT = Path(env("MEDIA_ROOT", default="").strip() or str(BASE_DIR / "media"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

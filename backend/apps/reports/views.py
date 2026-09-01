@@ -85,7 +85,7 @@ class TicketVolumeReportView(BaseReportView):
             if series == "channel":
                 queryset = with_origin_channel(queryset)
             series_field = DIMENSION_FIELDS[series]
-        return bucketed_counts(
+        rows = bucketed_counts(
             queryset,
             date_field="created_at",
             start=start,
@@ -94,6 +94,16 @@ class TicketVolumeReportView(BaseReportView):
             series_field=series_field,
             null_label=DIRECT_CHANNEL if series == "channel" else str(_("Uncategorized")),
         )
+        if series_field is None:
+            # `bucketed_counts` only sets `item["series"]` when a
+            # `series_field` is given (`aggregation.py`) — with no `?series=`
+            # requested, every row's "Series" column in the CSV export was
+            # blank, disagreeing with the on-screen chart's own label for
+            # this exact case (`t('volume.allTickets')`, "All tickets") on
+            # `TicketReportsPage.tsx`.
+            for row in rows:
+                row["series"] = str(_("All tickets"))
+        return rows
 
 
 class TicketBreakdownReportView(BaseReportView):

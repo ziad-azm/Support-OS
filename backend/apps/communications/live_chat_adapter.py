@@ -62,8 +62,20 @@ class LiveChatAdapter(ChannelAdapter):
             .first()
         )
         if ticket is None:
+            # `Ticket.subject` is `max_length=200`. `LiveChatStartView.post`
+            # already rejects a `name` over 200 chars, but the "Live chat
+            # with {name}" prefix still needs its own room — and the
+            # prefix's own translated length varies by locale, so this
+            # slices the final string defensively (a plain slice, not
+            # `Truncator.chars()` — that appends its own suffix on top of
+            # the requested length instead of capping the total at it)
+            # rather than trying to precompute a locale-specific safe
+            # `name` length in the view. Without this, an over-length
+            # `name` reaches Postgres and raises an unhandled `DataError`
+            # (500), not a clean 400.
+            subject = (_("Live chat with %(name)s") % {"name": name})[:200]
             ticket = Ticket.objects.create(
-                subject=_("Live chat with %(name)s") % {"name": name},
+                subject=subject,
                 description=_("Started via the live chat widget."),
                 customer=customer,
             )

@@ -71,7 +71,12 @@ class PortalFeedbackSerializer(BaseModelSerializer):
         this exact DRF behaviour. Ownership and status-eligibility are
         checked here; "already has feedback" is the free UniqueValidator.
         """
-        customer = self.context["request"].user.customer_profile
+        user = self.context["request"].user
+        if not hasattr(user, "customer_profile"):
+            raise serializers.ValidationError(
+                _("Only customer accounts can submit feedback through the portal.")
+            )
+        customer = user.customer_profile
         if ticket.customer_id != customer.id:
             raise serializers.ValidationError(_("That ticket does not belong to you."))
         if ticket.status not in (Ticket.Status.RESOLVED, Ticket.Status.CLOSED):

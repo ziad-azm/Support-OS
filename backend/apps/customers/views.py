@@ -136,6 +136,14 @@ class NoteViewSet(BaseModelViewSet):
         serializer.save(author=self.request.user)
 
 
+# 10 MB — a first-cut default, not a spec'd product requirement (no size
+# limit existed anywhere before this fix, front or back end, confirmed by
+# uploading a 15 MB file with no rejection). Easy to change here later; the
+# point of this constant is that *some* bound exists, closing a real
+# storage-exhaustion/DoS vector, not that this exact number is final.
+MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024
+
+
 class AttachmentViewSet(BaseModelViewSet):
     """Attachment create/list/retrieve/destroy/download for one customer.
     Reuses `customers.*`, same reasoning as `NoteViewSet`. No `update`/
@@ -173,11 +181,24 @@ class AttachmentViewSet(BaseModelViewSet):
 
     def perform_create(self, serializer):
         file_obj = serializer.validated_data["file"]
+        if file_obj.size > MAX_ATTACHMENT_SIZE_BYTES:
+            max_mb = MAX_ATTACHMENT_SIZE_BYTES // (1024 * 1024)
+            raise ValidationError({"file": [_("File must be %(max_mb)s MB or smaller.") % {"max_mb": max_mb}]})
         serializer.save(
             uploaded_by=self.request.user,
             original_filename=file_obj.name,
             size=file_obj.size,
         )
+
+    def perform_destroy(self, instance):
+        # `instance.delete()` (the `ModelViewSet` default `perform_destroy`)
+        # only removes the DB row — the physical file under `MEDIA_ROOT` is
+        # never touched by Django on its own, so every attachment delete
+        # leaked a file on disk permanently. `file.delete(save=False)`
+        # removes it from storage; `save=False` since the `Attachment` row
+        # itself is about to be deleted anyway.
+        instance.file.delete(save=False)
+        instance.delete()
 
     @action(detail=True, methods=["get"], url_path="download")
     def download(self, request, pk=None):

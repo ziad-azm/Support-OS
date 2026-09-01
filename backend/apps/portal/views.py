@@ -1,7 +1,7 @@
 import logging
 
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.core.permissions import Permissions
 from apps.core.views import CustomerScopedModelViewSet
@@ -66,6 +66,16 @@ class PortalTicketViewSet(CustomerScopedModelViewSet):
     def perform_create(self, serializer):
         # The one line CustomerScopedModelViewSet's scoping cannot do for
         # you on create: force the customer, never trust the client for it.
+        # `customer_profile` raises `RelatedObjectDoesNotExist` (an
+        # `AttributeError` subclass) for a caller with no linked `Customer`
+        # row — a real case, not hypothetical: `super_admin` legitimately
+        # holds `portal.access` alongside every other permission, so a
+        # staff account can reach this action without ever having a
+        # customer profile. `hasattr` is the verified-safe check this
+        # codebase already uses for the same reverse accessor elsewhere
+        # (`PortalTicketSerializer.get_has_feedback`).
+        if not hasattr(self.request.user, "customer_profile"):
+            raise PermissionDenied(_("Only customer accounts can submit tickets through the portal."))
         ticket = serializer.save(customer=self.request.user.customer_profile)
         try:
             auto_assign_ticket.delay(ticket.id)
@@ -93,4 +103,11 @@ class PortalFeedbackViewSet(CustomerScopedModelViewSet):
     permission_map = {"create": Permissions.PORTAL_ACCESS}
 
     def perform_create(self, serializer):
+        # Same guard as `PortalTicketViewSet.perform_create` — see its
+        # comment. `validate_ticket` on the serializer already checks this
+        # first in the normal request path, but this stays defensive in
+        # case `perform_create` is ever reached without it (e.g. a direct
+        # `serializer.save()` call in a future test or script).
+        if not hasattr(self.request.user, "customer_profile"):
+            raise PermissionDenied(_("Only customer accounts can submit feedback through the portal."))
         serializer.save(customer=self.request.user.customer_profile)

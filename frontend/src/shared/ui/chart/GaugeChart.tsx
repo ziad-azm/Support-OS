@@ -4,17 +4,23 @@ const WIDTH = 600
 const BAR_HEIGHT = 28
 const GAP = 16
 
-// CONVENTIONS.md § 25 row 4's literal qualitative-zone hex triple
-// (bad/ok/good) and performance-bar color — RPT-2 is the first real
-// consumer naming these as concrete values; RPT-5 reuses this component
-// unchanged (§ 25 line 1636), so they are NOT invented here, only used
-// for the first time. Target = GOOD_THRESHOLD: no "acceptable breach
-// rate" setting exists anywhere in this codebase, so this is a first-cut
-// default a later story can promote to a real setting if needed.
-const ZONE_GOOD = '#C8E6C9'
-const ZONE_OK = '#FFF9C4'
-const ZONE_BAD = '#FFCDD2'
-const PERFORMANCE_COLOR = '#1976D2'
+// CONVENTIONS.md § 25 row 4's literal qualitative-zone triple (bad/ok/good)
+// and performance-bar color — RPT-2 is the first real consumer naming
+// these, RPT-5 reuses this component unchanged (§ 25 line 1636). Originally
+// hardcoded light-only hex values (never revisited when `LineChart`/
+// `BarChart` were rebuilt on `recharts` and given the same dark-mode
+// treatment, SUPPORTOS-105) — now the same theme-aware tokens `badge.tsx`
+// uses for the identical semantic meanings (success/warning/destructive),
+// at reduced opacity so the always-bold `PERFORMANCE_COLOR` bar drawn on
+// top still reads as the distinct data indicator, not just another zone.
+// Target = GOOD_THRESHOLD: no "acceptable breach rate" setting exists
+// anywhere in this codebase, so this is a first-cut default a later story
+// can promote to a real setting if needed.
+const ZONE_GOOD = 'var(--success)'
+const ZONE_OK = 'var(--warning)'
+const ZONE_BAD = 'var(--destructive)'
+const ZONE_OPACITY = 0.3
+const PERFORMANCE_COLOR = 'var(--chart-1)'
 const GOOD_THRESHOLD = 0.1
 const WARN_THRESHOLD = 0.25
 
@@ -83,9 +89,30 @@ export function GaugeChart({
             >
               {gauge.label}
             </text>
-            <rect x={good.x} y={y} width={good.width} height={BAR_HEIGHT} fill={ZONE_GOOD} />
-            <rect x={ok.x} y={y} width={ok.width} height={BAR_HEIGHT} fill={ZONE_OK} />
-            <rect x={bad.x} y={y} width={bad.width} height={BAR_HEIGHT} fill={ZONE_BAD} />
+            <rect
+              x={good.x}
+              y={y}
+              width={good.width}
+              height={BAR_HEIGHT}
+              fill={ZONE_GOOD}
+              fillOpacity={ZONE_OPACITY}
+            />
+            <rect
+              x={ok.x}
+              y={y}
+              width={ok.width}
+              height={BAR_HEIGHT}
+              fill={ZONE_OK}
+              fillOpacity={ZONE_OPACITY}
+            />
+            <rect
+              x={bad.x}
+              y={y}
+              width={bad.width}
+              height={BAR_HEIGHT}
+              fill={ZONE_BAD}
+              fillOpacity={ZONE_OPACITY}
+            />
             <rect
               x={performance.x}
               y={y + BAR_HEIGHT / 4}
@@ -103,7 +130,7 @@ export function GaugeChart({
               y1={y - 2}
               x2={targetX}
               y2={y + BAR_HEIGHT + 2}
-              stroke="black"
+              stroke="var(--foreground)"
               strokeWidth={3}
             />
             <text

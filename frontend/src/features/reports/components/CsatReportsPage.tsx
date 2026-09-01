@@ -92,6 +92,7 @@ export function CsatReportsPage() {
             type="date"
             value={from}
             onChange={(event) => setFrom(event.target.value)}
+            max={to || undefined}
           />
         </div>
         <div className="flex flex-col gap-1">

@@ -63,6 +63,12 @@ class InternalNoteSerializer(BaseModelSerializer):
         many=True, required=False, queryset=assignable_agents()
     )
 
+    # `ticket` must stay writable on create (chosen from the ticket detail
+    # page's add-note form) but must never change afterward — a PATCH that
+    # moves `ticket` silently relocates a private, ticket-scoped note onto
+    # an unrelated ticket. See `BaseModelSerializer`.
+    immutable_fields = ("ticket",)
+
     class Meta(BaseModelSerializer.Meta):
         model = InternalNote
         fields = (

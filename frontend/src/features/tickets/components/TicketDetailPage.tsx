@@ -115,6 +115,7 @@ export function TicketDetailPage() {
                             <TicketAssigneeControl
                               ticketId={ticket.id}
                               assignedAgent={ticket.assigned_agent}
+                              assignedAgentName={ticket.assigned_agent_name}
                             />
                           </Can>
                         </dd>

@@ -96,6 +96,7 @@ export function SlaReportsPage() {
             type="date"
             value={from}
             onChange={(event) => setFrom(event.target.value)}
+            max={to || undefined}
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -203,6 +204,7 @@ export function SlaReportsPage() {
                 label: labelForSeries(row.key),
                 value: row.rate as number,
               }))}
+            formatValue={(v) => number(v, { style: 'percent', maximumFractionDigits: 1 })}
           />
         )}
       </ChartFrame>

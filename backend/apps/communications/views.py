@@ -1,6 +1,8 @@
 import logging
 
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.utils.crypto import constant_time_compare
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
@@ -27,6 +29,22 @@ from .web_form_adapter import WebFormAdapter
 from .whatsapp_adapter import WhatsAppAdapter, extract_text_message, verify_signature
 
 logger = logging.getLogger(__name__)
+
+
+def validate_optional_email(value: str | None) -> None:
+    """Shared by `LiveChatStartView`/`WebFormSubmissionView` — both accept an
+    optional customer email with no format check of their own. Neither
+    `Customer.objects.get_or_create()`/`.create()` calls `full_clean()`, so
+    `EmailField`'s own validator never ran; a malformed value (e.g. "not-an-
+    email") was stored as-is. The frontend's `optionalEmail()` Zod schema
+    already enforces this — this only guards a direct API call bypassing it.
+    """
+    if not value:
+        return
+    try:
+        validate_email(value)
+    except DjangoValidationError:
+        raise ValidationError({"email": [_("Enter a valid email address.")]}) from None
 
 
 class MessageViewSet(BaseModelViewSet):
@@ -217,7 +235,19 @@ class LiveChatStartView(APIView):
         name = (request.data.get("name") or "").strip()
         if not name:
             raise ValidationError({"name": [_("This field is required.")]})
+        # `LiveChatAdapter.start_session` writes `name` straight into
+        # `Customer.name` (`max_length=200`) and `Ticket.subject` (also
+        # `max_length=200`, via a "Live chat with {name}" prefix) with no
+        # validation of its own — an over-length value reaches Postgres and
+        # raises an unhandled `DataError` (500), not a clean 400. The
+        # frontend's own Zod schema already caps this at 200
+        # (`LiveChatWidget.tsx`), so this only guards a direct API call.
+        if len(name) > 200:
+            raise ValidationError({"name": [_("Ensure this field has no more than 200 characters.")]})
         email = (request.data.get("email") or "").strip() or None
+        if email and len(email) > 254:
+            raise ValidationError({"email": [_("Ensure this field has no more than 254 characters.")]})
+        validate_optional_email(email)
 
         ticket, token = LiveChatAdapter().start_session(name, email)
         return Response(
@@ -252,16 +282,34 @@ class WebFormSubmissionView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        # `WebFormAdapter.receive` writes each of these straight into
+        # `Customer.name`/`Ticket.subject` (both `max_length=200`) with no
+        # validation of its own — an over-length value reaches Postgres and
+        # raises an unhandled `DataError` (500), not a clean 400. The
+        # frontend's own Zod schema already caps `name`/`subject`/
+        # `description` (`WebFormPage.tsx`), so these only guard a direct
+        # API call bypassing the UI.
         name = (request.data.get("name") or "").strip()
         if not name:
             raise ValidationError({"name": [_("This field is required.")]})
+        if len(name) > 200:
+            raise ValidationError({"name": [_("Ensure this field has no more than 200 characters.")]})
         subject = (request.data.get("subject") or "").strip()
         if not subject:
             raise ValidationError({"subject": [_("This field is required.")]})
+        if len(subject) > 200:
+            raise ValidationError({"subject": [_("Ensure this field has no more than 200 characters.")]})
         description = (request.data.get("description") or "").strip()
         if not description:
             raise ValidationError({"description": [_("This field is required.")]})
+        if len(description) > 5000:
+            raise ValidationError(
+                {"description": [_("Ensure this field has no more than 5000 characters.")]}
+            )
         email = (request.data.get("email") or "").strip() or None
+        if email and len(email) > 254:
+            raise ValidationError({"email": [_("Ensure this field has no more than 254 characters.")]})
+        validate_optional_email(email)
 
         category_id = request.data.get("category")
         if category_id is not None:

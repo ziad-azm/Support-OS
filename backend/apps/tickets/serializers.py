@@ -34,6 +34,14 @@ class TicketSerializer(BaseModelSerializer):
         source="assigned_agent.get_full_name", read_only=True, allow_null=True
     )
 
+    # `customer` must stay writable on create (staff picks a customer when
+    # filing a new ticket) but must never change afterward — a PATCH that
+    # reassigns `customer` silently moves the ticket's whole message/note
+    # history into another customer's portal visibility (`customer_field`
+    # scoping in `CustomerScopedModelViewSet`), with no dedicated
+    # "reassign" endpoint or audit trail for it. See `BaseModelSerializer`.
+    immutable_fields = ("customer",)
+
     class Meta(BaseModelSerializer.Meta):
         model = Ticket
         fields = (

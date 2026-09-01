@@ -21,8 +21,15 @@ export function DateRangePresets({
   const { t } = useTranslation('reports')
   const today = new Date().toISOString().slice(0, 10)
   const presets = [
-    { key: 'last7', label: t('presets.last7'), from: isoDaysAgo(7) },
-    { key: 'last30', label: t('presets.last30'), from: isoDaysAgo(30) },
+    // `days - 1`, not `days`: paired with `to: today`, this is an
+    // inclusive range (today counts as one of the N days). `isoDaysAgo(7)`
+    // with `to: today` actually spans 8 calendar days, not 7 — matches the
+    // backend's own default-range computation (`aggregation.py`'s
+    // `today - (N - 1)`), confirmed live: the unfixed version returned 31
+    // buckets for "Last 30 days", one more than the backend's own no-params
+    // default returns for the same nominal window.
+    { key: 'last7', label: t('presets.last7'), from: isoDaysAgo(7 - 1) },
+    { key: 'last30', label: t('presets.last30'), from: isoDaysAgo(30 - 1) },
     { key: 'thisMonth', label: t('presets.thisMonth'), from: isoStartOfMonth() },
   ]
   return (

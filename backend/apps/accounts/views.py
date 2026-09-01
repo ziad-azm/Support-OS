@@ -204,23 +204,29 @@ class RoleViewSet(BaseModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """Mirrors `RoleAdmin.has_delete_permission` (apps/accounts/admin.py:42-45)
         for the API path — a system role must not be deletable from here
-        either. Logs the deletion before it happens: `target_role`'s
-        `on_delete=SET_NULL` means the just-created `AuditLog` row's own
-        `target_role` is nulled out the instant `super().destroy()` runs,
-        the same way any other `AuditLog` row survives its target's later
-        deletion — `target_label` is what keeps the entry meaningful either
-        way.
+        either. Logs the deletion only after it actually succeeds: a role
+        still referenced by a user raises `ProtectedError` inside
+        `super().destroy()` (caught globally and turned into a clean 400 by
+        `apps/core/exceptions.py`), and logging beforehand — as this method
+        used to — left a permanent, false `ROLE_DELETED` audit row for a
+        role that was never actually deleted (no transaction wraps the
+        request; `ATOMIC_REQUESTS` isn't set). `target_role=None` here
+        matches the same shape any other `AuditLog` row ends up in once its
+        target is later deleted (`on_delete=SET_NULL`) — `target_label` is
+        what keeps the entry meaningful either way.
         """
         role = self.get_object()
         if role.is_system:
             raise ValidationError({"non_field_errors": [_("System roles cannot be deleted.")]})
+        role_name = role.name
+        response = super().destroy(request, *args, **kwargs)
         AuditLog.objects.create(
             actor=request.user,
             action=AuditLog.Action.ROLE_DELETED,
-            target_role=role,
-            target_label=role.name,
+            target_role=None,
+            target_label=role_name,
         )
-        return super().destroy(request, *args, **kwargs)
+        return response
 
 
 class AuditLogViewSet(BaseModelViewSet):

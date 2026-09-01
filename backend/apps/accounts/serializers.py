@@ -147,7 +147,17 @@ class UserAdminSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-        return User.objects.create_user(password=password, **validated_data)
+        # `is_staff` is read-only on this serializer (never settable by the
+        # caller) but must still default to `True` for a user created
+        # through this "staff user administration" API — `create_user`
+        # itself defaults `is_staff=False`, which would otherwise silently
+        # produce an account unable to reach Django admin despite holding
+        # whatever role/permissions were granted, unlike every other
+        # account in this system (all seeded through a path that sets
+        # `is_staff=True`). Not a way to grant raw Django-admin access
+        # through this API — every account created here already needs
+        # `is_staff=True` just to be a normal staff user in this app.
+        return User.objects.create_user(password=password, is_staff=True, **validated_data)
 
     def update(self, instance, validated_data):
         # Silently ignored, not a 400: the edit form never renders this

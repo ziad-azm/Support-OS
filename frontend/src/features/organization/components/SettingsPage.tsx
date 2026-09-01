@@ -19,14 +19,31 @@ import { useSettings } from '../api/useSettings'
 import { useUpdateSettings } from '../api/useUpdateSettings'
 import type { OrganizationSettings, SettingsInput } from '../types/settings'
 
-const schema = z.object({
-  name: optionalString(150).transform((value) => value ?? ''),
-  logo_url: optionalString(500).transform((value) => value ?? ''),
-  departments: z.array(z.string()),
-  branches: z.array(z.string()),
-  default_response_target_minutes: nullablePositiveInt(),
-  default_resolution_target_minutes: nullablePositiveInt(),
-})
+const schema = z
+  .object({
+    name: optionalString(150).transform((value) => value ?? ''),
+    logo_url: optionalString(500).transform((value) => value ?? ''),
+    departments: z.array(z.string()),
+    branches: z.array(z.string()),
+    default_response_target_minutes: nullablePositiveInt(),
+    default_resolution_target_minutes: nullablePositiveInt(),
+  })
+  // `logo_url` had no format check client-side — any string passed
+  // validation and round-tripped to the server before failing on the
+  // backend's `URLField` ("Enter a valid URL."). Reuses `z.url()`'s own
+  // translated error (`invalid_format.url` in `validation.json`, the same
+  // mechanism `ContactDetailsSection.tsx`'s email `superRefine` already
+  // uses) rather than writing a new message, and only runs when non-empty
+  // — this field stays optional.
+  .superRefine((data, ctx) => {
+    if (data.logo_url === '') return
+    const result = z.url().safeParse(data.logo_url)
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        ctx.addIssue({ ...issue, path: ['logo_url'] })
+      }
+    }
+  })
 
 type FormValues = z.output<typeof schema>
 

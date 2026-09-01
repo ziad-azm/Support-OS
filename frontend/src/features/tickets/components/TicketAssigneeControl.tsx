@@ -28,19 +28,34 @@ const UNASSIGNED = 'unassigned'
 export function TicketAssigneeControl({
   ticketId,
   assignedAgent,
+  assignedAgentName,
 }: {
   ticketId: number
   assignedAgent: number | null
+  // `ticket.assigned_agent_name` — needed as a fallback because the
+  // currently-assigned agent can fall out of `useAssignableAgents()`'s
+  // pool (deactivated, or lost `tickets.manage`) while still being the
+  // ticket's actual assignee. Without it, `assignedAgent`'s id has no
+  // matching entry in either `agentsQuery.data` or the rendered
+  // `SelectItem` list, so Radix's `SelectValue` renders blank — a
+  // `tickets.manage` holder loses visibility into who the ticket was
+  // assigned to, while the view-only `<Can>` fallback (which reads this
+  // same field directly) still shows the name correctly.
+  assignedAgentName: string | null
 }) {
   const { t } = useTranslation('tickets')
   const { toast } = useToast()
   const agentsQuery = useAssignableAgents()
   const mutation = useAssignTicket(ticketId)
 
+  const assignedAgentInPool = (agentsQuery.data ?? []).some((agent) => agent.id === assignedAgent)
+
   const selectedAgentLabel =
     assignedAgent === null
       ? t('fields.unassigned')
-      : ((agentsQuery.data ?? []).find((agent) => agent.id === assignedAgent)?.name ?? undefined)
+      : ((agentsQuery.data ?? []).find((agent) => agent.id === assignedAgent)?.name ??
+        assignedAgentName ??
+        undefined)
 
   function onValueChange(next: string) {
     mutation.mutate(next === UNASSIGNED ? null : Number(next), {
@@ -61,6 +76,16 @@ export function TicketAssigneeControl({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={UNASSIGNED}>{t('fields.unassigned')}</SelectItem>
+        {assignedAgent !== null && !assignedAgentInPool ? (
+          // The current assignee is no longer assignable (deactivated, or
+          // lost `tickets.manage`) but is still who the ticket is assigned
+          // to — shown so the trigger has a matching item instead of
+          // rendering blank. Re-selecting it is a no-op (already assigned);
+          // the real actions here are picking someone else or unassigning.
+          <SelectItem value={String(assignedAgent)}>
+            {assignedAgentName ?? t('fields.unassigned')}
+          </SelectItem>
+        ) : null}
         {(agentsQuery.data ?? []).map((agent) => (
           <SelectItem key={agent.id} value={String(agent.id)}>
             {agent.name}

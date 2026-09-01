@@ -4,6 +4,12 @@ from .models import Message
 
 
 class MessageSerializer(BaseModelSerializer):
+    # `ticket` must stay writable on create (the reply's target ticket,
+    # chosen from the ticket detail page's reply form) but must never
+    # change afterward — a PATCH that moves `ticket` silently relocates a
+    # reply into a different ticket's conversation. See `BaseModelSerializer`.
+    immutable_fields = ("ticket",)
+
     class Meta(BaseModelSerializer.Meta):
         model = Message
         fields = (
