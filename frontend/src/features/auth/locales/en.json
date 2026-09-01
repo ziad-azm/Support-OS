@@ -10,5 +10,16 @@
     "contact": "Submit a request",
     "chat": "Start a live chat",
     "lockedOut": "Locked out or forgot your password? Ask an admin to reset it."
+  },
+  "setPassword": {
+    "title": "Set your password",
+    "subtitle": "Choose a password to activate your account.",
+    "password": "New password",
+    "submit": "Set password",
+    "successTitle": "Password set",
+    "successDescription": "Your account is now active.",
+    "signIn": "Sign in",
+    "invalidTitle": "Invalid link",
+    "invalidDescription": "This invite link is missing its token. Check the link in your email, or ask an admin to resend the invite."
   }
 }

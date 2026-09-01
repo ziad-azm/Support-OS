@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .views import LogoutView, MeView
+from .views import InviteConfirmView, LogoutView, MeView
 
 app_name = "accounts"
 
@@ -10,4 +10,5 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("me/", MeView.as_view(), name="me"),
+    path("invite/confirm/", InviteConfirmView.as_view(), name="invite_confirm"),
 ]

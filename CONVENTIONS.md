@@ -736,6 +736,22 @@ to render itself) — this is a feature, not a duplicate, and is why
 `LoginPage`'s own `onError` only handles `validation_error` field errors and
 does nothing else.
 
+**A single-use, expiring token is `is_active` plus a password-state check,
+not a nonce.** `InviteConfirmSerializer` (Story 70, `SEC-5`) signs only a
+user id and an expiry (`apps.accounts.tokens`, the same
+`django.core.signing.dumps`/`loads(..., max_age=...)` shape
+`live_chat_adapter`'s session token already established) — what makes it
+single-use is requiring `not user.has_usable_password()` in `validate`,
+never `is_active=False` alone. `is_active` is a general-purpose field any
+`BaseModelViewSet.update` can flip for unrelated reasons; gating only on it
+would let a stale-but-still-valid token reactivate an account an admin
+disabled for cause after the original invite was already spent.
+`has_usable_password()` only flips back to `True` through the one endpoint
+that calls `set_password`, so it is the actual "has this token already been
+used" signal. Reach for this pattern whenever a token grants a one-time
+state transition on a field a normal admin action can also independently
+flip.
+
 ---
 
 ## 22. Authorization (roles & permissions)

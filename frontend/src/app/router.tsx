@@ -37,6 +37,13 @@ export const router = createBrowserRouter([
           return { element: <WebFormPage /> }
         },
       },
+      {
+        path: 'set-password',
+        lazy: async () => {
+          const { SetPasswordPage } = await import('@/features/auth/components/SetPasswordPage')
+          return { element: <SetPasswordPage /> }
+        },
+      },
     ],
   },
   {

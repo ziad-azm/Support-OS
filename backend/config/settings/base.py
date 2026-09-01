@@ -223,6 +223,12 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
+# --- Frontend (SEC-5) ----------------------------------------------------
+# Used to build the "set your password" link in SEC-5's invite email
+# (apps/accounts/tasks.py::send_invite_email). Same default origin
+# CORS_ALLOWED_ORIGINS above already allows for local dev.
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
+
 
 # --- DRF ----------------------------------------------------------------
 # The renderer and the exception handler together are the `API` contract: every

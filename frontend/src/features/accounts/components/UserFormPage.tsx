@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
-import { email, optionalString, requiredString } from '@/shared/validation/schemas'
+import { email, optionalString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
@@ -35,11 +35,10 @@ const baseShape = {
   first_name: optionalString(150),
   last_name: optionalString(150),
   role: z.string(),
-  is_active: z.boolean(),
 }
 
-const createSchema = z.object({ ...baseShape, password: requiredString(128) })
-const editSchema = z.object(baseShape)
+const createSchema = z.object(baseShape)
+const editSchema = z.object({ ...baseShape, is_active: z.boolean() })
 
 type CreateFormValues = z.output<typeof createSchema>
 type EditFormValues = z.output<typeof editSchema>
@@ -55,10 +54,11 @@ function useRoleOptions(noRoleLabel: string) {
 
 /**
  * Not the single-schema pattern `ArticleFormPage`/`CustomerFormPage` use —
- * create and edit have genuinely different fields here (`password` exists
- * only on create). The outer component still picks the mode the same way
- * `ArticleFormPage` does; each mode owns its own schema and its own
- * `useAppForm` call.
+ * create and edit have genuinely different fields here (`is_active` exists
+ * only on edit; a new account is always pending until its owner accepts
+ * the emailed invite, SEC-5). The outer component still picks the mode the
+ * same way `ArticleFormPage` does; each mode owns its own schema and its
+ * own `useAppForm` call.
  */
 export function UserFormPage() {
   const { id: idParam } = useParams()
@@ -92,8 +92,6 @@ function UserCreateForm() {
       first_name: '',
       last_name: '',
       role: ROLE_NONE,
-      is_active: true,
-      password: '',
     } satisfies CreateFormValues,
   })
 
@@ -104,13 +102,11 @@ function UserCreateForm() {
       email: values.email,
       first_name: values.first_name ?? '',
       last_name: values.last_name ?? '',
-      is_active: values.is_active,
       role: values.role === ROLE_NONE ? null : Number(values.role),
-      password: values.password,
     }
     createMutation.mutate(input, {
       onSuccess: () => {
-        toast({ tone: 'success', message: t('users.created') })
+        toast({ tone: 'success', message: t('users.inviteSent') })
         navigate('/users')
       },
       onError: (error) => {
@@ -131,6 +127,7 @@ function UserCreateForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <Card>
               <CardContent className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground">{t('users.inviteHint')}</p>
                 <TextField
                   control={form.control}
                   name="email"
@@ -152,18 +149,6 @@ function UserCreateForm() {
                   name="role"
                   label={t('users.fields.role')}
                   options={roleOptions}
-                />
-                <SwitchField
-                  control={form.control}
-                  name="is_active"
-                  label={t('users.fields.status')}
-                />
-                <TextField
-                  control={form.control}
-                  name="password"
-                  label={t('users.fields.password')}
-                  type="password"
-                  autoComplete="new-password"
                 />
               </CardContent>
             </Card>

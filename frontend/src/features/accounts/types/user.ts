@@ -13,15 +13,16 @@ export type AdminUser = {
   last_login: string | null
 }
 
-/** Create-only write shape — includes `password`. */
+/** Create-only write shape. No `password` and no `is_active` — SEC-5's
+ * `UserAdminSerializer.create` forces the account inactive with an
+ * unusable password server-side no matter what is sent. */
 export type UserCreateInput = {
   email: string
   first_name: string
   last_name: string
-  is_active: boolean
   role: number | null
-  password: string
 }
 
-/** Edit write shape — no `password`; the API silently ignores one anyway. */
-export type UserUpdateInput = Omit<UserCreateInput, 'password'>
+/** Edit write shape. `is_active` is only ever settable here — deactivating
+ * (or reactivating) an already-invited account, never creating one. */
+export type UserUpdateInput = UserCreateInput & { is_active: boolean }

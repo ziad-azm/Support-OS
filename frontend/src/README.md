@@ -95,9 +95,9 @@ existing field expresses "many checkboxes, one array value." See
 precedent), and `RequireAuth.tsx` (a path-less layout route guard).
 `index.ts`'s side-effect import wires `client.ts`'s two auth seams
 (`setAuthTokenProvider`, `setUnauthorizedHandler`) — nothing else should call
-either directly. `src/features/auth/` holds `LoginPage`, built from
-`useAppForm` + `TextField` like any other form. See `CONVENTIONS.md` § 21
-for the full design.
+either directly. `src/features/auth/` holds `LoginPage` and `SetPasswordPage`
+(SEC-5's invite-confirm screen), both built from `useAppForm` + `TextField`
+like any other form. See `CONVENTIONS.md` § 21 for the full design.
 
 Authorization lives beside it: `permissions.ts` (`hasPermission`, the pure
 resolution), `Can.tsx` (declarative gating of a control), and

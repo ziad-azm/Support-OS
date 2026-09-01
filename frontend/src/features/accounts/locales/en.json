@@ -10,17 +10,17 @@
     "noSearchResults": "No users match that search.",
     "noRole": "No role",
     "superuser": "Superuser",
+    "inviteHint": "They'll receive an email with a link to set their own password.",
     "fields": {
       "email": "Email",
       "firstName": "First name",
       "lastName": "Last name",
       "role": "Role",
-      "status": "Status",
-      "password": "Password"
+      "status": "Status"
     },
     "status": { "active": "Active", "inactive": "Inactive" },
     "actions": { "save": "Save" },
-    "created": "User created.",
+    "inviteSent": "Invitation sent.",
     "updated": "User updated.",
     "notFound": "That user could not be found."
   },

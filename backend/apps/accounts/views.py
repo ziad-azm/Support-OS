@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
@@ -15,13 +17,16 @@ from apps.core.views import BaseModelViewSet
 from .models import AuditLog, Role
 from .serializers import (
     AuditLogSerializer,
+    InviteConfirmSerializer,
     LogoutSerializer,
     RoleAdminSerializer,
     UserAdminSerializer,
     UserSerializer,
 )
+from .tasks import send_invite_email
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class LogoutView(APIView):
@@ -45,6 +50,24 @@ class LogoutView(APIView):
             # Already invalid/expired/blacklisted — the caller's goal (this
             # token must not work again) already holds. Idempotent by design.
             pass
+        return Response(None, status=status.HTTP_200_OK)
+
+
+class InviteConfirmView(APIView):
+    """Completes SEC-5's invite flow: exchanges the token mailed by
+    `send_invite_email` (apps/accounts/tasks.py) for a real password,
+    activating the account `UserAdminSerializer.create` left pending. No
+    Authorization header — the token IS the credential, the same reasoning
+    `LogoutView` above already documents for a differently-shaped case.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = InviteConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(None, status=status.HTTP_200_OK)
 
 
@@ -112,6 +135,13 @@ class UserViewSet(BaseModelViewSet):
             target_user=user,
             target_label=user.get_full_name(),
         )
+        # Best-effort, same commit-first idiom `apps.notifications.services.notify`
+        # uses around its own `send_notification_email.delay(...)` call — a down
+        # Redis/worker must never fail or roll back the already-created account.
+        try:
+            send_invite_email.delay(user.id)
+        except Exception:
+            logger.exception("Failed to queue invite email for user %s", user.id)
 
     def perform_update(self, serializer):
         user = serializer.instance

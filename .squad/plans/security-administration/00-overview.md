@@ -10,12 +10,12 @@ Entry point for the **security-administration** feature. Stories execute in orde
 | 49 | [49-story-permissions-management-SUPPORTOS-73.md](49-story-permissions-management-SUPPORTOS-73.md) | Permissions Management | SUPPORTOS-73 | Story 48 (`SEC-1`) |
 | 52 | [52-story-audit-logs-SUPPORTOS-74.md](52-story-audit-logs-SUPPORTOS-74.md) | Audit Logs | SUPPORTOS-74 | Story 48 (`SEC-1`), Story 49 (`SEC-2`) |
 | 53 | [53-story-system-configuration-SUPPORTOS-75.md](53-story-system-configuration-SUPPORTOS-75.md) | System Configuration | SUPPORTOS-75 | None (independent of SEC-1/2/3) |
-| — | _not yet planned_ | New User Invitation & First-Login Password Setup | `SEC-5` | Story 48 (`SEC-1`) |
+| 70 | [70-story-user-invitation-first-login-password-SUPPORTOS-107.md](70-story-user-invitation-first-login-password-SUPPORTOS-107.md) | New User Invitation & First-Login Password Setup | SUPPORTOS-107 | Story 48 (`SEC-1`), Story 31 (`SLA-4`, `../sla-automation/`) |
 | — | _not yet planned_ | User Account Deletion | `SEC-6` | Story 48 (`SEC-1`) |
 | — | _not yet planned_ | Forgot Password / Self-Service Reset | `SEC-7` | `SEC-5` (reuses its token utility) |
 | — | _not yet planned_ | Change Password | `SEC-8` | AUTH-1, FORM |
 
-`SEC-5` through `SEC-8` are backlog-only additions (`SupportOs backlog.MD`) with no `NN`/intake file yet. All four are now folded into this feature: `SEC-5`/`SEC-6` came from a short-lived `account-lifecycle` epic (both extend `SEC-1`'s own Users admin screen directly); `SEC-7`/`SEC-8` came from an even shorter-lived `Password Self-Service` epic that briefly held just those two before being dissolved back into this one — every `User`-account credential concern now lives in one place rather than split across epics. Plan them the normal way (`/squad-new-story` → `/squad-plan`) when it's time to build them.
+`SEC-5` (Story 70, now planned) through `SEC-8` all came from the backlog (`SupportOs backlog.MD`) with no `NN`/intake file, until `SEC-5` got both via `/squad-new-story` → `/squad-plan`. All four are folded into this feature: `SEC-5`/`SEC-6` came from a short-lived `account-lifecycle` epic (both extend `SEC-1`'s own Users admin screen directly); `SEC-7`/`SEC-8` came from an even shorter-lived `Password Self-Service` epic that briefly held just those two before being dissolved back into this one — every `User`-account credential concern now lives in one place rather than split across epics. `SEC-6`/`SEC-7`/`SEC-8` remain backlog-only; plan them the normal way when it's time to build them.
 
 ## Dependency notes
 
@@ -27,6 +27,13 @@ This feature maps to **EPIC 12 — Security & Administration** in the Jira works
 - **Story 49 (`SEC-2`, `SUPPORTOS-73`)** — "Dependencies: SEC-1" per its own intake. Builds the role→permission mapping UI over `Role.permissions`, which Story 48 deliberately ships read-only.
 - **Story 52 (`SEC-3`, `SUPPORTOS-74`)** — Audit-log service + viewer over sensitive actions: every SEC-1/SEC-2 write (user create/role-change/status-change, role create/rename/permissions-change/delete) now writes an immutable `AuditLog` row, visible in a new filtered `/audit-log` screen.
 - **Story 53 (`SEC-4`, `SUPPORTOS-75`)** — Settings model + admin UI for org-level configuration (branding/departments/branches/SLA defaults) — independent of the other three (no `Dependencies:` line in its own intake). All four SEC stories are now planned.
+
+**Verified findings that shaped Story 70:**
+
+- **`apps.notifications.services.notify` (`SLA-4`) is the wrong reuse target for the invite email, despite its own docstring calling it "reused by tasks, collaboration, SLA, AI."** It creates an in-app `Notification` row against an authenticated recipient with no `Kind` case for "you have no account yet" — meaningless for someone who cannot sign in. Story 70 reuses one layer down instead: `SLA-4`'s email *transport* (`EmailMessage`/`DEFAULT_FROM_EMAIL`/`EMAIL_BACKEND`) via its own sibling `apps/accounts/tasks.py::send_invite_email`, the third `tasks.py` module `config/celery.py`'s `autodiscover_tasks()` picks up with no wiring (after `apps/sla/tasks.py` and `apps/notifications/tasks.py`).
+- **The invite token's single-use guarantee is a password-state check (`not user.has_usable_password()`), not `is_active=False` alone.** `is_active` is a general-purpose field `UserViewSet.update` can flip for unrelated reasons after an invite is already consumed (deactivating someone for cause); gating only on it would let a stale-but-cryptographically-valid old invite email reactivate that account. `has_usable_password()` only ever flips back `True` through the one confirm endpoint, so it is the real "already used" signal — documented as a reusable pattern in `CONVENTIONS.md` §21 for `SEC-7` (forgot-password) to follow.
+- **`apps/accounts/tokens.py` (`make_password_token`/`read_password_token`) is written for `SEC-7` to reuse unmodified with its own salt** — the intake's own "🔑 the token mechanism the Password Self-Service epic's forgot-password story reuses." It copies `apps.communications.live_chat_adapter`'s `signing.dumps`/`loads(..., max_age=...)` pattern exactly, the only precedent for a signed, expiring reference anywhere in this codebase before this story.
+- **No migration.** `User.is_active`/`User.password` already exist (Story 08); the pending-account state is expressed entirely through existing fields (`is_active=False` + an unusable password), not a new "status" column.
 
 **Verified findings that shaped Story 53:**
 

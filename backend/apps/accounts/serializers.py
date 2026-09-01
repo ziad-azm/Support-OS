@@ -7,6 +7,7 @@ from apps.core.permissions import ALL_PERMISSIONS, permissions_for
 from apps.core.serializers import BaseModelSerializer
 
 from .models import AuditLog, Role
+from .tokens import read_password_token
 
 User = get_user_model()
 
@@ -102,6 +103,11 @@ class UserAdminSerializer(serializers.ModelSerializer):
     explaining why an account with `role: null` still has full access, per
     `/auth/me/`'s own superuser note in `permissions_for`) — granting either
     is a Django-admin-only action, never exposed through this API.
+
+    No `password` field — SEC-5 replaced the admin-supplied password with
+    an emailed invite link (`InviteConfirmSerializer` below). `create()`
+    always produces an unusable password and an inactive account; the
+    account becomes usable only through a successful invite confirm.
     """
 
     # Same dotted-source pattern as `TicketSerializer.category_name`
@@ -111,12 +117,6 @@ class UserAdminSerializer(serializers.ModelSerializer):
     # `null=True, blank=True`, the same verified derivation
     # `TicketSerializer.category` relies on.
     role_name = serializers.CharField(source="role.name", read_only=True, allow_null=True)
-    # Write-only; required only on create (see `validate` below). Never
-    # returned and never accepted on update — password change is a
-    # self-service flow this story does not build. See `## Story Goal`.
-    password = serializers.CharField(
-        write_only=True, required=False, style={"input_type": "password"}
-    )
 
     class Meta:
         model = User
@@ -132,40 +132,72 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "role_name",
             "date_joined",
             "last_login",
-            "password",
         )
         read_only_fields = ("id", "is_staff", "is_superuser", "date_joined", "last_login")
+
+    def create(self, validated_data):
+        # `is_staff` is read-only on this serializer (never settable by the
+        # caller) but must still default to `True` for a user created
+        # through this "staff user administration" API — `create_user`
+        # itself defaults `is_staff=False`, which would otherwise silently
+        # produce an account unable to reach Django admin despite holding
+        # whatever role/permissions were granted. Unchanged reasoning from
+        # SEC-1.
+        #
+        # `password=None` makes `create_user` call `set_password(None)`,
+        # which Django's own `AbstractBaseUser.set_password` turns into
+        # `set_unusable_password()` — no `check_password` call can ever
+        # succeed against this account until `InviteConfirmSerializer.save`
+        # sets a real one.
+        #
+        # `is_active` is forced to `False` regardless of whatever the
+        # caller sent — the field stays writable for `update()`, so an
+        # already-active user can still be deactivated normally, but there
+        # is no "create an already-active staff account" path left through
+        # this API. See `## Story Goal`.
+        validated_data["is_active"] = False
+        return User.objects.create_user(password=None, is_staff=True, **validated_data)
+
+
+class InviteConfirmSerializer(serializers.Serializer):
+    """SEC-5's invite-confirm step. Exchanges a signed, time-limited token
+    (`apps.accounts.tokens.read_password_token`) for a real password,
+    activating the account `UserAdminSerializer.create` left pending.
+
+    Deliberately checks `not user.has_usable_password()` in `validate`, not
+    just `is_active=False` alone — a still-cryptographically-valid invite
+    token sitting in an old inbox must not be replayable to reactivate an
+    account an admin deactivated for cause *after* the original invite was
+    already used. `has_usable_password()` only ever flips back to `True`
+    through this endpoint (the sole caller of `set_password` for a pending
+    account), so once an invite is consumed once, the same token can never
+    succeed again regardless of any later `is_active` change. See
+    `## Edge Cases`.
+    """
+
+    token = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, style={"input_type": "password"})
 
     def validate_password(self, value):
         validate_password(value)
         return value
 
     def validate(self, attrs):
-        if self.instance is None and not attrs.get("password"):
-            raise serializers.ValidationError({"password": [_("This field is required.")]})
+        user_id = read_password_token(attrs["token"])
+        user = User.objects.filter(pk=user_id, is_active=False).first() if user_id else None
+        if user is None or user.has_usable_password():
+            raise serializers.ValidationError(
+                {"token": [_("This invite link is invalid or has expired.")]}
+            )
+        attrs["user"] = user
         return attrs
 
-    def create(self, validated_data):
-        password = validated_data.pop("password")
-        # `is_staff` is read-only on this serializer (never settable by the
-        # caller) but must still default to `True` for a user created
-        # through this "staff user administration" API — `create_user`
-        # itself defaults `is_staff=False`, which would otherwise silently
-        # produce an account unable to reach Django admin despite holding
-        # whatever role/permissions were granted, unlike every other
-        # account in this system (all seeded through a path that sets
-        # `is_staff=True`). Not a way to grant raw Django-admin access
-        # through this API — every account created here already needs
-        # `is_staff=True` just to be a normal staff user in this app.
-        return User.objects.create_user(password=password, is_staff=True, **validated_data)
-
-    def update(self, instance, validated_data):
-        # Silently ignored, not a 400: the edit form never renders this
-        # field, so a stray "password" key only ever arrives from a
-        # hand-crafted request, and rejecting it would tell such a caller
-        # more than a normal validation error should.
-        validated_data.pop("password", None)
-        return super().update(instance, validated_data)
+    def save(self, **kwargs):
+        user = self.validated_data["user"]
+        user.set_password(self.validated_data["password"])
+        user.is_active = True
+        user.save(update_fields=["password", "is_active"])
+        return user
 
 
 class AuditLogSerializer(BaseModelSerializer):
