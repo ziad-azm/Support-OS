@@ -243,10 +243,14 @@ class LiveChatStartView(APIView):
         # frontend's own Zod schema already caps this at 200
         # (`LiveChatWidget.tsx`), so this only guards a direct API call.
         if len(name) > 200:
-            raise ValidationError({"name": [_("Ensure this field has no more than 200 characters.")]})
+            raise ValidationError(
+                {"name": [_("Ensure this field has no more than 200 characters.")]}
+            )
         email = (request.data.get("email") or "").strip() or None
         if email and len(email) > 254:
-            raise ValidationError({"email": [_("Ensure this field has no more than 254 characters.")]})
+            raise ValidationError(
+                {"email": [_("Ensure this field has no more than 254 characters.")]}
+            )
         validate_optional_email(email)
 
         ticket, token = LiveChatAdapter().start_session(name, email)
@@ -293,12 +297,16 @@ class WebFormSubmissionView(APIView):
         if not name:
             raise ValidationError({"name": [_("This field is required.")]})
         if len(name) > 200:
-            raise ValidationError({"name": [_("Ensure this field has no more than 200 characters.")]})
+            raise ValidationError(
+                {"name": [_("Ensure this field has no more than 200 characters.")]}
+            )
         subject = (request.data.get("subject") or "").strip()
         if not subject:
             raise ValidationError({"subject": [_("This field is required.")]})
         if len(subject) > 200:
-            raise ValidationError({"subject": [_("Ensure this field has no more than 200 characters.")]})
+            raise ValidationError(
+                {"subject": [_("Ensure this field has no more than 200 characters.")]}
+            )
         description = (request.data.get("description") or "").strip()
         if not description:
             raise ValidationError({"description": [_("This field is required.")]})
@@ -308,7 +316,9 @@ class WebFormSubmissionView(APIView):
             )
         email = (request.data.get("email") or "").strip() or None
         if email and len(email) > 254:
-            raise ValidationError({"email": [_("Ensure this field has no more than 254 characters.")]})
+            raise ValidationError(
+                {"email": [_("Ensure this field has no more than 254 characters.")]}
+            )
         validate_optional_email(email)
 
         category_id = request.data.get("category")

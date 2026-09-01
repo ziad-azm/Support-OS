@@ -75,7 +75,9 @@ class PortalTicketViewSet(CustomerScopedModelViewSet):
         # codebase already uses for the same reverse accessor elsewhere
         # (`PortalTicketSerializer.get_has_feedback`).
         if not hasattr(self.request.user, "customer_profile"):
-            raise PermissionDenied(_("Only customer accounts can submit tickets through the portal."))
+            raise PermissionDenied(
+                _("Only customer accounts can submit tickets through the portal.")
+            )
         ticket = serializer.save(customer=self.request.user.customer_profile)
         try:
             auto_assign_ticket.delay(ticket.id)
@@ -109,5 +111,7 @@ class PortalFeedbackViewSet(CustomerScopedModelViewSet):
         # case `perform_create` is ever reached without it (e.g. a direct
         # `serializer.save()` call in a future test or script).
         if not hasattr(self.request.user, "customer_profile"):
-            raise PermissionDenied(_("Only customer accounts can submit feedback through the portal."))
+            raise PermissionDenied(
+                _("Only customer accounts can submit feedback through the portal.")
+            )
         serializer.save(customer=self.request.user.customer_profile)

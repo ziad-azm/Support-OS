@@ -183,7 +183,9 @@ class AttachmentViewSet(BaseModelViewSet):
         file_obj = serializer.validated_data["file"]
         if file_obj.size > MAX_ATTACHMENT_SIZE_BYTES:
             max_mb = MAX_ATTACHMENT_SIZE_BYTES // (1024 * 1024)
-            raise ValidationError({"file": [_("File must be %(max_mb)s MB or smaller.") % {"max_mb": max_mb}]})
+            raise ValidationError(
+                {"file": [_("File must be %(max_mb)s MB or smaller.") % {"max_mb": max_mb}]}
+            )
         serializer.save(
             uploaded_by=self.request.user,
             original_filename=file_obj.name,
