@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -20,6 +21,22 @@ const SERIES_DASH: (string | undefined)[] = [undefined, '6 3', '2 3', '8 3 2 3',
 function colorFor(index: number): string {
   return `var(--chart-${(index % 5) + 1})`
 }
+
+// recharts's <Tooltip> defaults to inline light-only styles (white
+// background, dark-gray text) that don't follow this app's theme — a
+// dark-mode viewer sees pale-gray-on-white, unreadable against the rest of
+// the UI. Pinned to the same `--popover`/`--border` tokens `popover.tsx`'s
+// shared primitive already uses, so it flips with `.dark` automatically.
+const TOOLTIP_CONTENT_STYLE: CSSProperties = {
+  backgroundColor: 'var(--popover)',
+  color: 'var(--popover-foreground)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  fontSize: 12,
+}
+const TOOLTIP_LABEL_STYLE: CSSProperties = { color: 'var(--popover-foreground)' }
+const TOOLTIP_ITEM_STYLE: CSSProperties = { color: 'var(--popover-foreground)' }
 
 function bucketDomain(series: readonly ChartSeries[]): readonly string[] {
   const buckets = new Set<string>()
@@ -87,6 +104,10 @@ export function LineChart({
           <Tooltip
             formatter={(value) => formatValue(Number(value))}
             labelFormatter={(label) => formatBucket(String(label))}
+            contentStyle={TOOLTIP_CONTENT_STYLE}
+            labelStyle={TOOLTIP_LABEL_STYLE}
+            itemStyle={TOOLTIP_ITEM_STYLE}
+            cursor={{ stroke: 'var(--border)' }}
           />
           {series.map((s, seriesIndex) => (
             <Line

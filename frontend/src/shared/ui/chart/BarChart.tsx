@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import {
   Bar,
   BarChart as RechartsBarChart,
@@ -16,6 +17,31 @@ import type { ChartCategory } from './types'
 function colorFor(index: number): string {
   return `var(--chart-${(index % 5) + 1})`
 }
+
+// recharts's default value-axis domain is `[0, dataMax]`, which leaves zero
+// headroom above/beside the tallest bar — the always-visible `<LabelList>`
+// value label then gets clipped against the plot's own edge (visible as a
+// sliver of cut-off text). Adding 15% headroom keeps every label fully
+// inside the chart regardless of data shape.
+function valueDomainWithHeadroom(max: number): number {
+  return Math.ceil(max * 1.15) || 1
+}
+
+// recharts's <Tooltip> defaults to inline light-only styles (white
+// background, dark-gray text) that don't follow this app's theme — a
+// dark-mode viewer sees pale-gray-on-white, unreadable against the rest of
+// the UI. Pinned to the same `--popover`/`--border` tokens `popover.tsx`'s
+// shared primitive already uses, so it flips with `.dark` automatically.
+const TOOLTIP_CONTENT_STYLE: CSSProperties = {
+  backgroundColor: 'var(--popover)',
+  color: 'var(--popover-foreground)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  fontSize: 12,
+}
+const TOOLTIP_LABEL_STYLE: CSSProperties = { color: 'var(--popover-foreground)' }
+const TOOLTIP_ITEM_STYLE: CSSProperties = { color: 'var(--popover-foreground)' }
 
 type BarChartProps = {
   categories: readonly ChartCategory[]
@@ -60,6 +86,7 @@ export function BarChart({
           <>
             <XAxis
               type="number"
+              domain={[0, valueDomainWithHeadroom]}
               tickFormatter={(value) => formatValue(Number(value))}
               tick={{ fontSize: 12 }}
               stroke="var(--muted-foreground)"
@@ -82,13 +109,20 @@ export function BarChart({
               reversed={direction === 'rtl'}
             />
             <YAxis
+              domain={[0, valueDomainWithHeadroom]}
               tickFormatter={(value) => formatValue(Number(value))}
               tick={{ fontSize: 12 }}
               stroke="var(--muted-foreground)"
             />
           </>
         )}
-        <Tooltip formatter={(value) => formatValue(Number(value))} />
+        <Tooltip
+          formatter={(value) => formatValue(Number(value))}
+          contentStyle={TOOLTIP_CONTENT_STYLE}
+          labelStyle={TOOLTIP_LABEL_STYLE}
+          itemStyle={TOOLTIP_ITEM_STYLE}
+          cursor={{ fill: 'var(--accent)' }}
+        />
         <Bar dataKey="value" isAnimationActive={false}>
           <LabelList
             dataKey="value"

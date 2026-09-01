@@ -8,6 +8,12 @@
    radius, or font stack. See CONVENTIONS.md §19. -------------------------- */
 
 :root {
+  /* Tells the browser which native-control chrome to draw (date/time
+     picker icons, spinner buttons, scrollbars) — without this, Chrome/Edge
+     always render that chrome light, regardless of the page's own theme,
+     which is why a dark-mode date input's calendar icon looked like a
+     bright light widget floating inside an otherwise dark field. */
+  color-scheme: light;
   --radius: 0.625rem;
   --background: oklch(0.984 0.003 247.858); /* #F8FAFC — MASTER.md Background, Story 51 */
   --foreground: oklch(0.279 0.037 260.031); /* #1E293B — MASTER.md Foreground, Story 51 */
@@ -67,6 +73,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(
     0.17 0.02 257
   ); /* #0A1018 — independently derived, no DSN dark spec exists, Story 51 */
