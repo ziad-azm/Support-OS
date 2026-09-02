@@ -1977,3 +1977,51 @@ never the payload.
 story that needs a different model tier for its own task passes `model=`
 to `generate_completion` explicitly; it does not add a second
 `AI_*_MODEL` environment variable.
+
+---
+
+## 29. Public API & API keys (INT-1)
+
+`INT-1` (Story 80) makes the existing `/api/` tree the public API. There is
+no separate external surface, and there must never be one: a second tree
+would need its own serializers, its own permission map, and its own
+envelope, and would drift from the first within one story.
+
+**An API key is an identity, not a permission set.**
+`apps.integrations.authentication.ApiKeyAuthentication` returns the
+`accounts.User` a key was issued for, and every existing `permission_map`,
+`HasPermission` check, and `CustomerScopedModelViewSet` queryset filter
+then applies to it unchanged (§ 22). **Never add a scope or permission
+list to `ApiKey`** — § 13's "never build a second permission check" applies
+directly. Narrow a key by issuing it against a narrowly-roled user.
+
+**`apps/integrations/keys.py` is the only place a key is minted, hashed, or
+compared.** Only `prefix` (the lookup column) and `sha256(secret)` are
+stored; the plaintext exists for the duration of one `POST
+/api/api-keys/` response and is never logged, never re-derivable, and
+never returned again. Plain `sha256` rather than a password hasher is
+deliberate — the secret is 256 bits of `secrets.token_hex`, so a slow KDF
+defends nothing and would cost its full price on every API-key request.
+
+**Revocation is a flag, never a delete.** `ApiKey.is_active = False` keeps
+`last_used_at` and the issue date, which are the only record that a
+credential ever existed. `ApiKeyViewSet.perform_destroy` is what `DELETE`
+does; the OpenAPI description says so explicitly, because a `DELETE` that
+does not delete would otherwise surprise an integrator.
+
+**A new endpoint is documented by existing in the router — but its response
+shape is documented by two shared pieces, not by the view.**
+`apps.integrations.schema.envelope_postprocessing_hook` wraps every `2xx`
+payload in the success envelope and attaches the shared `ErrorEnvelope` to
+`400/401/403/404/500`;
+`apps.core.pagination.DefaultPageNumberPagination.get_paginated_response_schema`
+supplies the `meta.pagination` shape for list endpoints. A story that adds
+an endpoint returning something other than a serializer (a bare dict, a
+file) annotates it with `drf_spectacular.utils.extend_schema` on that view
+— it does **not** add a second post-processing hook.
+
+**`DEFAULT_RENDERER_CLASSES` stays a one-element list.** The doc views each
+declare their own `renderer_classes`, which is why serving YAML and HTML
+from under `/api/` does not need — and must not get — a global renderer
+addition. `config/tests/test_settings.py::DrfSettingsTests
+.test_only_the_envelope_renderer_is_registered` pins this.

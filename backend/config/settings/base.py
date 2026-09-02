@@ -48,6 +48,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "channels",
     "django_celery_beat",
+    "drf_spectacular",
 ]
 
 # Domain apps: one per business area. See backend/apps/README.md for the rule
@@ -264,12 +265,23 @@ REST_FRAMEWORK = {
     # resolves correctly wherever a valid token is presented, but the API
     # stays open by default — any endpoint that must be protected sets
     # permission_classes explicitly on its own view. See CONVENTIONS.md §13.
+    # JWTAuthentication stays FIRST. Verified against the installed
+    # simplejwt 5.5.1: `get_raw_token` returns None for any Authorization
+    # keyword that is not `Bearer`, so an `Api-Key …` header falls through
+    # to the next authenticator without raising — and DRF reads the
+    # WWW-Authenticate header off the first entry, keeping an
+    # unauthenticated request a 401 rather than a 403. INT-1 (Story 80).
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apps.integrations.authentication.ApiKeyAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
+    # INT-1: drf-spectacular's schema generator. Registered here rather
+    # than per-view so `manage.py spectacular` sees every endpoint in the
+    # /api/ tree, not just the ones an author remembered to annotate.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     # SEC-7: the request endpoint is the only throttled view in this
     # project today. Keyed by IP for an anonymous caller (DRF's own
@@ -425,3 +437,44 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 # trade cost for quality without a code change — no feature hardcodes a
 # model id of its own.
 AI_MODEL = env("AI_MODEL", default="claude-opus-5")
+
+# --- Public API & OpenAPI docs (INT-1) -----------------------------------
+# `/api/schema/` (the OpenAPI 3 document), `/api/docs/` (Swagger UI) and
+# `/api/redoc/` (ReDoc) are routed from apps/integrations/urls.py. Public by
+# default so "documented external API" (SupportOs backlog.MD:864) is true
+# without a credential; set API_DOCS_PUBLIC=False in an environment that
+# must not publish its endpoint inventory, which narrows all three routes to
+# IsAuthenticated (they are never disabled outright — an authenticated
+# integrator still needs them).
+API_DOCS_PUBLIC = env.bool("API_DOCS_PUBLIC", default=True)
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "SupportOS API",
+    "DESCRIPTION": (
+        "Every response — success or failure — is wrapped in the same "
+        "four-key envelope (`success`, `data`, `error`, `meta`); the "
+        "schemas below already show the wrapped form. Authenticate either "
+        "as a staff user with `Authorization: Bearer <JWT access token>` "
+        "(POST /api/auth/token/) or as an external system with "
+        "`Authorization: Api-Key <key>` (issued via POST /api/api-keys/). "
+        "An API key carries exactly the permissions of the user it was "
+        "issued for."
+    ),
+    "VERSION": "1.0.0",
+    "SCHEMA_PATH_PREFIX": "/api/",
+    # The schema endpoint does not document itself.
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_PERMISSIONS": (
+        ["rest_framework.permissions.AllowAny"]
+        if API_DOCS_PUBLIC
+        else ["rest_framework.permissions.IsAuthenticated"]
+    ),
+    # `postprocess_schema_enums` is drf-spectacular's own default and must
+    # be kept when adding to this list. The envelope hook runs after it.
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "apps.integrations.schema.envelope_postprocessing_hook",
+    ],
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": True,
+}

@@ -36,3 +36,47 @@ class DefaultPageNumberPagination(PageNumberPagination):
                 },
             )
         )
+
+    def get_paginated_response_schema(self, schema):
+        """What drf-spectacular reads to document a list endpoint — it
+        never calls `get_paginated_response` above, so without this
+        override every list endpoint would be documented with DRF's
+        default flat `{count, next, previous, results}` body, a shape this
+        API has never returned (README.md § Paginated). Returns the full
+        envelope, `meta.pagination` included, because that block is a
+        sibling of `data` and cannot be added from outside — which is
+        also why `apps.integrations.schema.envelope_postprocessing_hook`
+        skips an already-enveloped schema. INT-1 (Story 80).
+
+        A plain dict, deliberately: this keeps `apps.core` free of any
+        `drf_spectacular` import.
+        """
+        return {
+            "type": "object",
+            "required": ["success", "data", "error", "meta"],
+            "properties": {
+                "success": {"type": "boolean", "enum": [True]},
+                "data": schema,
+                "error": {"nullable": True},
+                "meta": {
+                    "type": "object",
+                    "properties": {
+                        "pagination": {
+                            "type": "object",
+                            "properties": {
+                                "count": {"type": "integer", "example": 137},
+                                "page": {"type": "integer", "example": 2},
+                                "page_size": {"type": "integer", "example": 25},
+                                "num_pages": {"type": "integer", "example": 6},
+                                "next": {"type": "string", "format": "uri", "nullable": True},
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "nullable": True,
+                                },
+                            },
+                        }
+                    },
+                },
+            },
+        }

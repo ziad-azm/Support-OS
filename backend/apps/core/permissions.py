@@ -35,6 +35,7 @@ class Permissions:
     PORTAL_ACCESS = "portal.access"
     AUDIT_LOG_VIEW = "audit_log.view"
     SETTINGS_MANAGE = "settings.manage"
+    API_KEYS_MANAGE = "api_keys.manage"
     REPORTS_VIEW = "reports.view"
 
 

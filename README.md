@@ -450,6 +450,45 @@ Two more notes:
   handled: `config/api_urls.py` routes them through `ApiNotFoundView` so a typo'd endpoint still
   answers with an enveloped 404 rather than HTML.
 
+### The public API, API keys, and OpenAPI docs (INT-1)
+
+The whole `/api/` tree is the public API. There is no second, "external" surface — an outside
+system calls the same endpoints the frontend does, and sees the same envelope.
+
+| URL | What it is |
+|---|---|
+| `/api/schema/` | The OpenAPI 3 document (YAML). `?format=json` for JSON. |
+| `/api/docs/` | Swagger UI, with an **Authorize** button for both auth schemes. |
+| `/api/redoc/` | ReDoc, for reading rather than trying calls. |
+
+All three are public by default. Set `API_DOCS_PUBLIC=False` to narrow them to authenticated
+callers.
+
+**Two ways to authenticate, one authorization model.**
+
+```
+Authorization: Bearer <JWT access token>     # a signed-in staff user (POST /api/auth/token/)
+Authorization: Api-Key <key>                 # an external system
+```
+
+An API key resolves to the `accounts.User` it was issued for, and **inherits exactly that user's
+role permissions** — including portal customer scoping, if the user is a portal identity. To narrow
+what a key may do, issue it against a narrowly-roled user; there are no per-key scopes.
+
+**Issuing a key** (requires `api_keys.manage`, held by `admin`):
+
+```
+POST /api/api-keys/
+{"name": "Acme ERP", "user": 7, "expires_at": null}
+```
+
+The response's `data.key` is the plaintext, e.g. `sos_3f9a1c04.7b2e…`. **It is returned exactly
+once** — only `prefix` and a SHA-256 digest are stored, so a lost key is replaced, never recovered.
+
+**Revoking** is `DELETE /api/api-keys/<id>/`, which sets `is_active` to false rather than deleting
+the row, so `last_used_at` and the issue date stay auditable. `PATCH {"is_active": true}` reverses
+it. An expired (`expires_at` in the past) or revoked key returns `401 authentication_failed`.
+
 ### Consuming the API from the frontend
 
 **The rule:** features call `api.get` / `api.post` / `api.put` / `api.patch` / `api.delete` /
@@ -552,6 +591,7 @@ developer discovers it.
 | `MEDIA_ROOT` | no | `<repo>/backend/media` | Filesystem path where uploaded `Attachment` files are stored. No `MEDIA_URL` — files are served only through the permission-gated `AttachmentViewSet.download` action. |
 | `ANTHROPIC_API_KEY` | no | *(empty — AI features refuse to run until set)* | API key for Anthropic's Claude API — the one AI provider integration point (AI-0). |
 | `AI_MODEL` | no | `claude-opus-5` | Claude model id `apps.ai.client.generate_completion` uses by default. |
+| `API_DOCS_PUBLIC` | no | `True` | Whether `/api/schema/`, `/api/docs/`, `/api/redoc/` are reachable without credentials. `False` narrows all three to `IsAuthenticated` (INT-1). |
 
 ### Frontend — `frontend/.env`
 

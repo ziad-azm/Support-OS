@@ -155,13 +155,15 @@ class UserViewSet(BaseModelViewSet):
     """Staff user administration — SEC-1, extended by SEC-5 (invite-only
     creation) and SEC-6 (this story, hard delete).
 
-    `destroy` is real: `agents.Task.owner` and
-    `notifications.Notification.recipient` are still the only two
-    `on_delete=CASCADE` relationships to `accounts.User` (re-verified —
-    see `## Prerequisites`). `Notification` rows are safe to let cascade —
-    they have no meaning without their recipient (their own model
-    docstring). `Task` rows are not: `Task.owner` is required and, per
-    `apps/agents/models.py`'s own docstring, a task is never reassigned —
+    `destroy` is real: `agents.Task.owner`, `notifications.Notification.recipient`,
+    and `integrations.ApiKey.user` (INT-1) are the three `on_delete=CASCADE`
+    relationships to `accounts.User` (re-verified — see `## Prerequisites`).
+    `Notification` rows are safe to let cascade — they have no meaning
+    without their recipient (their own model docstring). `integrations.ApiKey`
+    rows (INT-1) are safe to let cascade too — a key has no meaning without
+    the identity it authenticates as, the same reasoning `Notification`
+    records for itself. `Task` rows are not: `Task.owner` is required and,
+    per `apps/agents/models.py`'s own docstring, a task is never reassigned —
     so `destroy()` below blocks the delete instead, the same PROTECT-style
     guard `RoleViewSet.destroy` already uses for a system role. It also
     refuses to let a caller delete their own account — a new guard, not
