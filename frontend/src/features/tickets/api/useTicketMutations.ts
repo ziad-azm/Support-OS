@@ -5,6 +5,7 @@ import { createTicket } from './createTicket'
 import { deleteTicket } from './deleteTicket'
 import { escalateTicket } from './escalateTicket'
 import { setTicketStatus } from './setTicketStatus'
+import { summarizeTicket } from './summarizeTicket'
 import { ticketKeys } from './ticketKeys'
 import { updateTicket } from './updateTicket'
 import type { TicketInput, TicketStatus } from '../types/ticket'
@@ -60,5 +61,14 @@ export function useEscalateTicket(id: number) {
   return useMutation({
     mutationFn: (escalated: boolean) => escalateTicket(id, escalated),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
+  })
+}
+
+// No queryClient.invalidateQueries — unlike every other mutation in this
+// file, summarizing changes nothing cached; the result is consumed
+// directly by the caller via onSuccess. See Story 75 `## Story Goal`.
+export function useSummarizeTicket(id: number) {
+  return useMutation({
+    mutationFn: () => summarizeTicket(id),
   })
 }

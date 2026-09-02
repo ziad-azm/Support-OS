@@ -6,8 +6,10 @@ import { choice, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Can } from '@/shared/auth'
 import { useFormatters } from '@/shared/hooks/useFormatters'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/primitives/alert'
 import { Badge } from '@/shared/ui/primitives/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
+import { Button } from '@/shared/ui/primitives/button'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
 import {
   FormErrorSummary,
@@ -29,6 +31,7 @@ import { useToast } from '@/shared/ui/toast/useToast'
 import { useCreateMessage } from '../api/useMessageMutations'
 import { useMessages } from '../api/useMessages'
 import { useQuickReplies } from '../api/useQuickReplies'
+import { useSummarizeTicket } from '../api/useTicketMutations'
 import { useTicketChatSocket } from '../api/useTicketChatSocket'
 import { MESSAGE_CHANNELS } from '../types/message'
 import type { Message, MessageInput } from '../types/message'
@@ -54,14 +57,46 @@ export function TicketConversation({ ticketId }: { ticketId: number }) {
   const query = useMessages(ticketId)
   useTicketChatSocket(ticketId)
 
+  const [summary, setSummary] = useState<string | null>(null)
+  const summarizeMutation = useSummarizeTicket(ticketId)
+
+  function handleSummarize() {
+    summarizeMutation.mutate(undefined, {
+      onSuccess: (data) => setSummary(data.summary),
+    })
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle asChild className="text-lg">
           <h2>{t('conversation.title')}</h2>
         </CardTitle>
+        <CardAction>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={summarizeMutation.isPending}
+            onClick={handleSummarize}
+          >
+            {t('conversation.actions.summarize')}
+          </Button>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {summary ? (
+          <Alert>
+            <AlertTitle>{t('conversation.summary.title')}</AlertTitle>
+            {/* No forced `dir` — AI-generated prose may itself be Arabic,
+                the same "free-form prose, not a Latin-script identifier"
+                reasoning `MessageRow` already applies to `message.body`
+                below. */}
+            <AlertDescription className="whitespace-pre-wrap text-foreground">
+              {summary}
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <QueryBoundary
           query={query}
           isEmpty={(page) => page.items.length === 0}

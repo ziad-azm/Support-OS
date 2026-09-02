@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
+from apps.ai.exceptions import AIServiceError, AIServiceUnavailable
 from apps.core.permissions import Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
 from apps.sla.policy import compute_sla_status
@@ -17,6 +18,7 @@ from .history import build_history
 from .models import Category, Ticket, TicketActivity
 from .serializers import CategorySerializer, TicketSerializer
 from .status import is_valid_transition
+from .summarization import summarize_ticket
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +72,7 @@ class TicketViewSet(BaseModelViewSet):
         "history": Permissions.TICKETS_VIEW,
         "context": Permissions.TICKETS_VIEW,
         "sla": Permissions.TICKETS_VIEW,
+        "summarize": Permissions.TICKETS_VIEW,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -285,3 +288,18 @@ class TicketViewSet(BaseModelViewSet):
         ticket = self.get_object()
         sla_status = compute_sla_status(ticket)
         return Response(sla_status)
+
+    @action(detail=True, methods=["post"], url_path="summarize")
+    def summarize(self, request, pk=None):
+        """AI-generated conversation summary — AI-1. Gated `tickets.view`
+        alone, the same reasoning `.history`/`.context`/`.sla` use — no
+        separate AI permission exists (see Story 75 `## Product rules`).
+        `POST`, not `GET`: unlike those three, this has a real external
+        cost and returns a freshly generated result each call.
+        """
+        ticket = self.get_object()
+        try:
+            summary = summarize_ticket(ticket)
+        except AIServiceError as exc:
+            raise AIServiceUnavailable() from exc
+        return Response({"summary": summary})

@@ -112,7 +112,11 @@
       "placeholder": "Insert a quick reply…"
     },
     "actions": {
-      "send": "Send"
+      "send": "Send",
+      "summarize": "Summarize"
+    },
+    "summary": {
+      "title": "AI Summary"
     },
     "sent": "Message sent."
   },
