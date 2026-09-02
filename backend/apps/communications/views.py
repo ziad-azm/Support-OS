@@ -5,14 +5,15 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.utils.crypto import constant_time_compare
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.permissions import Permissions
+from apps.core.permissions import HasPermission, Permissions
 from apps.core.renderers import PlainTextRenderer
 from apps.core.views import BaseModelViewSet
 from apps.tickets.models import Category
@@ -21,8 +22,13 @@ from apps.tickets.serializers import CategorySerializer
 from .adapters import get_adapter
 from .email_adapter import EmailAdapter
 from .live_chat_adapter import LiveChatAdapter
-from .models import Message
-from .serializers import MessageSerializer
+from .models import EmailProviderConfig, Message, SmsProviderConfig, WhatsAppProviderConfig
+from .serializers import (
+    EmailProviderConfigSerializer,
+    MessageSerializer,
+    SmsProviderConfigSerializer,
+    WhatsAppProviderConfigSerializer,
+)
 from .sms_adapter import SMSAdapter
 from .sms_adapter import verify_signature as verify_sms_signature
 from .web_form_adapter import WebFormAdapter
@@ -198,12 +204,13 @@ class SMSInboundWebhookView(APIView):
 
     def post(self, request):
         # Fail closed, same reasoning as EmailInboundWebhookView (Story 14).
-        if not (settings.SMS_AUTH_TOKEN and settings.SMS_WEBHOOK_URL):
+        sms_config = SmsProviderConfig.load()
+        if not (sms_config.auth_token and settings.SMS_WEBHOOK_URL):
             raise PermissionDenied()
         signature = request.headers.get("X-Twilio-Signature", "")
         params = {key: request.data.get(key, "") for key in request.data}
         if not verify_sms_signature(
-            settings.SMS_AUTH_TOKEN, settings.SMS_WEBHOOK_URL, params, signature
+            sms_config.auth_token, settings.SMS_WEBHOOK_URL, params, signature
         ):
             raise PermissionDenied()
 
@@ -340,3 +347,80 @@ class WebFormSubmissionView(APIView):
             }
         )
         return Response({"ticket_id": message.ticket_id}, status=status.HTTP_201_CREATED)
+
+
+class EmailProviderConfigView(APIView):
+    """The one email provider config record — INT-3. `GET`/`PATCH` only,
+    no id in the path, the same singleton shape
+    `apps.organization.views.SettingsView`/`apps.integrations.views
+    .ErpConnectionView` (Story 81) already establish.
+    """
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {
+        "get": Permissions.COMMUNICATIONS_MANAGE,
+        "patch": Permissions.COMMUNICATIONS_MANAGE,
+    }
+
+    @extend_schema(responses={200: EmailProviderConfigSerializer})
+    def get(self, request):
+        return Response(EmailProviderConfigSerializer(EmailProviderConfig.load()).data)
+
+    @extend_schema(
+        request=EmailProviderConfigSerializer, responses={200: EmailProviderConfigSerializer}
+    )
+    def patch(self, request):
+        config = EmailProviderConfig.load()
+        serializer = EmailProviderConfigSerializer(config, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class WhatsAppProviderConfigView(APIView):
+    """The one WhatsApp provider config record — INT-3."""
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {
+        "get": Permissions.COMMUNICATIONS_MANAGE,
+        "patch": Permissions.COMMUNICATIONS_MANAGE,
+    }
+
+    @extend_schema(responses={200: WhatsAppProviderConfigSerializer})
+    def get(self, request):
+        return Response(WhatsAppProviderConfigSerializer(WhatsAppProviderConfig.load()).data)
+
+    @extend_schema(
+        request=WhatsAppProviderConfigSerializer,
+        responses={200: WhatsAppProviderConfigSerializer},
+    )
+    def patch(self, request):
+        config = WhatsAppProviderConfig.load()
+        serializer = WhatsAppProviderConfigSerializer(config, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class SmsProviderConfigView(APIView):
+    """The one SMS provider config record — INT-3."""
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {
+        "get": Permissions.COMMUNICATIONS_MANAGE,
+        "patch": Permissions.COMMUNICATIONS_MANAGE,
+    }
+
+    @extend_schema(responses={200: SmsProviderConfigSerializer})
+    def get(self, request):
+        return Response(SmsProviderConfigSerializer(SmsProviderConfig.load()).data)
+
+    @extend_schema(
+        request=SmsProviderConfigSerializer, responses={200: SmsProviderConfigSerializer}
+    )
+    def patch(self, request):
+        config = SmsProviderConfig.load()
+        serializer = SmsProviderConfigSerializer(config, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

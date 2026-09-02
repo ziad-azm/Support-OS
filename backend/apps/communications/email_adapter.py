@@ -1,13 +1,13 @@
 import re
 
 from django.conf import settings
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, get_connection
 
 from apps.customers.models import Customer
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
-from .models import Message
+from .models import EmailProviderConfig, Message
 
 # A plain email address only — this story's inbound payload is a
 # provider-agnostic shape this project defines (no real MIME "To" header
@@ -73,15 +73,33 @@ class EmailAdapter(ChannelAdapter):
                 f"Cannot send email for ticket #{message.ticket_id}: "
                 "its customer has no email address."
             )
+        config = EmailProviderConfig.load()
+        if not config.is_configured():
+            raise ValueError("Email sending is not configured (set it at /settings/channels).")
         reply_to = (
             f"{settings.EMAIL_INBOUND_LOCAL_PART}+{message.ticket_id}"
             f"@{settings.EMAIL_INBOUND_DOMAIN}"
         )
+        # `EMAIL_BACKEND` (console in dev, SMTP in prod) is still read from
+        # Django settings — untouched, see Story 82 `## Prerequisites`. Only
+        # host/port/username/password/use_tls come from the DB config; the
+        # console backend accepts and ignores all five
+        # (`django.core.mail.backends.base.BaseEmailBackend.__init__`
+        # absorbs arbitrary kwargs), so this call is safe in every
+        # environment without branching on which backend is active.
+        connection = get_connection(
+            host=config.host,
+            port=config.port,
+            username=config.host_user,
+            password=config.host_password,
+            use_tls=config.use_tls,
+        )
         email = EmailMessage(
             subject=message.ticket.subject,
             body=message.body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=config.default_from_email,
             to=[customer.email],
             reply_to=[reply_to],
+            connection=connection,
         )
         email.send()

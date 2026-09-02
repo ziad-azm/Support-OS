@@ -468,6 +468,19 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="communications.manage" />,
+            children: [
+              {
+                path: 'settings/channels',
+                lazy: async () => {
+                  const { ChannelSettingsPage } =
+                    await import('@/features/communications/components/ChannelSettingsPage')
+                  return { element: <ChannelSettingsPage /> }
+                },
+              },
+            ],
+          },
+          {
             path: 'tasks',
             lazy: async () => {
               const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')

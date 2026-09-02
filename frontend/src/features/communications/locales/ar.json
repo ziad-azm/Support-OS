@@ -1,0 +1,33 @@
+{
+  "channels": {
+    "title": "مزودو المراسلة",
+    "navLabel": "القنوات",
+    "saved": "تم حفظ إعدادات المزود.",
+    "tokenSet": "تم تكوين بيانات اعتماد.",
+    "tokenUnset": "لم يتم تكوين بيانات اعتماد.",
+    "tokenKeepHint": "اترك هذا الحقل فارغًا للاحتفاظ بالبيانات الحالية.",
+    "email": {
+      "title": "البريد الإلكتروني",
+      "host": "خادم SMTP",
+      "port": "منفذ SMTP",
+      "hostUser": "اسم مستخدم SMTP",
+      "hostPassword": "كلمة مرور SMTP",
+      "useTls": "استخدام TLS",
+      "defaultFromEmail": "عنوان المرسل"
+    },
+    "whatsapp": {
+      "title": "واتساب",
+      "apiBaseUrl": "الرابط الأساسي لواجهة البرمجة",
+      "phoneNumberId": "معرّف رقم الهاتف",
+      "accessToken": "رمز الوصول"
+    },
+    "sms": {
+      "title": "الرسائل النصية",
+      "apiBaseUrl": "الرابط الأساسي لواجهة البرمجة",
+      "accountSid": "معرّف الحساب",
+      "authToken": "رمز المصادقة",
+      "fromNumber": "رقم المرسل"
+    },
+    "actions": { "save": "حفظ" }
+  }
+}

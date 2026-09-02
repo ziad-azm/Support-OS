@@ -1,0 +1,33 @@
+{
+  "channels": {
+    "title": "Messaging Providers",
+    "navLabel": "Channels",
+    "saved": "Provider config saved.",
+    "tokenSet": "A credential is configured.",
+    "tokenUnset": "No credential is configured.",
+    "tokenKeepHint": "Leave this field blank to keep the current one.",
+    "email": {
+      "title": "Email",
+      "host": "SMTP host",
+      "port": "SMTP port",
+      "hostUser": "SMTP username",
+      "hostPassword": "SMTP password",
+      "useTls": "Use TLS",
+      "defaultFromEmail": "From address"
+    },
+    "whatsapp": {
+      "title": "WhatsApp",
+      "apiBaseUrl": "API base URL",
+      "phoneNumberId": "Phone number id",
+      "accessToken": "Access token"
+    },
+    "sms": {
+      "title": "SMS",
+      "apiBaseUrl": "API base URL",
+      "accountSid": "Account SID",
+      "authToken": "Auth token",
+      "fromNumber": "From number"
+    },
+    "actions": { "save": "Save" }
+  }
+}

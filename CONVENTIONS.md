@@ -2076,3 +2076,57 @@ leaves the stored value alone, so saving the form cannot wipe it.
 own task text is "secure central config for … credentials". Until then,
 DB access is token access; § 10's never-log rule is what keeps it out of
 logs.
+
+---
+
+## 31. Messaging provider config (INT-3)
+
+`INT-3` (Story 82) moves the three outbound channel adapters'
+credentials (`apps.communications.{email,whatsapp,sms}_adapter`) from
+`ENV`-only settings to a DB-backed singleton per provider
+(`EmailProviderConfig`/`WhatsAppProviderConfig`/`SmsProviderConfig`,
+`apps/communications/models.py`), each following the `pk=1`/`load()`
+shape `organization.OrganizationSettings` and `integrations.ErpConnection`
+already established.
+
+**Scope is deliberately narrow: only the three channel adapters' `send()`
+methods read this config.** `apps.accounts.tasks` (invite, password
+reset) and `apps.notifications.tasks` (notification email) still read
+Django's own `EMAIL_*` settings, unchanged — confirmed with the user
+during planning. This means an operator using one SMTP account for
+everything configures it in two places today. Unifying the two is a
+legitimate follow-up; it is not something a future story should assume
+already happened just because "messaging provider config" sounds like it
+would cover it.
+
+**A credential shared between an adapter's outbound send and a webhook's
+inbound verification has exactly one stored value, read by both.**
+`SmsProviderConfig.auth_token` is the one example today —
+`SMSAdapter.send()` and `SMSInboundWebhookView.post()` both read it,
+because Twilio's own Auth Token is genuinely dual-purpose. A future
+provider whose API has the same shared-secret design should follow this,
+not add two fields that can drift apart. A verification-only secret with
+no adapter involvement (`WHATSAPP_WEBHOOK_VERIFY_TOKEN`,
+`WHATSAPP_APP_SECRET`, `EMAIL_INBOUND_WEBHOOK_TOKEN`) stays an `ENV`
+setting — it is not "a credential reused by a channel adapter."
+
+**Encryption at rest is not implemented, again, on purpose.** `INT-1`
+(`ApiKey.hashed_key`, a digest — different case), `INT-2`
+(`ErpConnection.auth_token`), and now `INT-3`
+(`EmailProviderConfig.host_password`, `WhatsAppProviderConfig
+.access_token`, `SmsProviderConfig.auth_token`) all store a live,
+replayable credential in a plain `CharField`, `write_only` in its
+serializer and never returned by the API. No encryption library is
+installed in this project. Adding one is a single cross-cutting decision
+that should encrypt all four fields at once — it is not a per-story
+choice, and no story should quietly add its own encryption scheme for
+just its own field.
+
+**A removed `ENV` setting is removed everywhere at once: `config/settings/base.py`, `.env.example`, and the `README.md` table, in the same
+change that removes its last Python reader.** `WHATSAPP_API_BASE_URL`/
+`WHATSAPP_PHONE_NUMBER_ID`/`WHATSAPP_ACCESS_TOKEN`/`SMS_API_BASE_URL`/
+`SMS_ACCOUNT_SID`/`SMS_AUTH_TOKEN`/`SMS_FROM_NUMBER` are the first
+settings this project has ever removed rather than added — verified live
+that each had zero remaining Python consumers before deletion. An
+`ENV`-var removal without checking every consumer first is exactly the
+mistake this rule exists to prevent.

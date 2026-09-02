@@ -5,13 +5,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from django.conf import settings
-
 from apps.customers.models import ContactDetail, Customer
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
-from .models import Message
+from .models import Message, SmsProviderConfig
 
 
 def verify_signature(auth_token: str, url: str, params: dict, signature_header: str) -> bool:
@@ -88,13 +86,9 @@ class SMSAdapter(ChannelAdapter):
         )
 
     def send(self, message: Message) -> None:
-        if not (
-            settings.SMS_API_BASE_URL
-            and settings.SMS_ACCOUNT_SID
-            and settings.SMS_AUTH_TOKEN
-            and settings.SMS_FROM_NUMBER
-        ):
-            raise ValueError("SMS sending is not configured (SMS_* settings are blank).")
+        config = SmsProviderConfig.load()
+        if not config.is_configured():
+            raise ValueError("SMS sending is not configured (set it at /settings/channels).")
 
         contact = ContactDetail.objects.filter(
             customer=message.ticket.customer, channel=ContactDetail.Channel.PHONE
@@ -105,12 +99,12 @@ class SMSAdapter(ChannelAdapter):
                 "its customer has no phone contact on file."
             )
 
-        url = f"{settings.SMS_API_BASE_URL}/Accounts/{settings.SMS_ACCOUNT_SID}/Messages.json"
+        url = f"{config.api_base_url}/Accounts/{config.account_sid}/Messages.json"
         body = urllib.parse.urlencode(
-            {"To": contact.value, "From": settings.SMS_FROM_NUMBER, "Body": message.body}
+            {"To": contact.value, "From": config.from_number, "Body": message.body}
         ).encode()
         credentials = base64.b64encode(
-            f"{settings.SMS_ACCOUNT_SID}:{settings.SMS_AUTH_TOKEN}".encode()
+            f"{config.account_sid}:{config.auth_token}".encode()
         ).decode()
         request = urllib.request.Request(
             url,

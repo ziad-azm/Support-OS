@@ -13,6 +13,7 @@ import {
   LayoutDashboardIcon,
   ListTodoIcon,
   LogOutIcon,
+  MessagesSquareIcon,
   PlugIcon,
   SearchIcon,
   Settings2Icon,
@@ -119,6 +120,7 @@ export function Sidebar() {
     'auditLog',
     'organization',
     'integrations',
+    'communications',
     'reports',
   ])
   const { user, logout, can } = useAuth()
@@ -127,7 +129,8 @@ export function Sidebar() {
     can('roles.manage') ||
     can('audit_log.view') ||
     can('settings.manage') ||
-    can('integrations.manage')
+    can('integrations.manage') ||
+    can('communications.manage')
   const [collapsed, setCollapsed] = useState(readCollapsed)
 
   function toggleCollapsed() {
@@ -271,6 +274,14 @@ export function Sidebar() {
                 to="/settings/erp"
                 icon={PlugIcon}
                 label={t('integrations:erp.navLabel')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="communications.manage">
+              <SidebarLink
+                to="/settings/channels"
+                icon={MessagesSquareIcon}
+                label={t('communications:channels.navLabel')}
                 collapsed={collapsed}
               />
             </Can>

@@ -517,6 +517,32 @@ interval in `/admin/` (`django-celery-beat`), never in settings — `CONVENTIONS
 Celery worker must be running** for any sync to happen (`README.md` § 6; on Windows,
 `celery -A config worker --pool=solo`).
 
+### Messaging provider config (INT-3)
+
+`/settings/channels` (permission `communications.manage`) configures the three outbound
+messaging providers `EmailAdapter`/`WhatsAppAdapter`/`SMSAdapter` send through — one screen, three
+independent config rows.
+
+| Endpoint | Provider |
+|---|---|
+| `GET`/`PATCH` `/api/providers/email/` | SMTP host/port/user/password, TLS, from address. |
+| `GET`/`PATCH` `/api/providers/whatsapp/` | Meta WhatsApp Business (Cloud) API base URL, phone number id, access token. |
+| `GET`/`PATCH` `/api/providers/sms/` | Twilio API base URL, Account SID, Auth Token, from number. |
+
+Each credential field (`host_password`, `access_token`, `auth_token`) is write-only — the API
+never returns it, only a `has_*` boolean. Sending `""` or omitting the field on `PATCH` leaves the
+stored credential untouched.
+
+**Scope, deliberately:** this config is read only by the three channel adapters' `send()` methods
+— not by invite/password-reset email (`apps.accounts.tasks`) or notification email
+(`apps.notifications.tasks`), which continue reading the `EMAIL_*` environment variables below
+unchanged. An operator using the same SMTP account for both configures it in two places today; see
+`CONVENTIONS.md` § 31.
+
+**One coupling worth knowing:** Twilio's Auth Token is dual-purpose — `SmsProviderConfig.auth_token`
+is used both by `SMSAdapter.send()` (outbound Basic Auth) and by `SMSInboundWebhookView` (inbound
+`X-Twilio-Signature` verification). Rotating it in the UI takes effect for both immediately.
+
 ### Consuming the API from the frontend
 
 **The rule:** features call `api.get` / `api.post` / `api.put` / `api.patch` / `api.delete` /
@@ -597,24 +623,17 @@ developer discovers it.
 | `DJANGO_LOG_LEVEL` | no | `INFO` | Level for the `apps.*` logger tree. See `CONVENTIONS.md` § Logging. |
 | `DJANGO_SECURE_SSL_REDIRECT` | no | `True` | **Prod only.** Redirect HTTP to HTTPS. |
 | `DJANGO_SECURE_HSTS_SECONDS` | no | `31536000` | **Prod only.** HSTS max-age. |
-| `EMAIL_HOST` | no | *(empty)* | SMTP host. Ignored in dev (console backend); needed in prod for real delivery. |
-| `EMAIL_PORT` | no | `587` | SMTP port. |
-| `EMAIL_HOST_USER` | no | *(empty)* | SMTP auth username. |
-| `EMAIL_HOST_PASSWORD` | no | *(empty)* | SMTP auth password. |
-| `EMAIL_USE_TLS` | no | `True` | Use STARTTLS for SMTP. |
-| `DEFAULT_FROM_EMAIL` | no | `support@example.com` | `From` address for outbound email. |
+| `EMAIL_HOST` | no | *(empty)* | SMTP host. Ignored in dev (console backend); needed in prod for real delivery. System email only (invite, password reset, notifications) — ticket-reply email now reads its own DB-stored config (INT-3). |
+| `EMAIL_PORT` | no | `587` | SMTP port. System email only — see `EMAIL_HOST` row. |
+| `EMAIL_HOST_USER` | no | *(empty)* | SMTP auth username. System email only — see `EMAIL_HOST` row. |
+| `EMAIL_HOST_PASSWORD` | no | *(empty)* | SMTP auth password. System email only — see `EMAIL_HOST` row. |
+| `EMAIL_USE_TLS` | no | `True` | Use STARTTLS for SMTP. System email only — see `EMAIL_HOST` row. |
+| `DEFAULT_FROM_EMAIL` | no | `support@example.com` | `From` address for outbound email. System email only — see `EMAIL_HOST` row. |
 | `EMAIL_INBOUND_LOCAL_PART` | no | `support` | Local-part of the inbound routing address, before the `+<ticket id>` tag. |
 | `EMAIL_INBOUND_DOMAIN` | no | `support.example.com` | Domain of the inbound routing address a reply-to uses. |
 | `EMAIL_INBOUND_WEBHOOK_TOKEN` | no | *(empty — endpoint rejects every request until set)* | Shared secret `EmailInboundWebhookView` requires as `?token=`. |
-| `WHATSAPP_API_BASE_URL` | no | *(empty — sending refuses to run until set)* | Base URL of Meta's Graph API, e.g. `https://graph.facebook.com/v21.0`. |
-| `WHATSAPP_PHONE_NUMBER_ID` | no | *(empty)* | Meta's internal id for the business's WhatsApp number. |
-| `WHATSAPP_ACCESS_TOKEN` | no | *(empty)* | Bearer token for the WhatsApp Cloud API. |
 | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | no | *(empty — verification handshake rejects every request until set)* | Shared secret Meta's `GET` webhook-verification handshake checks against `hub.verify_token`. |
 | `WHATSAPP_APP_SECRET` | no | *(empty — inbound webhook rejects every request until set)* | Meta App Secret used to verify the `X-Hub-Signature-256` header on every inbound `POST`. |
-| `SMS_API_BASE_URL` | no | *(empty — sending refuses to run until set)* | Base URL of Twilio's REST API, e.g. `https://api.twilio.com/2010-04-01`. |
-| `SMS_ACCOUNT_SID` | no | *(empty)* | Twilio Account SID, used both as the API path segment and the Basic Auth username. |
-| `SMS_AUTH_TOKEN` | no | *(empty — inbound webhook rejects every request until set)* | Twilio Auth Token — the Basic Auth password for sending, and the HMAC key for verifying `X-Twilio-Signature` on inbound webhooks. |
-| `SMS_FROM_NUMBER` | no | *(empty)* | The Twilio phone number outbound SMS is sent from. |
 | `SMS_WEBHOOK_URL` | no | *(empty — inbound webhook rejects every request until set)* | The exact URL configured in the Twilio console for the inbound SMS webhook — used, not reconstructed, because Twilio's signature depends on it. |
 | `MEDIA_ROOT` | no | `<repo>/backend/media` | Filesystem path where uploaded `Attachment` files are stored. No `MEDIA_URL` — files are served only through the permission-gated `AttachmentViewSet.download` action. |
 | `ANTHROPIC_API_KEY` | no | *(empty — AI features refuse to run until set)* | API key for Anthropic's Claude API — the one AI provider integration point (AI-0). |

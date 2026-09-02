@@ -37,6 +37,7 @@ class Permissions:
     SETTINGS_MANAGE = "settings.manage"
     API_KEYS_MANAGE = "api_keys.manage"
     INTEGRATIONS_MANAGE = "integrations.manage"
+    COMMUNICATIONS_MANAGE = "communications.manage"
     REPORTS_VIEW = "reports.view"
 
 

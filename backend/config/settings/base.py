@@ -339,9 +339,13 @@ LOGGING = {
 # --- Email (COMM-1) -------------------------------------------------------
 # Outbound uses Django's own SMTP backend. EMAIL_BACKEND itself is NOT read
 # from ENV — dev.py hardcodes the console backend so local development can
-# never accidentally send a real email; prod.py hardcodes SMTP. Provider
-# config stays ENV-only for this story; INT-3 (SupportOs backlog.MD:661-665)
-# is where a DB-backed config UI eventually lands.
+# never accidentally send a real email; prod.py hardcodes SMTP. These six
+# settings remain for SYSTEM email only (invite/password-reset —
+# apps.accounts.tasks — and notification email — apps.notifications.tasks).
+# Ticket-reply email now reads its own DB-stored config instead
+# (apps.communications.models.EmailProviderConfig, INT-3, Story 82) — a
+# deliberately narrower scope than "every outbound email", confirmed with
+# the user during that story's planning. See CONVENTIONS.md § 31.
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
@@ -360,16 +364,14 @@ EMAIL_INBOUND_WEBHOOK_TOKEN = env("EMAIL_INBOUND_WEBHOOK_TOKEN", default="")
 
 
 # --- WhatsApp (COMM-2) -----------------------------------------------------
-# Meta's WhatsApp Business (Cloud) API. No safe default anywhere — unlike
-# email's dev/prod EMAIL_BACKEND split, there is no "print instead of send"
-# abstraction for an arbitrary HTTP call, so every WHATSAPP_* setting stays
-# blank until explicitly configured, in every environment.
-# WhatsAppAdapter.send refuses to run against blank config rather than
-# firing a real request at Meta's live API with empty credentials. See
-# Story 15 `## Prerequisites`.
-WHATSAPP_API_BASE_URL = env("WHATSAPP_API_BASE_URL", default="")
-WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")
-WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN", default="")
+# Meta's WhatsApp Business (Cloud) API. Send credentials
+# (api_base_url/phone_number_id/access_token) moved to a DB-backed config —
+# apps.communications.models.WhatsAppProviderConfig, INT-3 (Story 82) — read
+# by WhatsAppAdapter.send(), which refuses to run against blank config
+# exactly as it did against these settings before the move. Only the two
+# inbound-only webhook secrets remain here: neither is read by any adapter,
+# so neither is "a credential reused by a channel adapter" (CONVENTIONS.md
+# § 31).
 # Fail closed: GET verification handshake rejects every request until set.
 WHATSAPP_WEBHOOK_VERIFY_TOKEN = env("WHATSAPP_WEBHOOK_VERIFY_TOKEN", default="")
 # Fail closed: POST signature verification rejects every request until set.
@@ -389,19 +391,18 @@ CHANNEL_LAYERS = {
 }
 
 # --- SMS (COMM-4) ------------------------------------------------------------
-# Twilio's Programmable Messaging API. No safe default anywhere, same
-# reasoning as WhatsApp (COMM-2) — every SMS_* setting stays blank until
-# explicitly configured, in every environment. SMSAdapter.send refuses to
-# run against blank config rather than firing a real request at Twilio's
-# live API with empty credentials. See Story 17 `## Prerequisites`.
-SMS_API_BASE_URL = env("SMS_API_BASE_URL", default="")
-SMS_ACCOUNT_SID = env("SMS_ACCOUNT_SID", default="")
-SMS_AUTH_TOKEN = env("SMS_AUTH_TOKEN", default="")
-SMS_FROM_NUMBER = env("SMS_FROM_NUMBER", default="")
+# Twilio's Programmable Messaging API. Send credentials
+# (api_base_url/account_sid/auth_token/from_number) moved to a DB-backed
+# config — apps.communications.models.SmsProviderConfig, INT-3 (Story 82).
+# `auth_token` is dual-purpose in Twilio's own model — SMSAdapter.send()
+# (outbound Basic Auth) and SMSInboundWebhookView (inbound
+# X-Twilio-Signature verification) both now read the same DB-stored value,
+# not this settings module. See CONVENTIONS.md § 31.
 # The exact URL configured in the Twilio console for this webhook — used to
 # verify X-Twilio-Signature. Not reconstructed from the request: Twilio's
 # algorithm signs the URL it was told to POST to, and a proxy/tunnel
-# rewriting Host would otherwise break every signature check silently.
+# rewriting Host would otherwise break every signature check silently. Stays
+# an ENV setting: a fixed, deployment-level URL, not a rotatable credential.
 SMS_WEBHOOK_URL = env("SMS_WEBHOOK_URL", default="")
 
 # --- Background jobs (SLA-0) -------------------------------------------------

@@ -3,12 +3,15 @@ from rest_framework.routers import SimpleRouter
 
 from .views import (
     EmailInboundWebhookView,
+    EmailProviderConfigView,
     LiveChatStartView,
     MessageViewSet,
     SMSInboundWebhookView,
+    SmsProviderConfigView,
     WebFormCategoriesView,
     WebFormSubmissionView,
     WhatsAppInboundWebhookView,
+    WhatsAppProviderConfigView,
 )
 
 app_name = "communications"
@@ -33,5 +36,11 @@ urlpatterns = [
     path("live-chat/start/", LiveChatStartView.as_view(), name="live-chat-start"),
     path("web-form/categories/", WebFormCategoriesView.as_view(), name="web-form-categories"),
     path("web-form/submit/", WebFormSubmissionView.as_view(), name="web-form-submit"),
+    # INT-3 (Story 82) — provider config, grouped under one prefix so the
+    # three endpoints read as one feature at a glance, matching the "one
+    # place to connect channels" outcome.
+    path("providers/email/", EmailProviderConfigView.as_view(), name="provider-email"),
+    path("providers/whatsapp/", WhatsAppProviderConfigView.as_view(), name="provider-whatsapp"),
+    path("providers/sms/", SmsProviderConfigView.as_view(), name="provider-sms"),
     *router.urls,
 ]

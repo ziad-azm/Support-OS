@@ -4,13 +4,11 @@ import json
 import urllib.error
 import urllib.request
 
-from django.conf import settings
-
 from apps.customers.models import ContactDetail, Customer
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
-from .models import Message
+from .models import Message, WhatsAppProviderConfig
 
 
 def verify_signature(secret: str, body: bytes, signature_header: str) -> bool:
@@ -106,12 +104,9 @@ class WhatsAppAdapter(ChannelAdapter):
         )
 
     def send(self, message: Message) -> None:
-        if not (
-            settings.WHATSAPP_API_BASE_URL
-            and settings.WHATSAPP_PHONE_NUMBER_ID
-            and settings.WHATSAPP_ACCESS_TOKEN
-        ):
-            raise ValueError("WhatsApp sending is not configured (WHATSAPP_* settings are blank).")
+        config = WhatsAppProviderConfig.load()
+        if not config.is_configured():
+            raise ValueError("WhatsApp sending is not configured (set it at /settings/channels).")
 
         contact = ContactDetail.objects.filter(
             customer=message.ticket.customer, channel=ContactDetail.Channel.WHATSAPP
@@ -122,7 +117,7 @@ class WhatsAppAdapter(ChannelAdapter):
                 "its customer has no WhatsApp contact on file."
             )
 
-        url = f"{settings.WHATSAPP_API_BASE_URL}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+        url = f"{config.api_base_url}/{config.phone_number_id}/messages"
         body = json.dumps(
             {
                 "messaging_product": "whatsapp",
@@ -135,7 +130,7 @@ class WhatsAppAdapter(ChannelAdapter):
             url,
             data=body,
             headers={
-                "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
+                "Authorization": f"Bearer {config.access_token}",
                 "Content-Type": "application/json",
             },
             method="POST",

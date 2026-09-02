@@ -4,6 +4,8 @@ import auditLogAr from '@/features/audit-log/locales/ar.json'
 import auditLogEn from '@/features/audit-log/locales/en.json'
 import authAr from '@/features/auth/locales/ar.json'
 import authEn from '@/features/auth/locales/en.json'
+import communicationsAr from '@/features/communications/locales/ar.json'
+import communicationsEn from '@/features/communications/locales/en.json'
 import customersAr from '@/features/customers/locales/ar.json'
 import customersEn from '@/features/customers/locales/en.json'
 import integrationsAr from '@/features/integrations/locales/ar.json'
@@ -50,6 +52,7 @@ export const resources = {
     auth: authEn,
     auditLog: auditLogEn,
     accounts: accountsEn,
+    communications: communicationsEn,
     customers: customersEn,
     integrations: integrationsEn,
     tickets: ticketsEn,
@@ -69,6 +72,7 @@ export const resources = {
     auth: authAr,
     auditLog: auditLogAr,
     accounts: accountsAr,
+    communications: communicationsAr,
     customers: customersAr,
     integrations: integrationsAr,
     tickets: ticketsAr,
