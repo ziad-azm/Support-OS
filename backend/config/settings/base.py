@@ -433,11 +433,21 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # default: apps/ai/client.py::get_client refuses to construct a client
 # against a blank key, the same "fail closed until configured" rule
 # WHATSAPP_*/SMS_* already establish. See Story 74 `## Edge Cases`.
+# Which provider apps/ai/client.py::get_client constructs — an explicit
+# switch, not "whichever key happens to be set": with both keys populated,
+# AI_PROVIDER alone decides, so a stale second key left in .env can never
+# silently take over. Only "anthropic" or "gemini" are valid; get_client
+# raises AIServiceError on anything else, and also when the API key for
+# the selected provider is blank — the same "fail closed until
+# configured" rule WHATSAPP_*/SMS_* already establish.
+AI_PROVIDER = env("AI_PROVIDER", default="anthropic")
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 # Overridable per environment so a later AI-* story (or an ops change) can
 # trade cost for quality without a code change — no feature hardcodes a
 # model id of its own.
 AI_MODEL = env("AI_MODEL", default="claude-opus-5")
+GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
+GEMINI_MODEL = env("GEMINI_MODEL", default="gemini-3.6-flash")
 
 # --- Public API & OpenAPI docs (INT-1) -----------------------------------
 # `/api/schema/` (the OpenAPI 3 document), `/api/docs/` (Swagger UI) and
