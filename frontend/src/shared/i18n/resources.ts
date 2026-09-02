@@ -12,6 +12,8 @@ import integrationsAr from '@/features/integrations/locales/ar.json'
 import integrationsEn from '@/features/integrations/locales/en.json'
 import knowledgeBaseAr from '@/features/knowledge-base/locales/ar.json'
 import knowledgeBaseEn from '@/features/knowledge-base/locales/en.json'
+import landingAr from '@/features/landing/locales/ar.json'
+import landingEn from '@/features/landing/locales/en.json'
 import liveChatAr from '@/features/live-chat/locales/ar.json'
 import liveChatEn from '@/features/live-chat/locales/en.json'
 import notificationsAr from '@/features/notifications/locales/ar.json'
@@ -59,6 +61,7 @@ export const resources = {
     integrations: integrationsEn,
     tickets: ticketsEn,
     liveChat: liveChatEn,
+    landing: landingEn,
     webForm: webFormEn,
     webhooks: webhooksEn,
     notifications: notificationsEn,
@@ -80,6 +83,7 @@ export const resources = {
     integrations: integrationsAr,
     tickets: ticketsAr,
     liveChat: liveChatAr,
+    landing: landingAr,
     webForm: webFormAr,
     webhooks: webhooksAr,
     notifications: notificationsAr,

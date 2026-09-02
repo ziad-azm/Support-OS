@@ -1,0 +1,35 @@
+{
+  "hero": {
+    "headline": "Support that keeps every promise",
+    "valueProposition": "SupportOS brings every customer conversation, service-level target, and support metric into one bilingual workspace your team actually enjoys using.",
+    "login": "Log in",
+    "demo": "Get a demo"
+  },
+  "features": {
+    "sectionTitle": "Everything your support team runs on",
+    "tickets": {
+      "title": "Omni-channel tickets",
+      "description": "Email, WhatsApp, SMS, live chat, and web forms land in one queue with the full history attached."
+    },
+    "sla": {
+      "title": "SLA automation",
+      "description": "Response and resolution targets tracked automatically, with escalation before a breach rather than after it."
+    },
+    "ai": {
+      "title": "AI-assisted replies",
+      "description": "Summaries, suggested replies, and automatic categorisation, so agents spend their time on the hard part."
+    },
+    "reports": {
+      "title": "Reporting that answers questions",
+      "description": "Ticket volume, SLA health, agent performance, and CSAT on one dashboard you can act on."
+    }
+  },
+  "cta": {
+    "title": "Ready when you are",
+    "subtitle": "Sign in to your workspace, or send us a request and we'll walk you through it.",
+    "login": "Log in"
+  },
+  "footer": {
+    "copyright": "© {{year}} SupportOS"
+  }
+}

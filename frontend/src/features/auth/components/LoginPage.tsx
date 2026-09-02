@@ -29,7 +29,10 @@ export function LoginPage() {
     defaultValues: { email: '', password: '' },
   })
 
-  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/'
+  // `/home`, not `/`: Story 86 made `/` the public landing page. A staff
+  // member who logged in from the landing page's CTA has no `from` state and
+  // must land on the dashboard, not back where they started.
+  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/home'
 
   const mutation = useMutation({
     mutationFn: (values: z.output<typeof schema>) => login(values.email, values.password),

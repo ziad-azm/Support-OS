@@ -3,9 +3,37 @@ import { createBrowserRouter } from 'react-router'
 import { PublicLayout } from './PublicLayout'
 import { RootLayout } from './RootLayout'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
-import { RedirectPortalOnly, RequireAuth, RequirePermission } from '@/shared/auth'
+import {
+  RedirectAuthenticated,
+  RedirectPortalOnly,
+  RequireAuth,
+  RequirePermission,
+} from '@/shared/auth'
 
 export const router = createBrowserRouter([
+  {
+    // The public front door. A second `PublicLayout` instance rather than a
+    // child of the tree below, because the landing page needs the `full`
+    // variant (edge-to-edge section bands) while every page below it is a
+    // centred card. Same shell component, no third layout type — see
+    // `SupportOs backlog.MD` LAND-1's own constraint.
+    element: <PublicLayout variant="full" />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        element: <RedirectAuthenticated />,
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { LandingPage } = await import('@/features/landing/components/LandingPage')
+              return { element: <LandingPage /> }
+            },
+          },
+        ],
+      },
+    ],
+  },
   {
     // Pathless — matched purely by its children's own paths, not nested
     // under `path: '/'`. Kept separate from the staff `RootLayout` tree
@@ -73,7 +101,7 @@ export const router = createBrowserRouter([
             element: <RedirectPortalOnly />,
             children: [
               {
-                index: true,
+                path: 'home',
                 lazy: async () => {
                   const { HomePage } = await import('@/app/HomePage')
                   return { element: <HomePage /> }
