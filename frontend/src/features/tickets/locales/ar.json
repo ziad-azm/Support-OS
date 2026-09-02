@@ -113,7 +113,8 @@
     },
     "actions": {
       "send": "إرسال",
-      "summarize": "تلخيص"
+      "summarize": "تلخيص",
+      "suggestReply": "اقتراح رد"
     },
     "summary": {
       "title": "ملخص الذكاء الاصطناعي"

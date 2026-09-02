@@ -51,3 +51,25 @@ def build_grounded_system_prompt(instructions: str, *, kb_query: str | None = No
     if not context:
         return instructions
     return f"{instructions}\n\nRelevant knowledge base context:\n{context}"
+
+
+LANGUAGE_NAMES = {"en": "English", "ar": "Arabic"}
+DEFAULT_LANGUAGE_NAME = "English"
+
+
+def resolve_language_name() -> str:
+    """The requesting caller's UI language as a plain English name, for
+    instructing the model to respond in that language. Reads
+    `django.utils.translation.get_language()`, resolved by the existing
+    `LocaleMiddleware` from the frontend's `Accept-Language` header
+    (`CONVENTIONS.md` §18) — extending that resolved-language pattern to
+    AI-generated text, first established by `apps.tickets.summarization`
+    (Story 75) and moved here once a second consumer (this story)
+    appeared. Falls back to `"English"` for a language outside
+    `LANGUAGES` in `base.py` (only `en`/`ar` today), degrading
+    gracefully rather than raising if a third language is ever added
+    without updating this dict.
+    """
+    from django.utils.translation import get_language
+
+    return LANGUAGE_NAMES.get(get_language(), DEFAULT_LANGUAGE_NAME)

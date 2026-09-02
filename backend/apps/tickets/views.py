@@ -16,6 +16,7 @@ from .context import build_ticket_context
 from .escalation import apply_escalation
 from .history import build_history
 from .models import Category, Ticket, TicketActivity
+from .reply_suggestions import draft_reply
 from .serializers import CategorySerializer, TicketSerializer
 from .status import is_valid_transition
 from .summarization import summarize_ticket
@@ -73,6 +74,7 @@ class TicketViewSet(BaseModelViewSet):
         "context": Permissions.TICKETS_VIEW,
         "sla": Permissions.TICKETS_VIEW,
         "summarize": Permissions.TICKETS_VIEW,
+        "suggest_reply": Permissions.TICKETS_MANAGE,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -303,3 +305,17 @@ class TicketViewSet(BaseModelViewSet):
         except AIServiceError as exc:
             raise AIServiceUnavailable() from exc
         return Response({"summary": summary})
+
+    @action(detail=True, methods=["post"], url_path="suggest-reply")
+    def suggest_reply(self, request, pk=None):
+        """AI-drafted reply suggestion — AI-2. Gated `tickets.manage`,
+        matching `ReplyForm`'s own gate (`<Can permission="tickets.manage">`,
+        `TicketConversation.tsx`) — only a user who could actually send a
+        reply gets to draft one.
+        """
+        ticket = self.get_object()
+        try:
+            reply = draft_reply(ticket)
+        except AIServiceError as exc:
+            raise AIServiceUnavailable() from exc
+        return Response({"reply": reply})

@@ -31,7 +31,7 @@ import { useToast } from '@/shared/ui/toast/useToast'
 import { useCreateMessage } from '../api/useMessageMutations'
 import { useMessages } from '../api/useMessages'
 import { useQuickReplies } from '../api/useQuickReplies'
-import { useSummarizeTicket } from '../api/useTicketMutations'
+import { useSuggestTicketReply, useSummarizeTicket } from '../api/useTicketMutations'
 import { useTicketChatSocket } from '../api/useTicketChatSocket'
 import { MESSAGE_CHANNELS } from '../types/message'
 import type { Message, MessageInput } from '../types/message'
@@ -154,6 +154,16 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
   const [selectedQuickReplyId, setSelectedQuickReplyId] = useState('')
   const quickReplies = quickRepliesQuery.data?.items ?? []
 
+  const suggestReplyMutation = useSuggestTicketReply(ticketId)
+
+  function handleSuggestReply() {
+    suggestReplyMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        form.setValue('body', data.reply, { shouldValidate: true, shouldDirty: true })
+      },
+    })
+  }
+
   function handleQuickReplySelect(value: string) {
     const reply = quickReplies.find((candidate) => String(candidate.id) === value)
     if (reply) {
@@ -180,24 +190,35 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3 border-t pt-4">
-        {quickReplies.length > 0 ? (
-          <Select value={selectedQuickReplyId} onValueChange={handleQuickReplySelect}>
-            <SelectTrigger
-              size="sm"
-              className="self-start"
-              aria-label={t('conversation.quickReply.label')}
-            >
-              <SelectValue placeholder={t('conversation.quickReply.placeholder')} />
-            </SelectTrigger>
-            <SelectContent>
-              {quickReplies.map((reply) => (
-                <SelectItem key={reply.id} value={String(reply.id)}>
-                  {reply.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {quickReplies.length > 0 ? (
+            <Select value={selectedQuickReplyId} onValueChange={handleQuickReplySelect}>
+              <SelectTrigger
+                size="sm"
+                className="self-start"
+                aria-label={t('conversation.quickReply.label')}
+              >
+                <SelectValue placeholder={t('conversation.quickReply.placeholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {quickReplies.map((reply) => (
+                  <SelectItem key={reply.id} value={String(reply.id)}>
+                    {reply.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={suggestReplyMutation.isPending}
+            onClick={handleSuggestReply}
+          >
+            {t('conversation.actions.suggestReply')}
+          </Button>
+        </div>
         <SelectField
           control={form.control}
           name="channel"

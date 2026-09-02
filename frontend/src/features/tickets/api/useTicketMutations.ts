@@ -5,6 +5,7 @@ import { createTicket } from './createTicket'
 import { deleteTicket } from './deleteTicket'
 import { escalateTicket } from './escalateTicket'
 import { setTicketStatus } from './setTicketStatus'
+import { suggestTicketReply } from './suggestTicketReply'
 import { summarizeTicket } from './summarizeTicket'
 import { ticketKeys } from './ticketKeys'
 import { updateTicket } from './updateTicket'
@@ -70,5 +71,14 @@ export function useEscalateTicket(id: number) {
 export function useSummarizeTicket(id: number) {
   return useMutation({
     mutationFn: () => summarizeTicket(id),
+  })
+}
+
+// No queryClient.invalidateQueries — same reasoning as useSummarizeTicket
+// (Story 75): drafting a reply changes nothing cached; the caller
+// consumes the result directly via onSuccess.
+export function useSuggestTicketReply(id: number) {
+  return useMutation({
+    mutationFn: () => suggestTicketReply(id),
   })
 }

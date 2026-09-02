@@ -17,4 +17,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | customer-portal | [customer-portal/00-overview.md](customer-portal/00-overview.md) | 42–47 (EPIC 10 fully planned, PORTAL-0 through PORTAL-5) |
 | security-administration | [security-administration/00-overview.md](security-administration/00-overview.md) | 48–49, 52–53, 70–73 (EPIC 12, SEC-1 through SEC-8 fully planned; SEC-1 through SEC-7 implemented; SEC-8 (Story 73) planned, not yet implemented) |
 | reports-analytics | [reports-analytics/00-overview.md](reports-analytics/00-overview.md) | 55–60 (EPIC 11 fully planned, RPT-0/RPT-1/RPT-2/RPT-3/RPT-4 implemented, RPT-5 planned) |
-| ai-features | [ai-features/00-overview.md](ai-features/00-overview.md) | 74–75 (EPIC 13, AI-0/AI-1 planned; AI-2 through AI-5 not yet planned) |
+| ai-features | [ai-features/00-overview.md](ai-features/00-overview.md) | 74–76 (EPIC 13, AI-0/AI-1/AI-2 planned; AI-3 through AI-5 not yet planned) |

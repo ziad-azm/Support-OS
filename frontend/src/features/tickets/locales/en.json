@@ -113,7 +113,8 @@
     },
     "actions": {
       "send": "Send",
-      "summarize": "Summarize"
+      "summarize": "Summarize",
+      "suggestReply": "Suggest reply"
     },
     "summary": {
       "title": "AI Summary"

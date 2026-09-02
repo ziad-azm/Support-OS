@@ -4,9 +4,8 @@ one cap constant, one function returning plain data" shape as
 `history.py`/`context.py` in this same app.
 """
 
-from django.utils.translation import get_language
-
 from apps.ai.client import generate_completion
+from apps.ai.prompts import resolve_language_name
 from apps.communications.models import Message
 
 from .models import Ticket
@@ -18,9 +17,6 @@ from .models import Ticket
 # context window, even 50 long messages is a small fraction of what the
 # model can accept.
 MAX_TRANSCRIPT_MESSAGES = 50
-
-_LANGUAGE_NAMES = {"en": "English", "ar": "Arabic"}
-_DEFAULT_LANGUAGE_NAME = "English"
 
 
 def build_conversation_transcript(ticket: Ticket) -> str:
@@ -53,7 +49,7 @@ def summarize_ticket(ticket: Ticket) -> str:
     (`TicketViewSet.summarize`) decides how to translate that for HTTP.
     """
     transcript = build_conversation_transcript(ticket)
-    language_name = _LANGUAGE_NAMES.get(get_language(), _DEFAULT_LANGUAGE_NAME)
+    language_name = resolve_language_name()
     system = (
         "You are a support-ticket summarization assistant. Summarize the "
         "conversation below for a support agent in 2-4 concise sentences, "
