@@ -1843,12 +1843,18 @@ one `AuthProvider`/`Direction.DirectionProvider`/`QueryClientProvider` stack
 in `main.tsx`), so direction, i18n, and auth state all work identically in
 both — only the visual shell differs.
 
-**Provisioning is Django-admin-only, by design, until a later epic builds a
-screen.** A staff member creates a `User`, assigns it the `customer` role,
-then links it to a `Customer` row's `user` field — the same
-admin-first-until-SEC-1 pattern § 22 already documents for staff role
-assignment. There is no self-service registration and no combined
-create-and-link form.
+**Provisioning is a staff-facing action on the customer profile — `CUST-5`
+(Story 85).** `CustomerViewSet.portal_access` (`POST` grants, `DELETE`
+revokes, gated on `customers.manage`) is the primary path: grant creates or
+reuses a `User(role=customer, is_staff=False)` in exactly the same
+`is_active=False` + unusable-password pending state `SEC-5`'s
+`UserAdminSerializer.create` leaves for a new staff account, and dispatches
+the same `send_invite_email` task; revoke unlinks `Customer.user` and sets
+`User.is_active = False` together. Django admin's `Customer.user` field
+(Story 42) is unchanged and still usable as a manual fallback — the same
+role Django admin keeps for `Role`/`User` after `SEC-1`/`SEC-2` shipped their
+own screens over those. Still no self-service registration: only a staff
+member with `customers.manage` can grant or revoke.
 
 ---
 

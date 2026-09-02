@@ -178,6 +178,8 @@ class AuditLog(TimeStampedModel):
         ROLE_RENAMED = "role_renamed", _("Role renamed")
         ROLE_PERMISSIONS_CHANGED = "role_permissions_changed", _("Role permissions changed")
         ROLE_DELETED = "role_deleted", _("Role deleted")
+        PORTAL_ACCESS_GRANTED = "portal_access_granted", _("Portal access granted")
+        PORTAL_ACCESS_REVOKED = "portal_access_revoked", _("Portal access revoked")
 
     actor = models.ForeignKey(
         User,

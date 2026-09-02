@@ -3,7 +3,7 @@ import { createBrowserRouter } from 'react-router'
 import { PublicLayout } from './PublicLayout'
 import { RootLayout } from './RootLayout'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
-import { RequireAuth, RequirePermission } from '@/shared/auth'
+import { RedirectPortalOnly, RequireAuth, RequirePermission } from '@/shared/auth'
 
 export const router = createBrowserRouter([
   {
@@ -70,11 +70,16 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           {
-            index: true,
-            lazy: async () => {
-              const { HomePage } = await import('@/app/HomePage')
-              return { element: <HomePage /> }
-            },
+            element: <RedirectPortalOnly />,
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { HomePage } = await import('@/app/HomePage')
+                  return { element: <HomePage /> }
+                },
+              },
+            ],
           },
           {
             element: <RequirePermission permission="customers.view" />,

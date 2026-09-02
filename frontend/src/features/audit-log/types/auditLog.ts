@@ -8,6 +8,8 @@ export const AUDIT_LOG_ACTIONS = [
   'role_renamed',
   'role_permissions_changed',
   'role_deleted',
+  'portal_access_granted',
+  'portal_access_revoked',
 ] as const
 
 export type AuditLogAction = (typeof AUDIT_LOG_ACTIONS)[number]

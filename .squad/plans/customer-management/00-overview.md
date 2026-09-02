@@ -10,12 +10,15 @@ Entry point for the **customer-management** feature. Stories execute in order by
 | 11 | [11-story-contact-details-SUPPORTOS-29.md](11-story-contact-details-SUPPORTOS-29.md) | Contact Details | SUPPORTOS-29 | Story 10 |
 | 20 | [20-story-interaction-history-SUPPORTOS-30.md](20-story-interaction-history-SUPPORTOS-30.md) | Interaction History | SUPPORTOS-30 | Story 10 (`CUST-1`), Story 12 (`TKT-1`), Stories 13–19 (`COMM-*`) |
 | 21 | [21-story-notes-attachments-SUPPORTOS-31.md](21-story-notes-attachments-SUPPORTOS-31.md) | Notes & Attachments | SUPPORTOS-31 | Story 10 (`CUST-1`) |
+| 85 | [85-story-portal-access-management-SUPPORTOS-122.md](85-story-portal-access-management-SUPPORTOS-122.md) | Portal Access Management | SUPPORTOS-122 | Story 10 (`CUST-1`); `../customer-portal/42-story-portal-access-customer-auth-SUPPORTOS-55.md` (`PORTAL-0`); `../security-administration/70-story-user-invitation-first-login-password-SUPPORTOS-107.md` (`SEC-5`) |
 
 ## Dependency notes
 
 This feature maps to **EPIC 3 — Customer Management** in `SupportOs backlog.MD` (lines 264–303). It depends on EPIC 0, 1, and 2 being complete, which they are — see [`../authentication-authorization/00-overview.md`](../authentication-authorization/00-overview.md).
 
-`CUST-1` (story 10) → `CUST-2` (Contact Details) → `CUST-3` (Interaction History, story 20) → `CUST-4` (Notes & Attachments, story 21). CUST-3 additionally depended on TKT-1 and COMM-*, which is why it is story **20** rather than 12 — it waited for ticket-management and the whole of EPIC 5 to land first. `CUST-4` depends only on `CUST-1`, and with story 21 planned, **EPIC 3 is now fully planned**.
+`CUST-1` (story 10) → `CUST-2` (Contact Details) → `CUST-3` (Interaction History, story 20) → `CUST-4` (Notes & Attachments, story 21). CUST-3 additionally depended on TKT-1 and COMM-*, which is why it is story **20** rather than 12 — it waited for ticket-management and the whole of EPIC 5 to land first. `CUST-4` depends only on `CUST-1`, and with story 21 planned, EPIC 3's original four stories were fully planned.
+
+**Story 85 (`CUST-5`, `SUPPORTOS-122`) is a later addition, not part of EPIC 3's original four-story scope** — it depends on `CUST-1` (this feature) plus two cross-epic prerequisites: `PORTAL-0` (`Customer.user`, the link this story finally exposes a staff-facing grant/revoke UI over) and `SEC-5` (the invite-email flow it reuses wholesale). It replaces the Django-admin-only provisioning path `PORTAL-0` documented as intentionally temporary.
 
 **Story 10 is the first feature story in the project**, and the first consumer of four foundations that all shipped without one:
 

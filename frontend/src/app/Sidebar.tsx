@@ -200,6 +200,11 @@ export function Sidebar() {
               collapsed={collapsed}
             />
           </Can>
+          {/* Deliberately ungated, unlike every other link in this file:
+              TaskViewSet scopes to request.user's own rows (personal, safe
+              for any staff account), and after Story 84 a portal-only
+              account never reaches this sidebar at all — RedirectPortalOnly
+              sends it to /portal before RootLayout ever renders. */}
           <SidebarLink
             to="/tasks"
             icon={ListTodoIcon}

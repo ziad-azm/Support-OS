@@ -27,6 +27,20 @@
   "updated": "Customer updated.",
   "deleted": "Customer deleted.",
   "notFound": "That customer could not be found.",
+  "portalAccess": {
+    "label": "Portal access",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "grant": "Grant portal access",
+    "revoke": "Revoke portal access",
+    "noEmailHint": "Add an email address to grant portal access.",
+    "granted": "Portal access granted. An invite email was sent.",
+    "revoked": "Portal access revoked.",
+    "revokeConfirm": {
+      "title": "Revoke portal access?",
+      "description": "The customer will no longer be able to sign in to the portal."
+    }
+  },
   "contacts": {
     "title": "Contact channels",
     "empty": "No contact channels yet.",

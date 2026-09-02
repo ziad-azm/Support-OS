@@ -52,6 +52,7 @@ class CustomerSerializer(BaseModelSerializer):
         allow_null=True,
         validators=[UniqueValidator(queryset=Customer.objects.all())],
     )
+    portal_access_enabled = serializers.SerializerMethodField()
 
     class Meta(BaseModelSerializer.Meta):
         model = Customer
@@ -62,6 +63,7 @@ class CustomerSerializer(BaseModelSerializer):
             "phone",
             "company",
             "external_id",
+            "portal_access_enabled",
             "created_at",
             "updated_at",
         )
@@ -75,6 +77,15 @@ class CustomerSerializer(BaseModelSerializer):
 
     def validate_external_id(self, value):
         return value or None
+
+    def get_portal_access_enabled(self, customer) -> bool:
+        """Whether this customer has a linked portal-login `User`
+        (`Customer.user`, Story 42). A plain column read — `user_id` lives on
+        `Customer` itself, not behind a reverse accessor — so this adds no
+        query. Read-only: writes go through `CustomerViewSet.portal_access`
+        (Story 85), never a PATCH on this field.
+        """
+        return customer.user_id is not None
 
 
 class ContactDetailSerializer(BaseModelSerializer):

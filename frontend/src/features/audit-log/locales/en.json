@@ -26,6 +26,8 @@
     "role_created": "Role created",
     "role_renamed": "Role renamed",
     "role_permissions_changed": "Role permissions changed",
-    "role_deleted": "Role deleted"
+    "role_deleted": "Role deleted",
+    "portal_access_granted": "Portal access granted",
+    "portal_access_revoked": "Portal access revoked"
   }
 }

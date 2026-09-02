@@ -6,6 +6,7 @@ export type Customer = {
   email: string | null
   phone: string
   company: string
+  portal_access_enabled: boolean
   created_at: string
   updated_at: string
 }

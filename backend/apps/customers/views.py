@@ -1,3 +1,6 @@
+import logging
+
+from django.contrib.auth import get_user_model
 from django.http import FileResponse
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
@@ -5,6 +8,8 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
+from apps.accounts.models import AuditLog, Role
+from apps.accounts.tasks import send_invite_email
 from apps.core.permissions import Permissions, permissions_for
 from apps.core.views import BaseModelViewSet
 
@@ -16,6 +21,9 @@ from .serializers import (
     NoteSerializer,
 )
 from .timeline import build_timeline
+
+User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class CustomerViewSet(BaseModelViewSet):
@@ -41,6 +49,13 @@ class CustomerViewSet(BaseModelViewSet):
         # `## Prerequisites`). Without this entry the action would fall
         # through to authenticated-only, NOT be denied.
         "timeline": Permissions.CUSTOMERS_VIEW,
+        # One HTTP-method-agnostic entry: DRF sets `self.action` to the
+        # decorated method's own name ("portal_access") for BOTH the `post`
+        # and `delete` methods bound to it below — verified against the
+        # installed DRF's `@action`/`MethodMapper` (rest_framework/decorators.py),
+        # the same "keyed by method name, not verb" rule `timeline` above
+        # already established for a single-method action.
+        "portal_access": Permissions.CUSTOMERS_MANAGE,
     }
 
     # `ordering_fields` is what makes `?ordering=` real for these columns —
@@ -67,6 +82,113 @@ class CustomerViewSet(BaseModelViewSet):
             raise PermissionDenied()
         customer = self.get_object()
         return Response(build_timeline(customer))
+
+    @action(detail=True, methods=["post", "delete"], url_path="portal-access")
+    def portal_access(self, request, pk=None):
+        """CUST-5: staff-controlled portal onboarding, replacing the
+        Django-admin-only path Story 42 left as intentionally temporary
+        (`CONVENTIONS.md` §26). `POST` grants — reusing SEC-5's invite-email
+        flow with `role=customer`; `DELETE` revokes — unlinking `Customer.user`
+        and deactivating the underlying `User`, both, per the intake's own
+        "unlink/deactivate" wording.
+        """
+        customer = self.get_object()
+        if request.method == "POST":
+            self._grant_portal_access(customer)
+        else:
+            self._revoke_portal_access(customer)
+        return Response(CustomerSerializer(customer).data)
+
+    def _grant_portal_access(self, customer: Customer) -> None:
+        if customer.user_id is not None:
+            raise ValidationError(
+                {"non_field_errors": [_("Portal access is already enabled for this customer.")]}
+            )
+        if not customer.email:
+            raise ValidationError(
+                {"non_field_errors": [_("Add an email address before granting portal access.")]}
+            )
+
+        customer_role = Role.objects.get(slug="customer")
+        existing = User.objects.filter(email=customer.email).first()
+
+        if existing is not None:
+            # `Customer.user_id` carries a UNIQUE constraint (the OneToOneField
+            # compiles to one) — linking a User another Customer already holds
+            # would raise IntegrityError with no guard. See `## Story Goal`.
+            if getattr(existing, "customer_profile", None) is not None:
+                raise ValidationError(
+                    {
+                        "non_field_errors": [
+                            _("This email is already linked to another customer's portal account.")
+                        ]
+                    }
+                )
+            if existing.is_staff:
+                raise ValidationError(
+                    {
+                        "non_field_errors": [
+                            _(
+                                "This email belongs to a staff account and cannot "
+                                "also be used for portal access."
+                            )
+                        ]
+                    }
+                )
+            # An orphaned, non-staff account with no current Customer link —
+            # the ordinary "re-grant after a prior revoke" case. Reused, not
+            # recreated: a second User row would collide on the unique `email`
+            # column anyway.
+            user = existing
+            user.role = customer_role
+            user.is_active = False
+            user.set_password(None)
+            user.save(update_fields=["role", "is_active", "password"])
+        else:
+            user = User.objects.create_user(
+                email=customer.email,
+                password=None,
+                is_staff=False,
+                is_active=False,
+                role=customer_role,
+                first_name=customer.name,
+            )
+
+        customer.user = user
+        customer.save(update_fields=["user"])
+
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action=AuditLog.Action.PORTAL_ACCESS_GRANTED,
+            target_user=user,
+            target_label=customer.name,
+        )
+        # Best-effort, the same commit-first idiom `UserViewSet.perform_create`
+        # already uses around its own `send_invite_email.delay(...)` call — a
+        # down Redis/worker must never fail or roll back the already-created
+        # link.
+        try:
+            send_invite_email.delay(user.id)
+        except Exception:
+            logger.exception("Failed to queue portal invite email for user %s", user.id)
+
+    def _revoke_portal_access(self, customer: Customer) -> None:
+        user = customer.user
+        if user is None:
+            raise ValidationError(
+                {"non_field_errors": [_("Portal access is not enabled for this customer.")]}
+            )
+        customer.user = None
+        customer.save(update_fields=["user"])
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action=AuditLog.Action.PORTAL_ACCESS_REVOKED,
+            target_user=user,
+            target_label=customer.name,
+        )
 
 
 class ContactDetailViewSet(BaseModelViewSet):
