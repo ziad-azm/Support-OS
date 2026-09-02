@@ -11,6 +11,7 @@ Entry point for the **ai-features** feature. Stories execute in order by their `
 | 76 | [76-story-suggested-replies-SUPPORTOS-84.md](76-story-suggested-replies-SUPPORTOS-84.md) | Suggested Replies (AI-2) | SUPPORTOS-84 | Story 74 (also reuses Story 75's `build_conversation_transcript`) |
 | 77 | [77-story-automatic-categorization-SUPPORTOS-85.md](77-story-automatic-categorization-SUPPORTOS-85.md) | Automatic Categorization (AI-3) | SUPPORTOS-85 | Story 74 |
 | 78 | [78-story-suggested-solutions-SUPPORTOS-86.md](78-story-suggested-solutions-SUPPORTOS-86.md) | Suggested Solutions (AI-4) | SUPPORTOS-86 | Story 74 + KB-3 (also reuses Story 75's `build_conversation_transcript`) |
+| 79 | [79-story-ai-chatbot-SUPPORTOS-87.md](79-story-ai-chatbot-SUPPORTOS-87.md) | AI Chatbot (AI-5) | SUPPORTOS-87 | Story 74 + KB-3 + PORTAL-0 |
 
 ## Dependency notes
 
@@ -23,4 +24,6 @@ and `apps/ai/prompts.py` (shared prompt utilities + KB grounding via
 - `AI-2` (Suggested Replies, `SUPPORTOS-84`) depends on Story 74 + `COMM-0` (complete) — **planned, Story 76.** Also reuses Story 75's `apps/tickets/summarization.py::build_conversation_transcript`, and relocates the language-resolution helper Story 75 first wrote into `apps/ai/prompts.py::resolve_language_name` (second consumer triggers the move — see Story 76 `## Prerequisites`).
 - `AI-3` (Automatic Categorization, `SUPPORTOS-85`) depends on Story 74 + `TKT-2` (complete) — **planned, Story 77.** Scoped to `PortalTicketViewSet.perform_create` only (see Story 77 `## Prerequisites` for why staff-created and channel-adapter-created tickets are excluded).
 - `AI-4` (Suggested Solutions, `SUPPORTOS-86`) depends on Story 74 + `KB-3` (complete, [../knowledge-base/41-story-knowledge-base-search-SUPPORTOS-54.md](../knowledge-base/41-story-knowledge-base-search-SUPPORTOS-54.md)) — **planned, Story 78.** The AI's role is query extraction only; retrieval reuses `apps.ai.prompts.ground_with_knowledge_base` (`KB-3`) directly, with no LLM-synthesized answer on top.
-- `AI-5` (AI Chatbot, `SUPPORTOS-87`) depends on Story 74 + `KB-3` + `PORTAL-0` (complete).
+- `AI-5` (AI Chatbot, `SUPPORTOS-87`) depends on Story 74 + `KB-3` + `PORTAL-0` (complete) — **planned, Story 79.** The only two-task story in this epic, and the one that consumes `AI-0`'s own deferred extension point (multi-turn `generate_chat_completion`). Adds `apps.ai`'s first model (`ChatbotSession`) and first migration.
+
+**EPIC 13 is fully planned** (Stories 74-79). Stories 74-78 are implemented; Story 79 is outstanding.

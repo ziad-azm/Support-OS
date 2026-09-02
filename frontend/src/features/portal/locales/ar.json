@@ -9,10 +9,24 @@
   "nav": {
     "home": "الرئيسية",
     "faqs": "الأسئلة الشائعة",
+    "assistant": "المساعد",
     "articles": "المقالات",
     "myTickets": "تذاكري",
     "history": "السجل",
     "newTicket": "تذكرة جديدة"
+  },
+  "chatbot": {
+    "title": "المساعد",
+    "paneTitle": "اسأل المساعد",
+    "empty": "اطرح سؤالاً للبدء.",
+    "placeholder": "اكتب سؤالك",
+    "send": "إرسال",
+    "talkToHuman": "التحدث إلى شخص",
+    "handedOff": {
+      "title": "سيتولى أحد موظفينا المحادثة",
+      "description": "تم تحويل محادثتك إلى فريق الدعم.",
+      "viewTicket": "عرض التذكرة"
+    }
   },
   "faqs": {
     "title": "الأسئلة الشائعة",

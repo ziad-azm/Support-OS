@@ -72,3 +72,41 @@ def generate_completion(
     if not text:
         raise AIServiceError("AI provider returned an empty response.")
     return text
+
+
+def generate_chat_completion(
+    messages: list[dict],
+    *,
+    system: str | None = None,
+    max_tokens: int = 1024,
+    model: str | None = None,
+) -> str:
+    """Multi-turn completion — the extension Story 74 `## Story Goal`
+    deferred to AI-5. `messages` is the full alternating history in the
+    Anthropic wire shape (`{"role": "user"|"assistant", "content": str}`),
+    oldest first; the caller owns history construction (see
+    `apps.ai.chatbot.build_history`).
+
+    Identical failure contract to `generate_completion`: every
+    `anthropic.*` error becomes an `AIServiceError`, and neither the
+    prompt nor the response is ever logged (CONVENTIONS.md §10).
+    """
+    client = get_client()
+    try:
+        response = client.messages.create(
+            model=model or settings.AI_MODEL,
+            max_tokens=max_tokens,
+            system=system,
+            messages=messages,
+        )
+    except anthropic.APIStatusError as exc:
+        logger.error("AI provider returned status %s", exc.status_code)
+        raise AIServiceError(f"AI provider error (status {exc.status_code}).") from exc
+    except anthropic.APIConnectionError as exc:
+        logger.error("AI provider connection failed: %s", exc.__class__.__name__)
+        raise AIServiceError("Could not reach the AI provider.") from exc
+
+    text = next((block.text for block in response.content if block.type == "text"), "")
+    if not text:
+        raise AIServiceError("AI provider returned an empty response.")
+    return text

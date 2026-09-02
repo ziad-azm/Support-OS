@@ -1,6 +1,11 @@
 from django.urls import path
 
-from .views import PortalFeedbackViewSet, PortalTicketViewSet
+from .views import (
+    PortalChatbotHandoffView,
+    PortalChatbotView,
+    PortalFeedbackViewSet,
+    PortalTicketViewSet,
+)
 
 app_name = "portal"
 
@@ -23,5 +28,11 @@ urlpatterns = [
         "portal/feedback/",
         PortalFeedbackViewSet.as_view({"post": "create"}),
         name="portal-feedback-create",
+    ),
+    path("portal/chatbot/", PortalChatbotView.as_view(), name="portal-chatbot"),
+    path(
+        "portal/chatbot/handoff/",
+        PortalChatbotHandoffView.as_view(),
+        name="portal-chatbot-handoff",
     ),
 ]

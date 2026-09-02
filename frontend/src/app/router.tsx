@@ -529,6 +529,14 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'chat',
+                lazy: async () => {
+                  const { PortalChatbotPage } =
+                    await import('@/features/portal/components/PortalChatbotPage')
+                  return { element: <PortalChatbotPage /> }
+                },
+              },
+              {
                 path: 'articles',
                 lazy: async () => {
                   const { PortalArticleListPage } =

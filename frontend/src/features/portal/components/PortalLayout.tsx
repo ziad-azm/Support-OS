@@ -52,6 +52,17 @@ export function PortalLayout() {
               {t('nav.faqs')}
             </NavLink>
             <NavLink
+              to="/portal/chat"
+              className={({ isActive }) =>
+                cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  isActive && 'bg-accent text-accent-foreground',
+                )
+              }
+            >
+              {t('nav.assistant')}
+            </NavLink>
+            <NavLink
               to="/portal/articles"
               className={({ isActive }) =>
                 cn(

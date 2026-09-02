@@ -9,10 +9,24 @@
   "nav": {
     "home": "Home",
     "faqs": "FAQs",
+    "assistant": "Assistant",
     "articles": "Articles",
     "myTickets": "My tickets",
     "history": "History",
     "newTicket": "New ticket"
+  },
+  "chatbot": {
+    "title": "Assistant",
+    "paneTitle": "Ask the assistant",
+    "empty": "Ask a question to get started.",
+    "placeholder": "Type your question",
+    "send": "Send",
+    "talkToHuman": "Talk to a human",
+    "handedOff": {
+      "title": "A person is taking over",
+      "description": "Your conversation has been passed to our support team.",
+      "viewTicket": "View the ticket"
+    }
   },
   "faqs": {
     "title": "Frequently asked questions",

@@ -2,14 +2,25 @@ import logging
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from apps.ai.chatbot import BOT_AUTHOR, answer, get_or_start_session, hand_off
+from apps.ai.exceptions import AIServiceError, AIServiceUnavailable
+from apps.ai.models import ChatbotSession
 from apps.ai.tasks import categorize_ticket
-from apps.core.permissions import Permissions
+from apps.communications.models import Message
+from apps.core.permissions import HasPermission, Permissions
 from apps.core.views import CustomerScopedModelViewSet
 from apps.sla.tasks import auto_assign_ticket
 from apps.tickets.models import Feedback, Ticket
 
-from .serializers import PortalFeedbackSerializer, PortalTicketSerializer
+from .serializers import (
+    PortalChatbotMessageSerializer,
+    PortalFeedbackSerializer,
+    PortalTicketSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,3 +132,88 @@ class PortalFeedbackViewSet(CustomerScopedModelViewSet):
                 _("Only customer accounts can submit feedback through the portal.")
             )
         serializer.save(customer=self.request.user.customer_profile)
+
+
+def _chatbot_state(session: ChatbotSession) -> dict:
+    """The one response shape all three chatbot endpoints return — the
+    full conversation state, so the widget replaces its state wholesale
+    instead of merging. `author` is derived here rather than exposing
+    `direction`/`metadata`: a customer-facing surface should not have to
+    know that "outbound" means "not the customer."
+    """
+    messages = Message.objects.filter(ticket=session.ticket).order_by("created_at")
+    return {
+        "ticket": session.ticket_id,
+        "handed_off": session.handed_off_at is not None,
+        "messages": [
+            {
+                "id": message.id,
+                "author": (
+                    "customer"
+                    if message.direction == Message.Direction.INBOUND
+                    else ("bot" if message.metadata.get("author") == BOT_AUTHOR else "agent")
+                ),
+                "body": message.body,
+                "created_at": message.created_at,
+            }
+            for message in messages
+        ],
+    }
+
+
+class PortalChatbotView(APIView):
+    """The portal assistant — AI-5. `GET` loads (or starts) the customer's
+    conversation; `POST` sends a message and returns the state including
+    the bot's reply. A plain `APIView`, so `permission_classes` is set
+    explicitly and `permission_map` is keyed by lowercased HTTP method —
+    the same shape `KnowledgeBaseSearchView` (KB-3) established.
+    """
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {
+        "get": Permissions.PORTAL_ACCESS,
+        "post": Permissions.PORTAL_ACCESS,
+    }
+
+    def _customer(self):
+        # Same guard, same reason as PortalTicketViewSet.perform_create:
+        # a staff account can hold `portal.access` without ever having a
+        # customer profile.
+        if not hasattr(self.request.user, "customer_profile"):
+            raise PermissionDenied(_("Only customer accounts can use the portal assistant."))
+        return self.request.user.customer_profile
+
+    def get(self, request):
+        session = get_or_start_session(self._customer())
+        return Response(_chatbot_state(session))
+
+    def post(self, request):
+        serializer = PortalChatbotMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        session = get_or_start_session(self._customer())
+        if session.handed_off_at is not None:
+            raise ValidationError({"body": [_("This conversation is now with a human agent.")]})
+        try:
+            answer(session, serializer.validated_data["body"])
+        except AIServiceError as exc:
+            raise AIServiceUnavailable() from exc
+        session.refresh_from_db()
+        return Response(_chatbot_state(session))
+
+
+class PortalChatbotHandoffView(APIView):
+    """Customer-requested handoff — AI-5. Idempotent (`hand_off` is), so a
+    double-click is a no-op rather than a second assignment attempt.
+    """
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {"post": Permissions.PORTAL_ACCESS}
+
+    def post(self, request):
+        if not hasattr(request.user, "customer_profile"):
+            raise PermissionDenied(_("Only customer accounts can use the portal assistant."))
+        session = get_or_start_session(request.user.customer_profile)
+        hand_off(session)
+        session.refresh_from_db()
+        return Response(_chatbot_state(session))

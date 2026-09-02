@@ -84,3 +84,15 @@ class PortalFeedbackSerializer(BaseModelSerializer):
                 _("Feedback can only be submitted for a resolved or closed ticket.")
             )
         return ticket
+
+
+class PortalChatbotMessageSerializer(serializers.Serializer):
+    """Write-only input for `PortalChatbotView.post` — a plain
+    `Serializer`, not a `ModelSerializer`: the customer supplies only a
+    body, and everything else about the resulting `Message` (ticket,
+    direction, channel) is decided server-side by `apps.ai.chatbot`.
+    `max_length` matches the live-chat widget's own 2000-char cap
+    (`LiveChatWidget`'s `messageSchema`).
+    """
+
+    body = serializers.CharField(max_length=2000, trim_whitespace=True)
