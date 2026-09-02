@@ -3,6 +3,7 @@ import logging
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
+from apps.ai.tasks import categorize_ticket
 from apps.core.permissions import Permissions
 from apps.core.views import CustomerScopedModelViewSet
 from apps.sla.tasks import auto_assign_ticket
@@ -87,6 +88,11 @@ class PortalTicketViewSet(CustomerScopedModelViewSet):
             # committed; auto-assignment queuing failing must not fail
             # the customer's submission.
             logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
+        try:
+            categorize_ticket.delay(ticket.id)
+        except Exception:
+            # Same resilience contract, one call site over — AI-3.
+            logger.exception("Failed to queue AI categorization for ticket %s", ticket.id)
 
 
 class PortalFeedbackViewSet(CustomerScopedModelViewSet):
