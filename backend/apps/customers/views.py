@@ -124,7 +124,16 @@ class CustomerViewSet(BaseModelViewSet):
                         ]
                     }
                 )
-            if existing.is_staff:
+            # `is_staff` alone is not a reliable enough signal — verified live:
+            # an account provisioned outside `UserAdminSerializer.create()`
+            # (e.g. directly via `manage.py shell`, as this project's own dev
+            # seed accounts are) can hold a real operational role with
+            # `is_staff=False`. Holding any role other than `customer` is the
+            # actual "this identity is in real use" signal, independent of how
+            # the account was created.
+            if existing.is_staff or (
+                existing.role_id is not None and existing.role_id != customer_role.id
+            ):
                 raise ValidationError(
                     {
                         "non_field_errors": [
@@ -135,10 +144,10 @@ class CustomerViewSet(BaseModelViewSet):
                         ]
                     }
                 )
-            # An orphaned, non-staff account with no current Customer link —
-            # the ordinary "re-grant after a prior revoke" case. Reused, not
-            # recreated: a second User row would collide on the unique `email`
-            # column anyway.
+            # An orphaned account with no current Customer link, held by
+            # nobody else's operational role — the ordinary "re-grant after a
+            # prior revoke" case. Reused, not recreated: a second User row
+            # would collide on the unique `email` column anyway.
             user = existing
             user.role = customer_role
             user.is_active = False
