@@ -28,6 +28,8 @@ export type Ticket = {
   customer_name: string
   category: number | null
   category_name: string | null
+  department: number | null
+  department_name: string | null
   assigned_agent: number | null
   assigned_agent_name: string | null
   status: TicketStatus
@@ -50,5 +52,8 @@ export type TicketInput = {
   description: string
   customer: number
   category: number | null
+  // Nullable, same contract as `category` — the form always sends this
+  // key explicitly (`null` to clear), never omits it (ORG-1).
+  department: number | null
   priority: TicketPriority
 }

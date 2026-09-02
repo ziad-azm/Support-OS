@@ -7,6 +7,9 @@ export type TicketVolumeParams = {
   to?: string
   bucket?: 'day' | 'week' | 'month'
   series?: ReportDimension
+  // A string, because the value carries either a numeric department id or
+  // the literal `'none'` — the backend scoping sentinel (ORG-1).
+  department?: string
 }
 
 // api.get, not api.getPage — neither report endpoint paginates, so there is

@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from apps.core.permissions import ALL_PERMISSIONS, permissions_for
 from apps.core.serializers import BaseModelSerializer
+from apps.organization.models import Department
 
 from .models import AuditLog, Role
 from .tasks import send_password_reset_email
@@ -25,6 +26,22 @@ class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = ("slug", "name")
+
+
+class DepartmentBriefSerializer(serializers.ModelSerializer):
+    """The `/auth/me/` shape of a department — id and name only.
+
+    A narrow, read-only mirror distinct from
+    `apps.organization.serializers.DepartmentSerializer` (which carries
+    `description` and the timestamps for the management screen), exactly
+    as `RoleSerializer` above is distinct from `RoleAdminSerializer`. The
+    session payload should carry the caller's department, not a record of
+    it.
+    """
+
+    class Meta:
+        model = Department
+        fields = ("id", "name")
 
 
 class RoleAdminSerializer(BaseModelSerializer):
@@ -87,12 +104,22 @@ class UserSerializer(serializers.ModelSerializer):
     """
 
     role = RoleSerializer(read_only=True)
+    department = DepartmentBriefSerializer(read_only=True)
     permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ("id", "email", "first_name", "last_name", "is_staff", "role", "permissions")
-        read_only_fields = ("id", "is_staff", "role", "permissions")
+        fields = (
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "is_staff",
+            "role",
+            "department",
+            "permissions",
+        )
+        read_only_fields = ("id", "is_staff", "role", "department", "permissions")
 
     def get_permissions(self, user) -> list[str]:
         """The SAME resolution the API enforces with, including the superuser
@@ -126,6 +153,14 @@ class UserAdminSerializer(serializers.ModelSerializer):
     # `null=True, blank=True`, the same verified derivation
     # `TicketSerializer.category` relies on.
     role_name = serializers.CharField(source="role.name", read_only=True, allow_null=True)
+    # Same dotted-source + `allow_null=True` pattern as `role_name` above —
+    # `allow_null` is what makes this return `None` instead of erroring when
+    # the user has no department. `department` itself needs no explicit
+    # declaration: DRF derives `required=False, allow_null=True` from the
+    # model FK's own `null=True, blank=True`.
+    department_name = serializers.CharField(
+        source="department.name", read_only=True, allow_null=True
+    )
 
     class Meta:
         model = User
@@ -139,6 +174,8 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "is_superuser",
             "role",
             "role_name",
+            "department",
+            "department_name",
             "date_joined",
             "last_login",
         )

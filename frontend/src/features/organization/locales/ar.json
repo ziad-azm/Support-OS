@@ -5,16 +5,40 @@
     "fields": {
       "name": "اسم المؤسسة",
       "logoUrl": "رابط الشعار",
-      "departments": "الأقسام",
       "branches": "الفروع",
       "defaultResponseMinutes": "هدف الاستجابة الافتراضي (بالدقائق)",
       "defaultResolutionMinutes": "هدف الحل الافتراضي (بالدقائق)"
     },
-    "addDepartment": "إضافة قسم",
     "addBranch": "إضافة فرع",
     "newItemPlaceholder": "الاسم",
     "remove": "إزالة",
     "removeItem": "إزالة {{item}}",
     "actions": { "save": "حفظ" }
+  },
+  "departments": {
+    "title": "الأقسام",
+    "new": "قسم جديد",
+    "edit": "تعديل القسم",
+    "search": "البحث في الأقسام",
+    "searchPlaceholder": "البحث بالاسم",
+    "empty": "لا توجد أقسام بعد",
+    "emptyDescription": "أنشئ قسمًا لتنظيم الوكلاء والتذاكر حسب الوظيفة.",
+    "noSearchResults": "لا توجد أقسام مطابقة لبحثك",
+    "created": "تم إنشاء القسم.",
+    "updated": "تم تحديث القسم.",
+    "fields": {
+      "name": "الاسم",
+      "description": "الوصف",
+      "createdAt": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "save": "حفظ",
+      "delete": "حذف"
+    },
+    "delete": {
+      "title": "حذف القسم؟",
+      "description": "تحتفظ التذاكر والوكلاء في هذا القسم بسجلاتهم؛ سيصبحون فقط غير معيّنين."
+    }
   }
 }

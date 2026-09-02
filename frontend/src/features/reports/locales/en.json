@@ -81,14 +81,18 @@
     "bucket": "Group by",
     "series": "Split by",
     "noSeries": "No split",
-    "dimension": "Breakdown by"
+    "dimension": "Breakdown by",
+    "department": "Department",
+    "allDepartments": "All departments",
+    "noDepartment": "No department"
   },
   "buckets": { "day": "Day", "week": "Week", "month": "Month" },
   "dimensions": {
     "status": "Status",
     "priority": "Priority",
     "category": "Category",
-    "channel": "Channel"
+    "channel": "Channel",
+    "department": "Department"
   },
   "statuses": {
     "open": "Open",

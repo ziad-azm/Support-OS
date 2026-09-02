@@ -6,6 +6,9 @@ export type TicketBreakdownParams = {
   from?: string
   to?: string
   dimension: ReportDimension
+  // A string, because the value carries either a numeric department id or
+  // the literal `'none'` — the backend scoping sentinel (ORG-1).
+  department?: string
 }
 
 export function getTicketBreakdown(params: TicketBreakdownParams): Promise<BreakdownRow[]> {

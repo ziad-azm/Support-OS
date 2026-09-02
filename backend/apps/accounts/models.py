@@ -111,6 +111,24 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True,
         blank=True,
     )
+    # SET_NULL, not PROTECT: contrast `role` directly above, where deleting
+    # a role people still hold must fail loudly because it silently strips
+    # access. A department is an org-chart label — deleting one should
+    # leave every agent's account and permissions untouched, just
+    # unassigned. Same call, same reasoning, as `Ticket.category`
+    # (apps/tickets/models.py:60-64). Nullable because every account that
+    # exists today has no department and a required column would need a
+    # fabricated default for all of them. String reference, not an import:
+    # `apps.organization` must stay free of any `accounts` dependency so
+    # the migration graph has no cycle (ORG-1 `## Prerequisites`).
+    department = models.ForeignKey(
+        "organization.Department",
+        verbose_name=_("department"),
+        related_name="users",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     objects = UserManager()
 

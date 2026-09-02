@@ -84,6 +84,23 @@ class Ticket(TimeStampedModel):
         related_name="assigned_tickets",
         verbose_name=_("assigned agent"),
     )
+    # SET_NULL, nullable — the same call `category` and `assigned_agent`
+    # above already make, for the same reason: deleting a department must
+    # neither delete its tickets (CASCADE) nor block the deletion
+    # (PROTECT); the ticket simply becomes department-less. Unlike
+    # `assigned_agent` this is NOT action-only: it is written through
+    # `TicketSerializer` on ordinary create/update, because moving a ticket
+    # between departments is routine triage, not a privileged state
+    # change. String reference, not an import — see
+    # `accounts.User.department`.
+    department = models.ForeignKey(
+        "organization.Department",
+        verbose_name=_("department"),
+        related_name="tickets",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     status = models.CharField(
         _("status"), max_length=20, choices=Status.choices, default=Status.OPEN
     )

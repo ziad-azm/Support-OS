@@ -24,6 +24,12 @@ class TicketSerializer(BaseModelSerializer):
     # `source="category.name"` return `None` instead of erroring when a
     # ticket has no category — also verified against DRF's own source.
     category_name = serializers.CharField(source="category.name", read_only=True, allow_null=True)
+    # Same verified dotted-source + `allow_null=True` pattern as
+    # `category_name` above. `department` itself needs no declaration —
+    # DRF derives `required=False, allow_null=True` from the model field.
+    department_name = serializers.CharField(
+        source="department.name", read_only=True, allow_null=True
+    )
     # Same verified-safe dotted-source pattern as `category_name` above and
     # `NoteSerializer.author_name` (Story 21): `allow_null=True` is what
     # makes this return `None` instead of erroring when `assigned_agent` is
@@ -52,6 +58,8 @@ class TicketSerializer(BaseModelSerializer):
             "customer_name",
             "category",
             "category_name",
+            "department",
+            "department_name",
             "assigned_agent",
             "assigned_agent_name",
             "status",

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
+import { useDepartments } from '@/shared/departments'
 import { email, optionalString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
@@ -29,12 +30,16 @@ import type { AdminUser, UserCreateInput, UserUpdateInput } from '../types/user'
 // in for "no role", the same role `ArticleFormPage`'s `CATEGORY_NONE` plays
 // for its own optional `category`.
 const ROLE_NONE = 'none'
+// Same sentinel shape as `ROLE_NONE` above, for the same Radix reason —
+// "no department" (ORG-1).
+const DEPARTMENT_NONE = 'none'
 
 const baseShape = {
   email: email(),
   first_name: optionalString(150),
   last_name: optionalString(150),
   role: z.string(),
+  department: z.string(),
 }
 
 const createSchema = z.object(baseShape)
@@ -50,6 +55,18 @@ function useRoleOptions(noRoleLabel: string) {
     ...(rolesQuery.data?.items.map((role) => ({ value: String(role.id), label: role.name })) ?? []),
   ]
   return { options, isPending: rolesQuery.isPending }
+}
+
+function useDepartmentOptions(noDepartmentLabel: string) {
+  const departmentsQuery = useDepartments()
+  const options = [
+    { value: DEPARTMENT_NONE, label: noDepartmentLabel },
+    ...(departmentsQuery.data?.items.map((department) => ({
+      value: String(department.id),
+      label: department.name,
+    })) ?? []),
+  ]
+  return { options, isPending: departmentsQuery.isPending }
 }
 
 /**
@@ -84,6 +101,9 @@ function UserCreateForm() {
   const { toast } = useToast()
   const [formErrors, setFormErrors] = useState<string[]>([])
   const { options: roleOptions, isPending: rolesPending } = useRoleOptions(t('users.noRole'))
+  const { options: departmentOptions, isPending: departmentsPending } = useDepartmentOptions(
+    t('users.noDepartment'),
+  )
 
   const form = useAppForm({
     schema: createSchema,
@@ -92,6 +112,7 @@ function UserCreateForm() {
       first_name: '',
       last_name: '',
       role: ROLE_NONE,
+      department: DEPARTMENT_NONE,
     } satisfies CreateFormValues,
   })
 
@@ -103,6 +124,7 @@ function UserCreateForm() {
       first_name: values.first_name ?? '',
       last_name: values.last_name ?? '',
       role: values.role === ROLE_NONE ? null : Number(values.role),
+      department: values.department === DEPARTMENT_NONE ? null : Number(values.department),
     }
     createMutation.mutate(input, {
       onSuccess: () => {
@@ -120,7 +142,7 @@ function UserCreateForm() {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t('users.new')}</h1>
-      {rolesPending ? (
+      {rolesPending || departmentsPending ? (
         <Loading />
       ) : (
         <Form {...form}>
@@ -150,6 +172,12 @@ function UserCreateForm() {
                   label={t('users.fields.role')}
                   options={roleOptions}
                 />
+                <SelectField
+                  control={form.control}
+                  name="department"
+                  label={t('users.fields.department')}
+                  options={departmentOptions}
+                />
               </CardContent>
             </Card>
             <FormErrorSummary errors={formErrors} />
@@ -174,6 +202,9 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
   const { toast } = useToast()
   const [formErrors, setFormErrors] = useState<string[]>([])
   const { options: roleOptions, isPending: rolesPending } = useRoleOptions(t('users.noRole'))
+  const { options: departmentOptions, isPending: departmentsPending } = useDepartmentOptions(
+    t('users.noDepartment'),
+  )
 
   const form = useAppForm({
     schema: editSchema,
@@ -182,6 +213,7 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
       first_name: user.first_name,
       last_name: user.last_name,
       role: user.role === null ? ROLE_NONE : String(user.role),
+      department: user.department === null ? DEPARTMENT_NONE : String(user.department),
       is_active: user.is_active,
     } satisfies EditFormValues,
   })
@@ -195,6 +227,7 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
       last_name: values.last_name ?? '',
       is_active: values.is_active,
       role: values.role === ROLE_NONE ? null : Number(values.role),
+      department: values.department === DEPARTMENT_NONE ? null : Number(values.department),
     }
     updateMutation.mutate(input, {
       onSuccess: () => {
@@ -212,7 +245,7 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t('users.edit')}</h1>
-      {rolesPending ? (
+      {rolesPending || departmentsPending ? (
         <Loading />
       ) : (
         <Form {...form}>
@@ -240,6 +273,12 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
                   name="role"
                   label={t('users.fields.role')}
                   options={roleOptions}
+                />
+                <SelectField
+                  control={form.control}
+                  name="department"
+                  label={t('users.fields.department')}
+                  options={departmentOptions}
                 />
                 <SwitchField
                   control={form.control}

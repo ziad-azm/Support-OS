@@ -81,14 +81,18 @@
     "bucket": "التجميع حسب",
     "series": "التقسيم حسب",
     "noSeries": "بدون تقسيم",
-    "dimension": "التصنيف حسب"
+    "dimension": "التصنيف حسب",
+    "department": "القسم",
+    "allDepartments": "كل الأقسام",
+    "noDepartment": "بدون قسم"
   },
   "buckets": { "day": "يوم", "week": "أسبوع", "month": "شهر" },
   "dimensions": {
     "status": "الحالة",
     "priority": "الأولوية",
     "category": "الفئة",
-    "channel": "القناة"
+    "channel": "القناة",
+    "department": "القسم"
   },
   "statuses": {
     "open": "مفتوحة",

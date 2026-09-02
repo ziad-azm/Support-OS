@@ -54,9 +54,17 @@ class UserAdmin(DjangoUserAdmin):
     """
 
     ordering = ("email",)
-    list_display = ("email", "first_name", "last_name", "role", "is_staff", "is_active")
-    list_filter = ("role", "is_staff", "is_active", "is_superuser")
-    list_select_related = ("role",)
+    list_display = (
+        "email",
+        "first_name",
+        "last_name",
+        "role",
+        "department",
+        "is_staff",
+        "is_active",
+    )
+    list_filter = ("role", "department", "is_staff", "is_active", "is_superuser")
+    list_select_related = ("role", "department")
     search_fields = ("email", "first_name", "last_name")
     fieldsets = (
         (None, {"fields": ("email", "password")}),
@@ -66,6 +74,7 @@ class UserAdmin(DjangoUserAdmin):
             {
                 "fields": (
                     "role",
+                    "department",
                     "is_active",
                     "is_staff",
                     "is_superuser",

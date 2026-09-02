@@ -5,16 +5,40 @@
     "fields": {
       "name": "Organization name",
       "logoUrl": "Logo URL",
-      "departments": "Departments",
       "branches": "Branches",
       "defaultResponseMinutes": "Default response target (minutes)",
       "defaultResolutionMinutes": "Default resolution target (minutes)"
     },
-    "addDepartment": "Add department",
     "addBranch": "Add branch",
     "newItemPlaceholder": "Name",
     "remove": "Remove",
     "removeItem": "Remove {{item}}",
     "actions": { "save": "Save" }
+  },
+  "departments": {
+    "title": "Departments",
+    "new": "New department",
+    "edit": "Edit department",
+    "search": "Search departments",
+    "searchPlaceholder": "Search by name",
+    "empty": "No departments yet",
+    "emptyDescription": "Create a department to organize agents and tickets by function.",
+    "noSearchResults": "No departments match your search",
+    "created": "Department created.",
+    "updated": "Department updated.",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete department?",
+      "description": "Tickets and agents in this department keep their records; they simply become unassigned."
+    }
   }
 }

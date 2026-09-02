@@ -23,5 +23,11 @@ export type BreakdownRow = {
  * (`.oxlintrc.json`) forbids the cross-feature import, the same boundary
  * `features/tickets/types/ticket.ts:10` and CONVENTIONS.md line 1668
  * already document for duplicated enums. */
-export const REPORT_DIMENSIONS = ['status', 'priority', 'category', 'channel'] as const
+export const REPORT_DIMENSIONS = [
+  'status',
+  'priority',
+  'category',
+  'channel',
+  'department',
+] as const
 export type ReportDimension = (typeof REPORT_DIMENSIONS)[number]

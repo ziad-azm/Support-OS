@@ -14,6 +14,8 @@
     "customerSearchHint": "تُعرض أول 100 عميل. إذا لم تجد العميل المطلوب، تواصل مع أحد المسؤولين أو راجع قائمة العملاء.",
     "category": "الفئة",
     "noCategory": "بدون فئة",
+    "department": "القسم",
+    "noDepartment": "بدون قسم",
     "assignedAgent": "المسؤول",
     "unassigned": "غير مُعيَّن",
     "status": "الحالة",
@@ -37,9 +39,11 @@
     "category": "تصفية حسب الفئة",
     "status": "تصفية حسب الحالة",
     "priority": "تصفية حسب الأولوية",
+    "department": "تصفية حسب القسم",
     "allCategories": "كل الفئات",
     "allStatuses": "كل الحالات",
     "allPriorities": "كل الأولويات",
+    "allDepartments": "كل الأقسام",
     "onlyMine": "تذاكري فقط"
   },
   "actions": {
@@ -68,6 +72,13 @@
     "title": "تذاكري",
     "empty": "لا توجد تذاكر معيّنة لك",
     "emptyDescription": "ستظهر هنا التذاكر المعيّنة لك."
+  },
+  "departmentQueue": {
+    "title": "قائمة القسم",
+    "empty": "لا توجد تذاكر في قسمك",
+    "emptyDescription": "ستظهر هنا تذاكر قسمك.",
+    "noDepartment": "لست ضمن أي قسم",
+    "noDepartmentDescription": "اطلب من أحد المسؤولين تعيينك إلى قسم لرؤية قائمة تذاكره."
   },
   "status": {
     "updated": "تم تحديث الحالة.",

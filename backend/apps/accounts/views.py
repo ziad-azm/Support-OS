@@ -14,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.agents.models import Task
 from apps.core.permissions import Permissions
+from apps.core.scoping import ScopedQuerysetMixin, ScopeFilter
 from apps.core.views import BaseModelViewSet
 
 from .models import AuditLog, Role
@@ -151,7 +152,7 @@ class MeView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
-class UserViewSet(BaseModelViewSet):
+class UserViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     """Staff user administration — SEC-1, extended by SEC-5 (invite-only
     creation) and SEC-6 (this story, hard delete).
 
@@ -171,6 +172,10 @@ class UserViewSet(BaseModelViewSet):
     """
 
     http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
+    # Now a real class attribute (SEC-1 had none): `ScopedQuerysetMixin`
+    # reaches the base implementation through `super().get_queryset()`,
+    # and `ModelViewSet.get_queryset` asserts without one.
+    queryset = User.objects.select_related("role", "department")
     serializer_class = UserAdminSerializer
 
     permission_map = {
@@ -187,6 +192,9 @@ class UserViewSet(BaseModelViewSet):
     ordering_fields = ("email", "first_name", "last_name", "is_active", "date_joined")
     search_fields = ("email", "first_name", "last_name")
 
+    # ORG-1's reusable scoping declaration — see `apps/core/scoping.py`.
+    scope_filters = (ScopeFilter(param="department", field="department"),)
+
     def get_queryset(self):
         # Staff identities only. A portal customer's User row is
         # provisioned through `Customer.user` (Story 42, Django-admin-only)
@@ -196,7 +204,7 @@ class UserViewSet(BaseModelViewSet):
         # `role.slug == "customer"`: the linked Customer row is what
         # actually grants portal access, independent of whatever role is
         # assigned. See `## Story Goal`.
-        return User.objects.select_related("role").filter(customer_profile__isnull=True)
+        return super().get_queryset().filter(customer_profile__isnull=True)
 
     def perform_create(self, serializer):
         super().perform_create(serializer)

@@ -3,15 +3,29 @@ from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
 
-from .models import OrganizationSettings
+from .models import Department, OrganizationSettings
+
+
+class DepartmentSerializer(BaseModelSerializer):
+    """CRUD over `Department` — ORG-1's management screen. Shaped exactly
+    like `CategorySerializer` (apps/tickets/serializers.py:7-11): the model
+    field's own `unique=True` is what DRF derives the uniqueness validator
+    from, so no hand-declared `UniqueValidator` is needed here (contrast
+    `CustomerSerializer.email`, which overrides the generated field and
+    therefore must declare one — apps/customers/serializers.py:36-43).
+    """
+
+    class Meta(BaseModelSerializer.Meta):
+        model = Department
+        fields = ("id", "name", "description", "created_at", "updated_at")
 
 
 class OrganizationSettingsSerializer(BaseModelSerializer):
-    """Read/write over the one `OrganizationSettings` row. `validate_departments`/
-    `validate_branches` mirror `OrganizationSettings.clean()`'s own list-of-
-    strings check for the API path — DRF does not call model `clean()`, the
-    same split `RoleAdminSerializer.validate_permissions`/`Role.clean()`
-    already establishes (CONVENTIONS.md § 22).
+    """Read/write over the one `OrganizationSettings` row. `validate_branches`
+    mirrors `OrganizationSettings.clean()`'s own list-of-strings check for
+    the API path — DRF does not call model `clean()`, the same split
+    `RoleAdminSerializer.validate_permissions`/`Role.clean()` already
+    establishes (CONVENTIONS.md § 22).
     """
 
     class Meta(BaseModelSerializer.Meta):
@@ -20,7 +34,6 @@ class OrganizationSettingsSerializer(BaseModelSerializer):
             "id",
             "name",
             "logo_url",
-            "departments",
             "branches",
             "default_response_target_minutes",
             "default_resolution_target_minutes",
@@ -34,9 +47,6 @@ class OrganizationSettingsSerializer(BaseModelSerializer):
         if any(not isinstance(item, str) or not item.strip() for item in value):
             raise serializers.ValidationError(_("Every entry must be a non-empty string."))
         return value
-
-    def validate_departments(self, value):
-        return self._validate_string_list(value, "departments")
 
     def validate_branches(self, value):
         return self._validate_string_list(value, "branches")

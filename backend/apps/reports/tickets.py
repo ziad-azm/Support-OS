@@ -14,6 +14,8 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
 from apps.communications.models import Message
+from apps.core.scoping import ScopeFilter, apply_scope_filters
+from apps.tickets.models import Ticket
 
 # The annotation alias `with_origin_channel` adds. Named once so the
 # whitelist below and the annotation cannot drift.
@@ -37,7 +39,25 @@ DIMENSION_FIELDS = {
     "priority": "priority",
     "category": "category__name",
     "channel": ORIGIN_CHANNEL_FIELD,
+    "department": "department__name",
 }
+
+# The scopes both RPT-1 endpoints honour. A tuple, not a bare call, so
+# ORG-2 adds `ScopeFilter(param="branch", field="branch")` here once and
+# both reports pick it up. Applied via the shared
+# `apps.core.scoping.apply_scope_filters` — the reports are plain
+# `APIView`s, so they use the function rather than `ScopedQuerysetMixin`.
+TICKET_SCOPES = (ScopeFilter(param="department", field="department"),)
+
+
+def scoped_tickets(query_params, queryset=None) -> QuerySet:
+    """`queryset` (default: every ticket) narrowed by whatever scope params
+    the caller sent. Malformed values raise DRF `ValidationError` -> 400,
+    the same contract `parse_dimension`/`parse_bucket` already use.
+    """
+    if queryset is None:
+        queryset = Ticket.objects.all()
+    return apply_scope_filters(queryset, query_params, TICKET_SCOPES)
 
 
 def parse_dimension(query_params, param: str, *, required: bool) -> str | None:

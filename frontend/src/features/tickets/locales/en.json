@@ -14,6 +14,8 @@
     "customerSearchHint": "Showing the first 100 customers. If you don't see the one you need, ask an admin or check the customer list.",
     "category": "Category",
     "noCategory": "No category",
+    "department": "Department",
+    "noDepartment": "No department",
     "assignedAgent": "Assignee",
     "unassigned": "Unassigned",
     "status": "Status",
@@ -37,9 +39,11 @@
     "category": "Filter by category",
     "status": "Filter by status",
     "priority": "Filter by priority",
+    "department": "Filter by department",
     "allCategories": "All categories",
     "allStatuses": "All statuses",
     "allPriorities": "All priorities",
+    "allDepartments": "All departments",
     "onlyMine": "Only my tickets"
   },
   "actions": {
@@ -68,6 +72,13 @@
     "title": "My Tickets",
     "empty": "No tickets assigned to you",
     "emptyDescription": "Tickets assigned to you will appear here."
+  },
+  "departmentQueue": {
+    "title": "Department queue",
+    "empty": "No tickets in your department",
+    "emptyDescription": "Tickets in your department will appear here.",
+    "noDepartment": "You are not in a department",
+    "noDepartmentDescription": "Ask an admin to assign you to a department to see its ticket queue."
   },
   "status": {
     "updated": "Status updated.",

@@ -2192,3 +2192,53 @@ delivery is never retried and never succeeds, the moment it was
 reporting is simply never communicated. A future one-shot async task
 should default to retrying; a future recurring/scheduled one should
 default to not.
+
+---
+
+## 33. Organizational scoping (ORG-1)
+
+Two scoping primitives exist, and they answer different questions:
+
+| Module | Scopes by | Caller can opt out? | Use for |
+|---|---|---|---|
+| `apps.core.views.CustomerScopedModelViewSet` | **who is calling** (`request.user.customer_profile`) | No — it is a security boundary | Every portal-facing viewset |
+| `apps.core.scoping` | **what the caller asked for** (`?<param>=`) | Yes — absent means no filter | Staff-facing list narrowing, reports |
+
+Never reach for the second where the first is meant. A `?department=`
+filter is a convenience; it authorizes nothing.
+
+**Declaring a scope.** A viewset lists its scopes as data and inherits the
+parsing:
+
+```python
+class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
+    queryset = Ticket.objects.all()
+    scope_filters = (ScopeFilter(param="department", field="department"),)
+```
+
+`ScopedQuerysetMixin` must come **before** `BaseModelViewSet` in the bases,
+and the viewset must have a real `queryset` class attribute (its own
+`get_queryset` override, if any, reaches the mixin through `super()`).
+Only `list` is scoped; widen with `scoped_actions` deliberately.
+
+A plain `APIView` (every `BaseReportView` subclass) calls
+`apply_scope_filters(queryset, request.query_params, SCOPES)` directly
+instead of inheriting anything.
+
+**The param contract**, identical everywhere: absent/empty means no
+filter; a numeric id filters by that id; the literal `"none"` filters for
+rows with no value; anything else is a **400**. A malformed filter is
+never a silently-unfiltered list.
+
+**`Department` replaced `OrganizationSettings.departments`.** SEC-4 shipped
+departments and branches as `JSONField` string lists, explicitly as a
+placeholder until something referenced an individual one. ORG-1 promoted
+the departments half to `organization.Department` with a data migration
+(`0004_migrate_settings_departments`) and dropped the column. **`branches`
+is still a JSON list** — ORG-2 promotes it the same way, and until it does,
+no code may add a second consumer of that column.
+
+**Frontend:** department options live in `src/shared/departments/`, not in
+a feature — three features need the same list and `no-restricted-imports`
+(§15) forbids reaching across features for it. `features/organization/`
+owns only the management screens and the write path.

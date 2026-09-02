@@ -7,6 +7,9 @@ import type { Ticket, TicketPriority, TicketStatus } from '../types/ticket'
 export type TicketListParams = ServerTableParams & {
   search?: string
   category?: string
+  // A string, because the value carries either a numeric department id
+  // or the literal `'none'` — the backend scoping sentinel (ORG-1).
+  department?: string
   status?: TicketStatus
   priority?: TicketPriority
   assigned_to_me?: 'true'

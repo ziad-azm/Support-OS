@@ -4,7 +4,6 @@ export type OrganizationSettings = {
   id: number
   name: string
   logo_url: string
-  departments: string[]
   branches: string[]
   default_response_target_minutes: number | null
   default_resolution_target_minutes: number | null
@@ -16,7 +15,6 @@ export type OrganizationSettings = {
 export type SettingsInput = {
   name: string
   logo_url: string
-  departments: string[]
   branches: string[]
   default_response_target_minutes: number | null
   default_resolution_target_minutes: number | null

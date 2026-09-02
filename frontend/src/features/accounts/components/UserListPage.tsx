@@ -76,6 +76,14 @@ export function UserListPage() {
       cell: (row) => row.role_name ?? (row.is_superuser ? t('users.superuser') : t('users.noRole')),
     },
     {
+      id: 'department_name',
+      header: t('users.fields.department'),
+      // Not sortable: a joined display column absent from
+      // `UserViewSet.ordering_fields`, exactly like `role_name` above.
+      cell: (row) => row.department_name ?? t('users.noDepartment'),
+      priority: 'sm',
+    },
+    {
       id: 'is_active',
       header: t('users.fields.status'),
       sortable: true,

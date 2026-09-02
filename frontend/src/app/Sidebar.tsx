@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import {
   BarChart3Icon,
   BookOpenIcon,
+  Building2Icon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
   ContactIcon,
@@ -131,6 +132,7 @@ export function Sidebar() {
     can('roles.manage') ||
     can('audit_log.view') ||
     can('settings.manage') ||
+    can('departments.view') ||
     can('integrations.manage') ||
     can('communications.manage') ||
     can('webhooks.manage')
@@ -191,6 +193,14 @@ export function Sidebar() {
               label={t('tickets:myQueue.title')}
               collapsed={collapsed}
             />
+            {user?.department ? (
+              <SidebarLink
+                to="/tickets/department"
+                icon={Building2Icon}
+                label={t('tickets:departmentQueue.title')}
+                collapsed={collapsed}
+              />
+            ) : null}
           </Can>
           <Can permission="tickets.manage">
             <SidebarLink
@@ -274,6 +284,14 @@ export function Sidebar() {
                 to="/settings"
                 icon={SettingsIcon}
                 label={t('organization:settings.title')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="departments.view">
+              <SidebarLink
+                to="/settings/departments"
+                icon={Building2Icon}
+                label={t('organization:departments.title')}
                 collapsed={collapsed}
               />
             </Can>

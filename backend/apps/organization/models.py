@@ -12,6 +12,42 @@ def _validate_string_list(value, field_name: str) -> None:
         raise ValidationError({field_name: _("Every entry must be a non-empty string.")})
 
 
+class Department(TimeStampedModel):
+    """A functional unit — ORG-1. Agents (`accounts.User.department`) and
+    tickets (`tickets.Ticket.department`) point at one; both FKs are
+    nullable `SET_NULL`, so deleting a department leaves both intact and
+    merely unassigned.
+
+    Replaces `OrganizationSettings.departments`, the `JSONField` string
+    list SEC-4 shipped as a deliberate placeholder — that field's own
+    docstring named the condition for promoting it: "Nothing else in this
+    codebase references an individual department or branch yet." This
+    story is the story that makes something reference one.
+
+    Shaped exactly like `tickets.Category` (apps/tickets/models.py:8-23):
+    a unique name, alphabetical default ordering, `__str__` returning the
+    name. `description` is the one addition — a department is an org-chart
+    unit an admin may need to annotate ("Tier 2 escalations, EMEA hours"),
+    which `Role.description` (apps/accounts/models.py:55) already
+    establishes the shape for.
+
+    `OrganizationSettings.branches` is deliberately NOT promoted here —
+    ORG-2 does that, reusing this model and this story's migrations as its
+    template.
+    """
+
+    name = models.CharField(_("name"), max_length=100, unique=True)
+    description = models.CharField(_("description"), max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = _("department")
+        verbose_name_plural = _("departments")
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class OrganizationSettings(TimeStampedModel):
     """The one organization-wide settings record — SEC-4's "central
     configurable settings" backing branding, department/branch lists, and
@@ -25,11 +61,12 @@ class OrganizationSettings(TimeStampedModel):
     implementation of the well-known "pk=1" pattern rather than a new
     dependency.
 
-    `departments`/`branches` are `JSONField(default=list)` string lists,
-    not separate `Department`/`Branch` tables — the same "a list of
-    strings that doesn't need its own table today" call `Role.permissions`
-    (apps/accounts/models.py:56) already made. Nothing else in this
-    codebase references an individual department or branch yet.
+    `branches` is a `JSONField(default=list)` string list, not a separate
+    `Branch` table — the same "a list of strings that doesn't need its own
+    table today" call `Role.permissions` (apps/accounts/models.py:56) made,
+    and the same call this model made for `departments` until ORG-1
+    (Story 87) promoted that half to the real `Department` model above.
+    ORG-2 does the same to `branches`.
 
     `logo_url` is a plain URL, not an uploaded file — combining a file
     upload with this model's JSON list fields in one request would need an
@@ -39,7 +76,6 @@ class OrganizationSettings(TimeStampedModel):
 
     name = models.CharField(_("organization name"), max_length=150, blank=True)
     logo_url = models.URLField(_("logo URL"), max_length=500, blank=True)
-    departments = models.JSONField(_("departments"), default=list, blank=True)
     branches = models.JSONField(_("branches"), default=list, blank=True)
     # Mirrors `SLAPolicy.response_target_minutes`/`resolution_target_minutes`
     # (apps/sla/models.py) exactly, but nullable: unlike a configured
@@ -68,7 +104,6 @@ class OrganizationSettings(TimeStampedModel):
         (CONVENTIONS.md § 22).
         """
         super().clean()
-        _validate_string_list(self.departments, "departments")
         _validate_string_list(self.branches, "branches")
         if (
             self.default_response_target_minutes is not None

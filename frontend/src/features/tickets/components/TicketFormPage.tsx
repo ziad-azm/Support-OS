@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
+import { useDepartments } from '@/shared/departments'
 import { choice, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Form } from '@/shared/ui/primitives/form'
@@ -29,6 +30,9 @@ import type { Ticket, TicketInput } from '../types/ticket'
 // in for "no category" the same way the list filters' `"all"` sentinel
 // stands in for "no filter" (TicketListPage). See CONVENTIONS.md §19.
 const CATEGORY_NONE = 'none'
+// Same sentinel shape as `CATEGORY_NONE` above, for the same Radix reason
+// — "no department" (ORG-1).
+const DEPARTMENT_NONE = 'none'
 
 const ticketSchema = z.object({
   subject: requiredString(200),
@@ -41,6 +45,7 @@ const ticketSchema = z.object({
   // number only in `toTicketInput`. See Story 12 `## Prerequisites`.
   customer: z.string().min(1),
   category: z.string().min(1),
+  department: z.string().min(1),
   priority: choice(TICKET_PRIORITIES),
 })
 
@@ -51,6 +56,7 @@ const EMPTY_DEFAULTS: FormValues = {
   description: '',
   customer: '',
   category: CATEGORY_NONE,
+  department: DEPARTMENT_NONE,
   priority: 'medium',
 }
 
@@ -60,6 +66,7 @@ function toDefaults(ticket: Ticket): FormValues {
     description: ticket.description,
     customer: String(ticket.customer),
     category: ticket.category === null ? CATEGORY_NONE : String(ticket.category),
+    department: ticket.department === null ? DEPARTMENT_NONE : String(ticket.department),
     priority: ticket.priority,
   }
 }
@@ -70,6 +77,7 @@ function toTicketInput(values: FormValues): TicketInput {
     description: values.description,
     customer: Number(values.customer),
     category: values.category === CATEGORY_NONE ? null : Number(values.category),
+    department: values.department === DEPARTMENT_NONE ? null : Number(values.department),
     priority: values.priority,
   }
 }
@@ -111,6 +119,7 @@ function TicketForm({
 
   const customerOptionsQuery = useCustomerOptions()
   const categoriesQuery = useCategories()
+  const departmentsQuery = useDepartments()
 
   const form = useAppForm({
     schema: ticketSchema,
@@ -149,10 +158,16 @@ function TicketForm({
       label: category.name,
     })) ?? []
 
+  const departmentOptions =
+    departmentsQuery.data?.items.map((department) => ({
+      value: String(department.id),
+      label: department.name,
+    })) ?? []
+
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t(mode === 'create' ? 'new' : 'edit')}</h1>
-      {customerOptionsQuery.isPending || categoriesQuery.isPending ? (
+      {customerOptionsQuery.isPending || categoriesQuery.isPending || departmentsQuery.isPending ? (
         <Loading />
       ) : (
         <Form {...form}>
@@ -177,6 +192,15 @@ function TicketForm({
               options={[
                 { value: CATEGORY_NONE, label: t('fields.noCategory') },
                 ...categoryOptions,
+              ]}
+            />
+            <SelectField
+              control={form.control}
+              name="department"
+              label={t('fields.department')}
+              options={[
+                { value: DEPARTMENT_NONE, label: t('fields.noDepartment') },
+                ...departmentOptions,
               ]}
             />
             <SelectField

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DownloadIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { useDepartments } from '@/shared/departments'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
@@ -71,13 +72,16 @@ export function TicketReportsPage() {
   const [bucket, setBucket] = useState<Bucket>('day')
   const [series, setSeries] = useState<'none' | ReportDimension>('none')
   const [dimension, setDimension] = useState<ReportDimension>('status')
+  const [department, setDepartment] = useState('all')
+  const departmentsQuery = useDepartments()
 
   function labelForDimensionValue(dim: ReportDimension, key: string): string {
     if (dim === 'status') return t(`statuses.${key}`, { defaultValue: key })
     if (dim === 'priority') return t(`priorities.${key}`, { defaultValue: key })
     if (dim === 'channel') return t(`channels.${key}`, { defaultValue: key })
-    // category: a category name is user data, not a translatable key,
-    // except the server's own "Uncategorized" fallback label.
+    // category/department: a category or department name is user data,
+    // not a translatable key, except the server's own "Uncategorized"
+    // fallback label.
     return key
   }
 
@@ -86,6 +90,7 @@ export function TicketReportsPage() {
     ...(to ? { to } : {}),
     bucket,
     ...(series !== 'none' ? { series } : {}),
+    ...(department !== 'all' ? { department } : {}),
   }
   const volumeQuery = useTicketVolume(volumeParams)
   const { series: volumeSeries, totalCount: volumeSeriesCount } = toChartSeries(
@@ -97,6 +102,7 @@ export function TicketReportsPage() {
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
     dimension,
+    ...(department !== 'all' ? { department } : {}),
   }
   const breakdownQuery = useTicketBreakdown(breakdownParams)
 
@@ -168,6 +174,20 @@ export function TicketReportsPage() {
             {REPORT_DIMENSIONS.map((value) => (
               <SelectItem key={value} value={value}>
                 {t(`dimensions.${value}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={department} onValueChange={setDepartment}>
+          <SelectTrigger aria-label={t('filters.department')} size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allDepartments')}</SelectItem>
+            <SelectItem value="none">{t('filters.noDepartment')}</SelectItem>
+            {(departmentsQuery.data?.items ?? []).map((dept) => (
+              <SelectItem key={dept.id} value={String(dept.id)}>
+                {dept.name}
               </SelectItem>
             ))}
           </SelectContent>

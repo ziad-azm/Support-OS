@@ -23,7 +23,6 @@ const schema = z
   .object({
     name: optionalString(150).transform((value) => value ?? ''),
     logo_url: optionalString(500).transform((value) => value ?? ''),
-    departments: z.array(z.string()),
     branches: z.array(z.string()),
     default_response_target_minutes: nullablePositiveInt(),
     default_resolution_target_minutes: nullablePositiveInt(),
@@ -51,7 +50,6 @@ function toDefaults(settings: OrganizationSettings): FormValues {
   return {
     name: settings.name,
     logo_url: settings.logo_url,
-    departments: settings.departments,
     branches: settings.branches,
     default_response_target_minutes: settings.default_response_target_minutes,
     default_resolution_target_minutes: settings.default_resolution_target_minutes,
@@ -191,19 +189,6 @@ function SettingsForm({ settings }: { settings: OrganizationSettings }) {
               />
             </CardContent>
           </Card>
-          <FormField
-            control={form.control}
-            name="departments"
-            render={({ field }) => (
-              <StringListField
-                label={t('settings.fields.departments')}
-                addLabel={t('settings.addDepartment')}
-                placeholder={t('settings.newItemPlaceholder')}
-                value={field.value}
-                onChange={field.onChange}
-              />
-            )}
-          />
           <FormField
             control={form.control}
             name="branches"

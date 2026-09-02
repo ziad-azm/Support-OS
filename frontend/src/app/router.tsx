@@ -178,6 +178,16 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                // Must stay before `tickets/:id`, same reason as
+                // `tickets/my-tickets`.
+                path: 'tickets/department',
+                lazy: async () => {
+                  const { DepartmentQueuePage } =
+                    await import('@/features/tickets/components/DepartmentQueuePage')
+                  return { element: <DepartmentQueuePage /> }
+                },
+              },
+              {
                 path: 'tickets/:id',
                 lazy: async () => {
                   const { TicketDetailPage } =
@@ -540,6 +550,46 @@ export const router = createBrowserRouter([
                   const { WebhookSubscriptionFormPage } =
                     await import('@/features/webhooks/components/WebhookSubscriptionFormPage')
                   return { element: <WebhookSubscriptionFormPage /> }
+                },
+              },
+            ],
+          },
+          {
+            element: <RequirePermission permission="departments.view" />,
+            children: [
+              {
+                path: 'settings/departments',
+                lazy: async () => {
+                  const { DepartmentListPage } =
+                    await import('@/features/organization/components/DepartmentListPage')
+                  return { element: <DepartmentListPage /> }
+                },
+              },
+            ],
+          },
+          {
+            // Split from the `departments.view` list route above for the
+            // same reason `users/new` is split from `users`: create/edit
+            // are writes the server gates on `departments.manage`, so a
+            // view-only holder must not be routed to a guaranteed dead end.
+            element: <RequirePermission permission="departments.manage" />,
+            children: [
+              {
+                // Must stay before `settings/departments/:id/edit`, the
+                // same declaration order `roles/new` uses.
+                path: 'settings/departments/new',
+                lazy: async () => {
+                  const { DepartmentFormPage } =
+                    await import('@/features/organization/components/DepartmentFormPage')
+                  return { element: <DepartmentFormPage /> }
+                },
+              },
+              {
+                path: 'settings/departments/:id/edit',
+                lazy: async () => {
+                  const { DepartmentFormPage } =
+                    await import('@/features/organization/components/DepartmentFormPage')
+                  return { element: <DepartmentFormPage /> }
                 },
               },
             ],

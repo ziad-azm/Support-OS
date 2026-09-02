@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { Can } from '@/shared/auth'
+import { useDepartments } from '@/shared/departments'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
@@ -52,8 +53,14 @@ export function TicketListPage() {
   // non-empty value, mirroring the form's CATEGORY_NONE sentinel.
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
+  // "all" is "no filter"; the literal "none" is a real, distinct filter
+  // value — the backend's own `?department=none` sentinel for "no
+  // department" (`apps.core.scoping.UNSCOPED`) — so it needs no
+  // client-side translation before it reaches `useTickets`.
+  const [departmentFilter, setDepartmentFilter] = useState('all')
   const [onlyMine, setOnlyMine] = useState(false)
   const categoriesQuery = useCategories()
+  const departmentsQuery = useDepartments()
 
   useEffect(() => {
     const handle = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS)
@@ -64,13 +71,14 @@ export function TicketListPage() {
   // reset to page 1, or the user can land on a now-nonexistent page.
   useEffect(() => {
     setPage(1)
-  }, [search, categoryFilter, priorityFilter, onlyMine, setPage])
+  }, [search, categoryFilter, priorityFilter, departmentFilter, onlyMine, setPage])
 
   const query = useTickets({
     ...params,
     ...(search ? { search } : {}),
     ...(categoryFilter !== 'all' ? { category: categoryFilter } : {}),
     ...(priorityFilter !== 'all' ? { priority: priorityFilter as TicketPriority } : {}),
+    ...(departmentFilter !== 'all' ? { department: departmentFilter } : {}),
     ...(onlyMine ? { assigned_to_me: 'true' as const } : {}),
   })
 
@@ -95,6 +103,15 @@ export function TicketListPage() {
       // joined/derived display column, not in the viewset's
       // `ordering_fields`. See Story 18 `## Prerequisites`.
       cell: (row) => row.category_name ?? t('fields.noCategory'),
+      priority: 'sm',
+    },
+    {
+      id: 'department_name',
+      header: t('fields.department'),
+      // Not sortable: mirrors `category_name`'s precedent — a
+      // joined/derived display column, not in the viewset's
+      // `ordering_fields` (ORG-1).
+      cell: (row) => row.department_name ?? t('fields.noDepartment'),
       priority: 'sm',
     },
     {
@@ -182,6 +199,20 @@ export function TicketListPage() {
             {TICKET_PRIORITIES.map((value) => (
               <SelectItem key={value} value={value}>
                 {t(`priorities.${value}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger aria-label={t('filters.department')} size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allDepartments')}</SelectItem>
+            <SelectItem value="none">{t('fields.noDepartment')}</SelectItem>
+            {(departmentsQuery.data?.items ?? []).map((department) => (
+              <SelectItem key={department.id} value={String(department.id)}>
+                {department.name}
               </SelectItem>
             ))}
           </SelectContent>

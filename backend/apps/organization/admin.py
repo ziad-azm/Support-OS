@@ -2,7 +2,21 @@ from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from .models import OrganizationSettings
+from .models import Department, OrganizationSettings
+
+
+@admin.register(Department)
+class DepartmentAdmin(admin.ModelAdmin):
+    """Ordinary `ModelAdmin` — unlike `OrganizationSettingsAdmin` below,
+    `Department` is a normal multi-row model. Coexists with
+    `DepartmentViewSet`/`/settings/departments` the same way
+    `RoleAdmin`/`UserAdmin` coexist with SEC-1's frontend: a manual
+    fallback, not the primary path.
+    """
+
+    list_display = ("name", "description", "created_at")
+    search_fields = ("name", "description")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(OrganizationSettings)

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from apps.ai.exceptions import AIServiceError, AIServiceUnavailable
 from apps.core.permissions import Permissions, permissions_for
+from apps.core.scoping import ScopedQuerysetMixin, ScopeFilter
 from apps.core.views import BaseModelViewSet
 from apps.sla.policy import compute_sla_status
 from apps.sla.tasks import auto_assign_ticket
@@ -48,10 +49,12 @@ class CategoryViewSet(BaseModelViewSet):
     search_fields = ("name",)
 
 
-class TicketViewSet(BaseModelViewSet):
+class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     """Ticket CRUD. The second consumer of `BaseModelViewSet`, after Customer."""
 
-    queryset = Ticket.objects.select_related("customer", "category", "assigned_agent").all()
+    queryset = Ticket.objects.select_related(
+        "customer", "category", "assigned_agent", "department"
+    ).all()
     serializer_class = TicketSerializer
 
     permission_map = {
@@ -87,6 +90,12 @@ class TicketViewSet(BaseModelViewSet):
     ordering_fields = ("subject", "status", "priority", "created_at")
     search_fields = ("subject", "description", "customer__name")
 
+    # ORG-1's reusable scoping declaration. ORG-2 appends
+    # `ScopeFilter(param="branch", field="branch")` here and writes no
+    # parsing code. `?department=none` lists tickets with no department;
+    # see `apps/core/scoping.py`.
+    scope_filters = (ScopeFilter(param="department", field="department"),)
+
     def perform_create(self, serializer):
         ticket = serializer.save()
         try:
@@ -100,6 +109,9 @@ class TicketViewSet(BaseModelViewSet):
             logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
 
     def get_queryset(self):
+        # `super().get_queryset()` reaches `ScopedQuerysetMixin`, which
+        # applies the `department` scope declared above — only on `list`,
+        # the same guard this method's own early return covers below.
         queryset = super().get_queryset()
         if self.action != "list":
             return queryset

@@ -25,7 +25,13 @@ from .aggregation import bucketed_counts, grouped_counts, parse_bucket, parse_da
 from .dashboard import dashboard_kpis
 from .export import csv_response
 from .sla import sla_breach_rate, sla_trend
-from .tickets import DIMENSION_FIELDS, DIRECT_CHANNEL, parse_dimension, with_origin_channel
+from .tickets import (
+    DIMENSION_FIELDS,
+    DIRECT_CHANNEL,
+    parse_dimension,
+    scoped_tickets,
+    with_origin_channel,
+)
 
 # NOT "format". DRF's DefaultContentNegotiation reads `?format=` as a
 # renderer override and raises Http404 when no renderer matches
@@ -79,7 +85,7 @@ class TicketVolumeReportView(BaseReportView):
 
     def get_report(self, request, *, start, end, bucket):
         series = parse_dimension(request.query_params, "series", required=False)
-        queryset = Ticket.objects.all()
+        queryset = scoped_tickets(request.query_params)
         series_field = None
         if series is not None:
             if series == "channel":
@@ -123,7 +129,10 @@ class TicketBreakdownReportView(BaseReportView):
 
     def get_report(self, request, *, start, end, bucket):
         dimension = parse_dimension(request.query_params, "dimension", required=True)
-        queryset = Ticket.objects.filter(created_at__gte=start, created_at__lt=end)
+        queryset = scoped_tickets(
+            request.query_params,
+            Ticket.objects.filter(created_at__gte=start, created_at__lt=end),
+        )
         if dimension == "channel":
             queryset = with_origin_channel(queryset)
         return grouped_counts(

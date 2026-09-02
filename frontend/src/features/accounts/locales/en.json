@@ -9,6 +9,7 @@
     "emptyDescription": "Create the first user to get started.",
     "noSearchResults": "No users match that search.",
     "noRole": "No role",
+    "noDepartment": "No department",
     "superuser": "Superuser",
     "inviteHint": "They'll receive an email with a link to set their own password.",
     "fields": {
@@ -16,6 +17,7 @@
       "firstName": "First name",
       "lastName": "Last name",
       "role": "Role",
+      "department": "Department",
       "status": "Status",
       "actions": "Actions"
     },
