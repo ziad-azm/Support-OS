@@ -302,3 +302,144 @@ class ErpSyncRun(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.get_direction_display()} {self.started_at:%Y-%m-%d %H:%M}"
+
+
+# The vocabulary a WebhookSubscription.events entry may contain — code, not
+# data, the same "code is the vocabulary, the row is the mapping" split
+# CONVENTIONS.md § 22 established for permissions. Grouped by the affected
+# model, `<resource>.<change>` — the same shape Permissions' own
+# `<area>.<action>` strings already use, which is what lets the frontend's
+# `groupByArea` helper (RoleFormPage.tsx) work unmodified for this checklist
+# too. Extending this set is how a later story adds a new event: one line
+# here, one signal receiver in `signals.py` — never a hardcoded string at a
+# dispatch call site.
+WEBHOOK_EVENTS: frozenset[str] = frozenset(
+    {
+        "ticket.created",
+        "ticket.status_changed",
+        "ticket.assigned",
+        "ticket.escalated",
+        "customer.created",
+        "message.created",
+    }
+)
+
+
+def _validate_events(value) -> None:
+    """Mirrors `Role.clean()`'s own allowlist check (apps/accounts/models.py)
+    for `WebhookSubscription.events` — called from both `clean()` (admin/
+    `full_clean()`) and the serializer (the API path; DRF does not call
+    model `clean()`, CONVENTIONS.md § 22).
+    """
+    if not isinstance(value, list):
+        raise ValidationError({"events": _("Must be a list of event names.")})
+    unknown = sorted(set(value) - WEBHOOK_EVENTS)
+    if unknown:
+        raise ValidationError(
+            {"events": _("Unknown events: %(names)s") % {"names": ", ".join(unknown)}}
+        )
+
+
+class WebhookSubscription(TimeStampedModel):
+    """An external system's registration for one or more domain events —
+    INT-4. Unlike every prior `INT-*` config (`ApiKey` aside), this is a
+    real list, not a `pk=1` singleton — many URLs can each subscribe to
+    their own, possibly overlapping, event sets.
+
+    `secret` is stored in plain text and never returned by the API
+    (`WebhookSubscriptionSerializer` declares it `write_only`) — the same
+    posture `ErpConnection.auth_token`/the three `apps.communications`
+    provider credentials already take (CONVENTIONS.md § 29-31). It signs
+    every delivery to this subscription's `target_url` — see
+    `apps/integrations/webhook_client.py::sign_payload`.
+
+    No `enabled`-vs-`is_configured()` split the way `ErpConnection`/the
+    provider configs need: a subscription is either created complete
+    (`target_url` + `secret` + at least one event) or not created at all,
+    unlike a singleton config a form fills in gradually over time.
+    `enabled` alone is the on/off switch — pausing deliveries without
+    losing the subscription's own configuration or delivery history.
+    """
+
+    name = models.CharField(_("name"), max_length=100)
+    target_url = models.URLField(_("target URL"), max_length=500)
+    secret = models.CharField(_("secret"), max_length=255, blank=True)
+    events = models.JSONField(_("events"), default=list)
+    enabled = models.BooleanField(_("enabled"), default=True)
+    # SET_NULL: the operator who registered a subscription may leave while
+    # the subscription itself keeps receiving deliveries — the same
+    # asymmetry `ApiKey.created_by` (Story 80) already draws.
+    created_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="webhook_subscriptions_created",
+        verbose_name=_("created by"),
+    )
+
+    class Meta:
+        verbose_name = _("webhook subscription")
+        verbose_name_plural = _("webhook subscriptions")
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+    def clean(self) -> None:
+        super().clean()
+        _validate_events(self.events)
+
+
+class WebhookDelivery(TimeStampedModel):
+    """One delivery **attempt** for one subscription/event pair — INT-4's
+    observability record, the same role `ErpSyncRun` (Story 81) plays for
+    a sync run. Deliberately one row PER ATTEMPT, not one row per logical
+    delivery updated across retries: a flaky endpoint's third attempt
+    succeeding is only genuinely visible if the first two failed attempts
+    are their own rows too, the same shape GitHub's/Stripe's own delivery
+    logs use.
+
+    `state` is named `state`, not `status`, for the identical reason
+    `ErpSyncRun.state` is (Story 81 `## Prerequisites`) — this project's
+    own live-verified drf-spectacular enum-naming collision on fields
+    named `status` (Story 80's own verification), not deepened here.
+
+    CASCADE on `subscription`: a delivery record has no meaning independent
+    of the subscription it was attempting to notify — the same reasoning
+    `ErpOrder.customer`/`Message.ticket` already establish for their own
+    parent relationships. Deleting a subscription deliberately takes its
+    delivery history with it.
+    """
+
+    class State(models.TextChoices):
+        SUCCESS = "success", _("Success")
+        RETRYING = "retrying", _("Retrying")
+        FAILED = "failed", _("Failed")
+
+    subscription = models.ForeignKey(
+        WebhookSubscription,
+        on_delete=models.CASCADE,
+        related_name="deliveries",
+        verbose_name=_("subscription"),
+    )
+    event = models.CharField(_("event"), max_length=50)
+    payload = models.JSONField(_("payload"), default=dict)
+    state = models.CharField(_("state"), max_length=10, choices=State.choices)
+    attempt = models.PositiveIntegerField(_("attempt"), default=1)
+    response_status_code = models.PositiveIntegerField(
+        _("response status code"), null=True, blank=True
+    )
+    # Truncated at write time (see tasks.py) — this is a debugging aid, not
+    # a full response archive; an unbounded external response body must
+    # never become an unbounded row.
+    response_body = models.TextField(_("response body"), blank=True)
+    error_message = models.TextField(_("error message"), blank=True)
+
+    class Meta:
+        verbose_name = _("webhook delivery")
+        verbose_name_plural = _("webhook deliveries")
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.event} -> {self.subscription_id} (attempt {self.attempt})"

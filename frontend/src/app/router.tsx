@@ -481,6 +481,37 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="webhooks.manage" />,
+            children: [
+              {
+                path: 'settings/webhooks',
+                lazy: async () => {
+                  const { WebhookSubscriptionListPage } =
+                    await import('@/features/webhooks/components/WebhookSubscriptionListPage')
+                  return { element: <WebhookSubscriptionListPage /> }
+                },
+              },
+              {
+                // Must stay before `settings/webhooks/:id/edit`, same reason
+                // `roles/new` is declared before `roles/:id/edit` above.
+                path: 'settings/webhooks/new',
+                lazy: async () => {
+                  const { WebhookSubscriptionFormPage } =
+                    await import('@/features/webhooks/components/WebhookSubscriptionFormPage')
+                  return { element: <WebhookSubscriptionFormPage /> }
+                },
+              },
+              {
+                path: 'settings/webhooks/:id/edit',
+                lazy: async () => {
+                  const { WebhookSubscriptionFormPage } =
+                    await import('@/features/webhooks/components/WebhookSubscriptionFormPage')
+                  return { element: <WebhookSubscriptionFormPage /> }
+                },
+              },
+            ],
+          },
+          {
             path: 'tasks',
             lazy: async () => {
               const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')

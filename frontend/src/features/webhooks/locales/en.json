@@ -1,0 +1,65 @@
+{
+  "list": {
+    "navLabel": "Webhooks",
+    "title": "Webhooks",
+    "new": "New webhook",
+    "eventCount": "{{count}} event",
+    "eventCount_other": "{{count}} events",
+    "search": "Search webhooks",
+    "searchPlaceholder": "Name",
+    "empty": "No webhooks yet",
+    "emptyDescription": "Create the first webhook subscription to get started.",
+    "noSearchResults": "No webhooks match that search.",
+    "fields": {
+      "name": "Name",
+      "targetUrl": "Target URL",
+      "events": "Events",
+      "enabled": "Status",
+      "actions": "Actions"
+    },
+    "enabledBadge": "Enabled",
+    "disabledBadge": "Disabled",
+    "delete": {
+      "title": "Delete this webhook?",
+      "description": "This permanently removes the subscription and its delivery history. No further events will be sent to its target URL."
+    },
+    "actions": { "delete": "Delete" }
+  },
+  "form": {
+    "new": "New webhook",
+    "edit": "Edit webhook",
+    "created": "Webhook created.",
+    "updated": "Webhook updated.",
+    "fields": {
+      "name": "Name",
+      "targetUrl": "Target URL",
+      "secret": "Signing secret",
+      "events": "Events",
+      "enabled": "Enabled"
+    },
+    "secretHint": {
+      "set": "A secret is configured.",
+      "unset": "No secret is configured.",
+      "keep": "Leave this field blank to keep the current one."
+    },
+    "eventsHint": "The target URL is sent a signed POST request whenever one of the selected events happens.",
+    "eventGroups": {
+      "ticket": "Tickets",
+      "customer": "Customers",
+      "message": "Messages"
+    },
+    "actions": { "save": "Save" }
+  },
+  "deliveries": {
+    "title": "Delivery history",
+    "empty": "No deliveries yet",
+    "fields": {
+      "createdAt": "Sent at",
+      "event": "Event",
+      "state": "State",
+      "attempt": "Attempt",
+      "responseStatusCode": "Status code",
+      "errorMessage": "Error"
+    }
+  }
+}

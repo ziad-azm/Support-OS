@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import ApiKey, ErpConnection, ErpOrder, ErpSyncRun
+from .models import (
+    ApiKey,
+    ErpConnection,
+    ErpOrder,
+    ErpSyncRun,
+    WebhookDelivery,
+    WebhookSubscription,
+)
 
 
 @admin.register(ApiKey)
@@ -78,6 +85,47 @@ class ErpSyncRunAdmin(admin.ModelAdmin):
     list_filter = ("direction", "state")
     list_select_related = ("triggered_by",)
     readonly_fields = tuple(field.name for field in ErpSyncRun._meta.fields if field.name != "id")
+
+    def has_add_permission(self, request) -> bool:
+        return False
+
+
+@admin.register(WebhookSubscription)
+class WebhookSubscriptionAdmin(admin.ModelAdmin):
+    """A lower-level fallback beside `/settings/webhooks` — the same
+    both-paths-exist call `ErpConnectionAdmin` (Story 81) documents.
+    Unlike the singleton config admins, adding IS allowed here — this is
+    a real list, and Django's own default add form is a legitimate
+    second path to create one, the same way `RoleAdmin` allows adding a
+    `Role` from `/admin/` alongside the API.
+    """
+
+    list_display = ("name", "target_url", "enabled", "created_by", "created_at")
+    list_filter = ("enabled",)
+    list_select_related = ("created_by",)
+    search_fields = ("name", "target_url")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(WebhookDelivery)
+class WebhookDeliveryAdmin(admin.ModelAdmin):
+    """Immutable record, same posture as `AuditLogAdmin`/`ErpSyncRunAdmin`
+    (Story 81)."""
+
+    list_display = (
+        "event",
+        "subscription",
+        "state",
+        "attempt",
+        "response_status_code",
+        "created_at",
+    )
+    list_filter = ("state", "event")
+    list_select_related = ("subscription",)
+    search_fields = ("event", "subscription__name")
+    readonly_fields = tuple(
+        field.name for field in WebhookDelivery._meta.fields if field.name != "id"
+    )
 
     def has_add_permission(self, request) -> bool:
         return False

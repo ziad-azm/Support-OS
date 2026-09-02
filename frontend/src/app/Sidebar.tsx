@@ -24,6 +24,7 @@ import {
   TicketIcon,
   UserCogIcon,
   UsersIcon,
+  WebhookIcon,
 } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -122,6 +123,7 @@ export function Sidebar() {
     'integrations',
     'communications',
     'reports',
+    'webhooks',
   ])
   const { user, logout, can } = useAuth()
   const showAdministration =
@@ -130,7 +132,8 @@ export function Sidebar() {
     can('audit_log.view') ||
     can('settings.manage') ||
     can('integrations.manage') ||
-    can('communications.manage')
+    can('communications.manage') ||
+    can('webhooks.manage')
   const [collapsed, setCollapsed] = useState(readCollapsed)
 
   function toggleCollapsed() {
@@ -282,6 +285,14 @@ export function Sidebar() {
                 to="/settings/channels"
                 icon={MessagesSquareIcon}
                 label={t('communications:channels.navLabel')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="webhooks.manage">
+              <SidebarLink
+                to="/settings/webhooks"
+                icon={WebhookIcon}
+                label={t('webhooks:list.navLabel')}
                 collapsed={collapsed}
               />
             </Can>

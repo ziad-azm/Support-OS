@@ -5,7 +5,15 @@ from apps.accounts.models import User
 from apps.core.serializers import BaseModelSerializer
 
 from .erp_sync import CUSTOMER_SYNCABLE_FIELDS, ORDER_SYNCABLE_FIELDS
-from .models import ApiKey, ErpConnection, ErpOrder, ErpSyncRun
+from .models import (
+    WEBHOOK_EVENTS,
+    ApiKey,
+    ErpConnection,
+    ErpOrder,
+    ErpSyncRun,
+    WebhookDelivery,
+    WebhookSubscription,
+)
 
 
 class ApiKeySerializer(serializers.ModelSerializer):
@@ -209,6 +217,95 @@ class ErpOrderSerializer(BaseModelSerializer):
             "currency",
             "placed_at",
             "synced_at",
+            "created_at",
+            "updated_at",
+        )
+
+
+class WebhookSubscriptionSerializer(BaseModelSerializer):
+    """Read/write over a `WebhookSubscription` row. `secret` is
+    `write_only`, the same posture every other stored credential in this
+    project takes; `has_secret` is what the UI renders instead.
+
+    A blank/omitted `secret` on `PATCH` leaves the stored value untouched
+    (`update` below) — the same contract `ErpConnectionSerializer`/the
+    three `apps.communications` provider serializers already establish.
+    Unlike those, `secret` **is** required on `create` — a subscription is
+    created complete or not at all (see `WebhookSubscription`'s own
+    docstring), so `validate` below enforces that only when `self.instance`
+    is `None`.
+    """
+
+    secret = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, write_only=True
+    )
+    has_secret = serializers.SerializerMethodField()
+
+    class Meta(BaseModelSerializer.Meta):
+        model = WebhookSubscription
+        fields = (
+            "id",
+            "name",
+            "target_url",
+            "secret",
+            "has_secret",
+            "events",
+            "enabled",
+            "created_by",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (*BaseModelSerializer.Meta.read_only_fields, "created_by")
+
+    def get_has_secret(self, obj) -> bool:
+        return bool(obj.secret)
+
+    def validate_events(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Must be a list of event names."))
+        unknown = sorted(set(value) - WEBHOOK_EVENTS)
+        if unknown:
+            raise serializers.ValidationError(
+                _("Unknown events: %(names)s") % {"names": ", ".join(unknown)}
+            )
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if self.instance is None and not attrs.get("secret"):
+            raise serializers.ValidationError(
+                {"secret": [_("A secret is required when creating a subscription.")]}
+            )
+        return attrs
+
+    def update(self, instance, validated_data):
+        if not validated_data.get("secret"):
+            validated_data.pop("secret", None)
+        return super().update(instance, validated_data)
+
+
+class WebhookDeliverySerializer(BaseModelSerializer):
+    """Read-only history. `payload` is included — unlike `ErpOrder.raw`
+    (Story 81, admin-only), a delivery's own outbound payload is exactly
+    what an operator debugging a subscriber's rejection needs to see
+    without leaving the UI.
+    """
+
+    state_display = serializers.CharField(source="get_state_display", read_only=True)
+
+    class Meta(BaseModelSerializer.Meta):
+        model = WebhookDelivery
+        fields = (
+            "id",
+            "subscription",
+            "event",
+            "payload",
+            "state",
+            "state_display",
+            "attempt",
+            "response_status_code",
+            "response_body",
+            "error_message",
             "created_at",
             "updated_at",
         )

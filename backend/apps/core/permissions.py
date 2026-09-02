@@ -38,6 +38,7 @@ class Permissions:
     API_KEYS_MANAGE = "api_keys.manage"
     INTEGRATIONS_MANAGE = "integrations.manage"
     COMMUNICATIONS_MANAGE = "communications.manage"
+    WEBHOOKS_MANAGE = "webhooks.manage"
     REPORTS_VIEW = "reports.view"
 
 

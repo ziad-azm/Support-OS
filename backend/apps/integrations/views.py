@@ -13,7 +13,15 @@ from apps.core.permissions import HasPermission, Permissions
 from apps.core.views import BaseModelViewSet
 
 from .keys import generate_api_key
-from .models import ApiKey, ErpConnection, ErpOrder, ErpSyncRun
+from .models import (
+    WEBHOOK_EVENTS,
+    ApiKey,
+    ErpConnection,
+    ErpOrder,
+    ErpSyncRun,
+    WebhookDelivery,
+    WebhookSubscription,
+)
 from .serializers import (
     ApiKeyIssuedSerializer,
     ApiKeySerializer,
@@ -21,6 +29,8 @@ from .serializers import (
     ErpConnectionSerializer,
     ErpOrderSerializer,
     ErpSyncRunSerializer,
+    WebhookDeliverySerializer,
+    WebhookSubscriptionSerializer,
 )
 from .tasks import run_erp_sync
 
@@ -262,4 +272,86 @@ class ErpOrderViewSet(BaseModelViewSet):
             except ValueError:
                 raise ValidationError({"customer": [_("Must be a valid customer id.")]}) from None
             queryset = queryset.filter(customer_id=customer_id)
+        return queryset
+
+
+class WebhookEventCatalogView(APIView):
+    """The full webhook-event vocabulary — the same "gated on the same
+    permission that gates writing what it describes" shape
+    `apps.core.views.PermissionCatalogView` already establishes for
+    `Permissions`/`Role.permissions`. What `WebhookSubscriptionFormPage`'s
+    event checklist renders its options from.
+    """
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {"get": Permissions.WEBHOOKS_MANAGE}
+
+    def get(self, request):
+        return Response(sorted(WEBHOOK_EVENTS))
+
+
+class WebhookSubscriptionViewSet(BaseModelViewSet):
+    """Full CRUD over `WebhookSubscription` — INT-4. Unlike `ApiKeyViewSet`
+    (Story 80), no `http_method_names` restriction: every field here is
+    legitimately editable via a full replace, so `PUT` stays available at
+    the API level even though the frontend only ever calls `PATCH`
+    (`updateWebhookSubscription.ts`, the same "PATCH, not PUT" convention
+    `updateRole.ts` already documents for itself). A real `destroy` — no
+    soft-delete the way `ApiKeyViewSet.perform_destroy` (Story 80) has:
+    deleting a subscription an operator no longer wants is exactly what
+    they asked for, and `WebhookDelivery.subscription`'s `CASCADE` takes
+    its history with it deliberately (see that model's own docstring).
+    """
+
+    queryset = WebhookSubscription.objects.select_related("created_by").all()
+    serializer_class = WebhookSubscriptionSerializer
+
+    permission_map = {
+        "list": Permissions.WEBHOOKS_MANAGE,
+        "retrieve": Permissions.WEBHOOKS_MANAGE,
+        "create": Permissions.WEBHOOKS_MANAGE,
+        "update": Permissions.WEBHOOKS_MANAGE,
+        "partial_update": Permissions.WEBHOOKS_MANAGE,
+        "destroy": Permissions.WEBHOOKS_MANAGE,
+    }
+
+    ordering_fields = ("name", "enabled", "created_at")
+    search_fields = ("name", "target_url")
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class WebhookDeliveryViewSet(BaseModelViewSet):
+    """Read-only delivery history — the same `AuditLogViewSet`(SEC-3)/
+    `ErpSyncRunViewSet` (Story 81) precedent: `http_method_names` drops
+    every unsafe verb, since an omitted `permission_map` entry is merely
+    authenticated-only under `HasPermission`'s grant-on-omission rule
+    (§ 22), the wrong default for a record table.
+    """
+
+    http_method_names = ["get", "head", "options"]
+    queryset = WebhookDelivery.objects.select_related("subscription").all()
+    serializer_class = WebhookDeliverySerializer
+
+    permission_map = {
+        "list": Permissions.WEBHOOKS_MANAGE,
+        "retrieve": Permissions.WEBHOOKS_MANAGE,
+    }
+
+    ordering_fields = ("created_at", "state", "event")
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action != "list":
+            return queryset
+        subscription_id = self.request.query_params.get("subscription")
+        if subscription_id:
+            try:
+                subscription_id = int(subscription_id)
+            except ValueError:
+                raise ValidationError(
+                    {"subscription": [_("Must be a valid subscription id.")]}
+                ) from None
+            queryset = queryset.filter(subscription_id=subscription_id)
         return queryset

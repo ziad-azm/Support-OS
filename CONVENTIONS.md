@@ -2130,3 +2130,59 @@ settings this project has ever removed rather than added — verified live
 that each had zero remaining Python consumers before deletion. An
 `ENV`-var removal without checking every consumer first is exactly the
 mistake this rule exists to prevent.
+
+
+---
+
+## 32. Outbound webhooks & the signals exception (INT-4)
+
+`INT-4` (Story 83) is the **first and, until a future story explicitly
+says otherwise, only** place in this project that uses Django model
+signals (`post_save`/`pre_save`/`@receiver`). Every other "something
+happened, tell someone" hook in this codebase — `apps.notifications
+.services.notify`, `apps.tickets.assignment.apply_assignment`,
+`apps.tickets.escalation.apply_escalation` — is an explicit call at the
+call site, and that stays the default. Signals were the deliberate
+exception here, confirmed with the user during planning, because a
+single domain event (a `Ticket` being created, say) has eight distinct
+call sites across five channel adapters, the staff API, the portal API,
+and the AI chatbot handoff, with more likely in the future — an explicit
+call site at all eight, forever, is the wrong trade for "a ticket was
+created" to keep meaning exactly that.
+
+**Before adding a second signal receiver anywhere in this codebase, read
+`apps/integrations/signals.py` first and ask whether the explicit-call-site
+convention still fits better** — it usually does. Signals earn their cost
+(implicit control flow, and — for change-detection specifically — an
+extra query per update, see below) only when a project-wide, no-gaps
+guarantee is the actual requirement, not merely a convenience.
+
+**Detecting a field *change* via signals costs a query `post_save` alone
+does not.** `post_save`'s own `created` flag answers "was this just
+created" for free; answering "did `status` just change" needs the
+*previous* value, which `apps/integrations/signals.py::_capture_ticket_changes`
+gets via a `pre_save` re-fetch (`Ticket.objects.get(pk=instance.pk)`).
+This runs on **every** `Ticket` UPDATE project-wide, not just ones a
+webhook subscriber cares about — an accepted, deliberate cost of a
+signals-only design with no new dependency (`django-model-utils`'
+`FieldTracker` is not installed). A story adding a fourth tracked field
+extends `_TRACKED_TICKET_FIELDS`, not a second re-fetch.
+
+**The webhook event vocabulary is code; the subscription's chosen subset
+is data** — the same split § 22 established for permissions.
+`apps.integrations.models.WEBHOOK_EVENTS` is the vocabulary,
+`WebhookSubscription.events` is the mapping, and adding a new event is a
+two-line change: one entry in `WEBHOOK_EVENTS`, one new signal receiver
+(or branch in an existing one) in `signals.py` — never a hardcoded event
+string at a dispatch call site, because there is deliberately only one
+dispatch call site (`webhook_dispatch.dispatch_event`).
+
+**A one-shot event retries; a recurring sync does not.**
+`apps.integrations.tasks.deliver_webhook` retries a failed delivery three
+times with backoff before giving up — contrast `run_erp_sync` (Story 81),
+which never retries, because an ERP sync failure self-heals on the next
+hourly run. A webhook fires once for one real moment in time; if that
+delivery is never retried and never succeeds, the moment it was
+reporting is simply never communicated. A future one-shot async task
+should default to retrying; a future recurring/scheduled one should
+default to not.

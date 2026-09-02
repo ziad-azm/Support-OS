@@ -1,0 +1,65 @@
+{
+  "list": {
+    "navLabel": "الويب هوك",
+    "title": "الويب هوك",
+    "new": "ويب هوك جديد",
+    "eventCount": "{{count}} حدث",
+    "eventCount_other": "{{count}} أحداث",
+    "search": "بحث في الويب هوك",
+    "searchPlaceholder": "الاسم",
+    "empty": "لا توجد اشتراكات ويب هوك بعد",
+    "emptyDescription": "أنشئ أول اشتراك ويب هوك للبدء.",
+    "noSearchResults": "لا توجد نتائج مطابقة لهذا البحث.",
+    "fields": {
+      "name": "الاسم",
+      "targetUrl": "رابط الوجهة",
+      "events": "الأحداث",
+      "enabled": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "enabledBadge": "مفعّل",
+    "disabledBadge": "معطّل",
+    "delete": {
+      "title": "حذف هذا الويب هوك؟",
+      "description": "سيؤدي هذا إلى إزالة الاشتراك وسجل تسليماته نهائيًا. لن تُرسل أي أحداث أخرى إلى رابط الوجهة."
+    },
+    "actions": { "delete": "حذف" }
+  },
+  "form": {
+    "new": "ويب هوك جديد",
+    "edit": "تعديل الويب هوك",
+    "created": "تم إنشاء الويب هوك.",
+    "updated": "تم تحديث الويب هوك.",
+    "fields": {
+      "name": "الاسم",
+      "targetUrl": "رابط الوجهة",
+      "secret": "المفتاح السري للتوقيع",
+      "events": "الأحداث",
+      "enabled": "مفعّل"
+    },
+    "secretHint": {
+      "set": "تم تكوين مفتاح سري.",
+      "unset": "لم يتم تكوين مفتاح سري.",
+      "keep": "اترك هذا الحقل فارغًا للاحتفاظ بالمفتاح الحالي."
+    },
+    "eventsHint": "يُرسل إلى رابط الوجهة طلب POST موقّع كلما وقع أحد الأحداث المحددة.",
+    "eventGroups": {
+      "ticket": "التذاكر",
+      "customer": "العملاء",
+      "message": "الرسائل"
+    },
+    "actions": { "save": "حفظ" }
+  },
+  "deliveries": {
+    "title": "سجل التسليمات",
+    "empty": "لا توجد عمليات تسليم بعد",
+    "fields": {
+      "createdAt": "وقت الإرسال",
+      "event": "الحدث",
+      "state": "الحالة",
+      "attempt": "المحاولة",
+      "responseStatusCode": "رمز الحالة",
+      "errorMessage": "الخطأ"
+    }
+  }
+}

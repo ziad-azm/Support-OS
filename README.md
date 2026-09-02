@@ -543,6 +543,43 @@ unchanged. An operator using the same SMTP account for both configures it in two
 is used both by `SMSAdapter.send()` (outbound Basic Auth) and by `SMSInboundWebhookView` (inbound
 `X-Twilio-Signature` verification). Rotating it in the UI takes effect for both immediately.
 
+### Outbound webhooks (INT-4)
+
+`/settings/webhooks` (permission `webhooks.manage`) manages subscriptions to domain events —
+external systems get a signed `POST` the moment one of the events they subscribed to happens.
+
+| Endpoint | What it does |
+|---|---|
+| `GET`/`POST` `/api/webhooks/subscriptions/` | List/create subscriptions. |
+| `GET`/`PATCH`/`DELETE` `/api/webhooks/subscriptions/<id>/` | Manage one subscription. `secret` is write-only — send `""` (or omit it) on `PATCH` to keep the stored one. |
+| `GET /api/webhooks/deliveries/?subscription=<id>` | Delivery history, one row per attempt. |
+| `GET /api/webhooks/events/` | The full event vocabulary a subscription's `events` list may contain. |
+
+**Events:** `ticket.created`, `ticket.status_changed`, `ticket.assigned`, `ticket.escalated`,
+`customer.created`, `message.created` (both inbound and outbound — `data.direction` tells you
+which).
+
+**The request your endpoint receives:**
+
+```
+POST <target_url>
+Content-Type: application/json
+X-SupportOS-Event: ticket.status_changed
+X-SupportOS-Delivery-Attempt: 1
+X-SupportOS-Signature: sha256=<hex hmac-sha256 of the raw body, keyed by your subscription's secret>
+
+{"event": "ticket.status_changed", "occurred_at": "2026-...", "data": {...}, "changes": {"status": {"from": "open", "to": "resolved"}}}
+```
+
+`data` is exactly the same object shape `GET`-ing that resource from the API itself would return —
+no separate "external" payload shape. Verify the signature the same way this project's own inbound
+WhatsApp webhook handler does (`hmac.new(secret, raw_body, hashlib.sha256).hexdigest()`, `sha256=`
+prefixed) before trusting a delivery.
+
+**Delivery:** async, via Celery, with up to 3 retries (60s/120s/240s backoff) before a delivery is
+recorded `failed`. **A Celery worker must be running** for any delivery to happen (`README.md` § 6;
+on Windows, `celery -A config worker --pool=solo`).
+
 ### Consuming the API from the frontend
 
 **The rule:** features call `api.get` / `api.post` / `api.put` / `api.patch` / `api.delete` /

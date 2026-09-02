@@ -9,6 +9,9 @@ from .views import (
     ErpSyncRunViewSet,
     ErpSyncTriggerView,
     SchemaView,
+    WebhookDeliveryViewSet,
+    WebhookEventCatalogView,
+    WebhookSubscriptionViewSet,
 )
 
 app_name = "integrations"
@@ -20,6 +23,10 @@ router = SimpleRouter()
 router.register("api-keys", ApiKeyViewSet, basename="api-key")
 router.register("erp/sync-runs", ErpSyncRunViewSet, basename="erp-sync-run")
 router.register("erp/orders", ErpOrderViewSet, basename="erp-order")
+router.register(
+    "webhooks/subscriptions", WebhookSubscriptionViewSet, basename="webhook-subscription"
+)
+router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook-delivery")
 
 # The three doc routes live here rather than in config/api_urls.py so this
 # app keeps its single include() line (backend/apps/README.md). Each view
@@ -29,6 +36,7 @@ router.register("erp/orders", ErpOrderViewSet, basename="erp-order")
 urlpatterns = router.urls + [
     path("erp/connection/", ErpConnectionView.as_view(), name="erp-connection"),
     path("erp/sync/", ErpSyncTriggerView.as_view(), name="erp-sync"),
+    path("webhooks/events/", WebhookEventCatalogView.as_view(), name="webhook-events"),
     path("schema/", SchemaView.as_view(), name="schema"),
     path(
         "docs/",

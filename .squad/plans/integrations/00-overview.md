@@ -9,11 +9,13 @@ Entry point for the **integrations** feature. Stories execute in order by their 
 | 80 | [80-story-public-rest-api-docs-SUPPORTOS-89.md](80-story-public-rest-api-docs-SUPPORTOS-89.md) | Public REST API & Docs (INT-1) | SUPPORTOS-89 | `AUTH-1`/`AUTH-2` (complete) — no `integrations` story |
 | 81 | [81-story-erp-integration-SUPPORTOS-90.md](81-story-erp-integration-SUPPORTOS-90.md) | ERP Integration (INT-2) | SUPPORTOS-90 | Story 80 (same app modules) + `CUST-1`, `SLA-0` (both complete) |
 | 82 | [82-story-messaging-providers-config-SUPPORTOS-91.md](82-story-messaging-providers-config-SUPPORTOS-91.md) | Messaging Providers Config (INT-3) | SUPPORTOS-91 | `COMM-1`/`COMM-2`/`COMM-4` (all complete) — no `integrations` story |
+| 83 | [83-story-outbound-webhooks-SUPPORTOS-92.md](83-story-outbound-webhooks-SUPPORTOS-92.md) | Outbound Webhooks (INT-4) | SUPPORTOS-92 | `SLA-0` (complete) — no `integrations` story |
 
 ## Dependency notes
 
-`EPIC 14` (`SupportOs backlog.MD` lines 858-882) is four stories; **`INT-1`, `INT-2`, and
-`INT-3` are planned, `INT-4` is not.**
+`EPIC 14` (`SupportOs backlog.MD` lines 858-882) is four stories — **`INT-1`
+through `INT-4` are now fully planned** (Stories 80-83); Stories 80-82 are
+implemented, Story 83 is planned, not yet implemented.
 
 **Story 80 (`INT-1`, `SUPPORTOS-89`) — implemented.** The app's first real code, and
 the story every later `integrations` story reads first:
@@ -86,14 +88,41 @@ adapters this story makes. Seven now-fully-unused `WHATSAPP_*`/`SMS_*` environme
 variables are removed (verified live: zero remaining Python consumers) — the first
 settings this project has ever removed rather than added.
 
-Still unplanned in this epic:
+**Story 83 (`INT-4`, `SUPPORTOS-92`) — planned, not implemented.** Back in
+`apps.integrations` (unlike Story 82) — a subscription list with no single
+owning domain, the same reasoning that placed Stories 80-81 there. Depends only
+on `SLA-0` (Story 27, complete), reusing Story 81's `apps/integrations/tasks.py`
+home and, for the outbound HTTP itself, the same stdlib-`urllib` client shape
+every prior `INT-*` story already established (no `requests`/`httpx`
+dependency exists in this project).
 
-- `INT-4` (Outbound Webhooks, line 880) — depends on `SLA-0` (complete); event
-  subscriptions dispatched asynchronously, with a **UI**. Reuses Story 81's
-  `apps/integrations/tasks.py` home and, for the outbound HTTP itself, the same
-  stdlib-`urllib` client shape (this project has no `requests`/`httpx` dependency).
+A real, discussed architectural fork: **this is the first story in the whole
+project to use Django model signals** (`post_save`/`pre_save`), a deliberate,
+confirmed exception to the otherwise-universal explicit-call-site convention
+(`notify(...)`, `apply_assignment`, `apply_escalation`) — chosen because a
+single domain event (e.g. a `Ticket` being created) has eight distinct call
+sites across five channel adapters, the staff API, the portal API, and the AI
+chatbot handoff, and an explicit call at every one of them (forever, including
+any future path) was judged the worse trade against "a ticket was created"
+needing to actually mean that. `CONVENTIONS.md` § 32 records the exception
+explicitly, including its one real accepted cost: detecting a *change* (not
+just a creation) via signals needs a `pre_save` re-fetch of the row's previous
+state, costing one extra query on every `Ticket` update project-wide.
+Unlike Story 81's self-healing recurring sync, a webhook delivery is a
+one-shot notification for one real moment — so `deliver_webhook` retries
+(3 attempts, 60/120/240s backoff) before giving up, the one `INT-*` task with
+retry logic. `WebhookDelivery` records one row **per attempt**, not per
+logical delivery, so a flaky endpoint's retry history stays fully visible.
 
-Follow-ups the three planned stories deliberately leave out and name as such:
+Six events ship: `ticket.created`, `ticket.status_changed`, `ticket.assigned`,
+`ticket.escalated`, `customer.created`, `message.created`. The UI is also
+architecturally different from every prior `INT-*` story's single-page config
+form: `WebhookSubscription` is a real list (not a `pk=1` singleton), so its
+frontend follows `RoleListPage.tsx`/`RoleFormPage.tsx`'s list-plus-separate-
+form-pages shape instead of `ErpSettingsPage.tsx`/`ChannelSettingsPage.tsx`'s
+single-page-with-cards shape.
+
+Follow-ups the four planned stories deliberately leave out and name as such:
 
 - **Per-key rate limiting** for the public API (Story 80) — a throttle scope keyed on
   `request.auth`.
@@ -111,3 +140,13 @@ Follow-ups the three planned stories deliberately leave out and name as such:
   not an oversight.
 - **A "send a test message" action** on `/settings/channels` (Story 82) — config CRUD
   only, matching `OrganizationSettings`'s own settings-page precedent.
+- **A "send a test event" / manual redelivery action** on `/settings/webhooks`
+  (Story 83) — the same declined-action precedent Story 82 set; `WebhookDelivery` is a
+  record, not a queue.
+- **Signature verification for the *receiving* end** (Story 83) — this project is the
+  sender, not a receiver, of its own webhooks; the signing scheme is documented for an
+  external integrator to verify independently, not built as a two-sided pair.
+- **Payload shaping/field selection per subscription** (Story 83) — every delivery's
+  `data` reuses the existing staff-facing serializer for the affected object in full,
+  the same "no second serializer for outside callers" posture `CONVENTIONS.md` § 29
+  already established.
