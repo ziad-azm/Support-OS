@@ -8,8 +8,11 @@ Entry point for the **authentication-authorization** feature. Stories execute in
 |----|------|-------|------------|------------|
 | 08 | [08-story-authentication-jwt-SUPPORTOS-26.md](08-story-authentication-jwt-SUPPORTOS-26.md) | Authentication (JWT) | SUPPORTOS-26 | Stories 05, 06, 07 (`I18N`, `UI`, `FORM`); FND-2/FND-3 |
 | 09 | [09-story-roles-permissions-authorization-SUPPORTOS-27.md](09-story-roles-permissions-authorization-SUPPORTOS-27.md) | Roles, Permissions & Authorization | SUPPORTOS-27 | Story 08 |
+| 84 | [84-story-role-based-post-login-landing-SUPPORTOS-123.md](84-story-role-based-post-login-landing-SUPPORTOS-123.md) | Role-Based Post-Login Landing | SUPPORTOS-123 | Story 09 |
 
-**EPIC 2 is complete.** Both stories are implemented and verified.
+**EPIC 2 is complete.** Stories 08-09 are implemented and verified. Story 84 (`SUPPORTOS-123`, not part of the original EPIC 2 backlog scope — no `AUTH-3` entry exists in `SupportOs backlog.MD`) is planned, not yet implemented.
+
+**Story 84's scope note:** the intake for `SUPPORTOS-123` had no description or acceptance criteria. Scoped down in planning, with the user's explicit sign-off, to a role-name badge on the existing `HomePage` landing screen — no change to the post-login redirect target (still `/` for every role) and no backend change. See the story file's `## Prerequisites` for the full reasoning.
 
 ## Dependency notes
 

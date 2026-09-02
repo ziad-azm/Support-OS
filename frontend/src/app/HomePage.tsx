@@ -123,7 +123,10 @@ export function HomePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={t('home.greeting', { name })} />
+      <PageHeader
+        title={t('home.greeting', { name })}
+        action={user?.role ? <Badge variant="secondary">{user.role.name}</Badge> : undefined}
+      />
       <p className="text-muted-foreground">{t('home.subtitle')}</p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

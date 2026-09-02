@@ -258,6 +258,15 @@
   - Depends on: backend permission task.
   - Outcome: UI reflects permissions consistently.
 
+### STORY (AUTH-3) — Role-Based Post-Login Landing
+
+**As a customer, I want to land on the customer portal right after logging in, so that I never see the staff application shell I have no business in.**
+**Dependencies:** AUTH-2.
+**Context:** confirmed live — `RootLayout.tsx`'s `/` route has no role/permission check beyond `RequireAuth`, so a `portal.access`-only account lands on the staff `Sidebar`/`HomePage` instead of `/portal`. Two sidebar items leak through even though nothing there is a data risk (`TaskViewSet` is user-scoped, empty for a customer; `knowledge_base.view` is legitimately granted to the `customer` role for portal FAQ/article browsing) — but the shell itself is the wrong one to show. Separately, `Sidebar.tsx`'s `/tasks` link is the only nav item not wrapped in `<Can permission="...">`, unlike every other entry in that file.
+
+- **Task: Role-aware landing redirect** — After login (and on any direct hit of `/`), redirect an account whose only permission is `portal.access` to `/portal` instead of rendering `RootLayout`. Outcome: a customer account never sees the staff shell.
+- **Task: Gate or hide the `/tasks` nav link consistently** — Decide and apply the same `<Can>` convention every other `Sidebar.tsx` entry uses, or document why `/tasks` is deliberately ungated. Outcome: no sidebar link that silently bypasses this project's own gating convention.
+
 ---
 
 ---
@@ -301,6 +310,14 @@
 
 - **Task: `Note` & `Attachment` models + upload API** — Implement models + file upload via `API` conventions; document storage location via `ENV`. Outcome: notes/files persistence.
 - **Task: Notes & attachments UI** — Implement add/list/download using shared primitives. Outcome: manage notes/files on profile.
+
+### STORY (CUST-5) — Portal Access Management
+
+**As an agent, I want to see and grant/revoke a customer's portal login from their profile, so that onboarding a customer to self-service doesn't require Django Admin access.**
+**Dependencies:** CUST-1, SEC-5.
+
+- **Task: Grant/revoke portal access API** — Expose whether a `Customer` has a linked portal `User` and add a permission-gated endpoint that provisions one (reusing SEC-5's invite-email flow, `role=customer`) or revokes it (unlink/deactivate), replacing the current Django-admin-only path (`Customer.user`, Story 42). Outcome: staff-controlled portal onboarding without admin access.
+- **Task: Portal access UI** — Implement a status indicator ("Portal access: enabled/disabled") + grant/revoke action on the customer profile page. Outcome: visible, actionable portal-access control for agents.
 
 ---
 
@@ -885,7 +902,25 @@
 
 ---
 
-# EPIC 15 — Multi-Department / Multi-Branch / Branding
+# EPIC 15 — Public Landing Page
+
+**Description:** A real front door for the product — right now `/` is gated by `RequireAuth` with no public route in between, so a signed-out visitor opening the app lands straight on the bare login form with zero introduction to what SupportOS is. Confirmed live: `PublicLayout` (`/login`, `/reset-password`, ...) exists but is a minimal centered-card shell, not a landing page — no route currently renders anything else for a visitor.
+**Depends on:** `UI`, `I18N` (EPIC 1).
+
+### STORY (LAND-1) — Animated Public Landing Page
+
+**As a visitor, I want a polished landing page with a warm, animated introduction before I ever see a login form, so that my first impression of SupportOS matches the quality of the product itself.**
+**Dependencies:** `UI`, `I18N`.
+
+- **Task: Landing page content & layout** — Implement a genuinely public `/` route (reachable with no session) with a hero section (name, one-line value proposition, primary "Log in" / "Get a demo" calls to action), a handful of feature highlights (omni-channel tickets, SLA automation, AI-assisted replies, reporting), reusing `UI` design tokens and `I18N` for full Arabic/English + RTL support. Constraints: reuse `PublicLayout`'s "no staff chrome" precedent rather than a third shell type. Outcome: an unauthenticated visitor sees a real introduction, not a bare form.
+- **Task: Entrance motion & micro-interactions** — Add tasteful, not-gratuitous motion: a hero entrance animation, scroll-triggered reveals for the feature sections, subtle hover states on CTAs. Constraints: prefer CSS transitions/Tailwind (CONVENTIONS.md § 0/§ 17 — check for an existing animation utility before adding a new dependency); respect `prefers-reduced-motion`. Outcome: the page feels alive without harming load time or accessibility.
+- **Task: Routing reconciliation with AUTH-3** — Move the authenticated dashboard off the now-public `/`, so a signed-out visitor sees the landing page, a signed-in staff member still lands on the app shell, and a `portal.access`-only customer still redirects to `/portal` per AUTH-3. Outcome: one `/` route that means the right thing for every visitor type.
+
+---
+
+---
+
+# EPIC 16 — Multi-Department / Multi-Branch / Branding
 
 **Description:** Organizational scoping (departments, branches) and custom branding. Scoping is a cross-cutting concern applied via a shared pattern; branding builds on system configuration.
 **Depends on:** Ticket Management, SEC-4.
@@ -912,7 +947,7 @@
 
 ---
 
-# EPIC 16 — Production Readiness
+# EPIC 17 — Production Readiness
 
 **Description:** Hardening for deployment — observability, performance, security review, and optional Docker packaging (future-ready, still not required for local dev).
 **Depends on:** all prior epics.
@@ -949,6 +984,6 @@
 - Shared form UX behavior (validation timing, error summary, focus) → EPIC 8 (DSN-10), extends `FORM`
 - Responsive table/shell patterns → EPIC 8 (DSN-9), extend `UI`/`DSN-5`
 - AI service foundation (AI-0) → EPIC 13
-- System config (SEC-4) → EPIC 12; Org scoping pattern (ORG-1) → EPIC 15
+- System config (SEC-4) → EPIC 12; Org scoping pattern (ORG-1) → EPIC 16
 
 **Rule for every later task:** consume these foundations by reference; never re-implement them.
