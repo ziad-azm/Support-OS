@@ -6,6 +6,7 @@ import { deleteTicket } from './deleteTicket'
 import { escalateTicket } from './escalateTicket'
 import { setTicketStatus } from './setTicketStatus'
 import { suggestTicketReply } from './suggestTicketReply'
+import { suggestTicketSolutions } from './suggestTicketSolutions'
 import { summarizeTicket } from './summarizeTicket'
 import { ticketKeys } from './ticketKeys'
 import { updateTicket } from './updateTicket'
@@ -80,5 +81,14 @@ export function useSummarizeTicket(id: number) {
 export function useSuggestTicketReply(id: number) {
   return useMutation({
     mutationFn: () => suggestTicketReply(id),
+  })
+}
+
+// No queryClient.invalidateQueries — same reasoning as useSummarizeTicket/
+// useSuggestTicketReply: finding solutions changes nothing cached; the
+// caller consumes the result directly via onSuccess.
+export function useSuggestTicketSolutions(id: number) {
+  return useMutation({
+    mutationFn: () => suggestTicketSolutions(id),
   })
 }

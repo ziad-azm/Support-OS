@@ -16,6 +16,7 @@ import { useTicket } from '../api/useTicket'
 import { ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
 import { CustomerContextPanel } from './CustomerContextPanel'
 import { InternalNotesSection } from './InternalNotesSection'
+import { SuggestedSolutionsPanel } from './SuggestedSolutionsPanel'
 import { TicketAssigneeControl } from './TicketAssigneeControl'
 import { TicketConversation } from './TicketConversation'
 import { TicketHistorySection } from './TicketHistorySection'
@@ -194,6 +195,7 @@ export function TicketDetailPage() {
                 </Card>
                 <TicketSlaSection ticketId={ticket.id} />
                 <TicketConversation ticketId={ticket.id} />
+                <SuggestedSolutionsPanel ticketId={ticket.id} />
                 <TicketHistorySection ticketId={ticket.id} />
                 <InternalNotesSection ticketId={ticket.id} />
               </div>

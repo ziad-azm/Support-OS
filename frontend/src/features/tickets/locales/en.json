@@ -143,6 +143,19 @@
       "pending": "Pending"
     }
   },
+  "solutions": {
+    "title": "Suggested Solutions",
+    "empty": "Click \"Find solutions\" to search the knowledge base for this ticket.",
+    "query": "Searched for: \"{{query}}\"",
+    "noMatches": "No matching knowledge base content found.",
+    "actions": {
+      "suggest": "Find solutions"
+    },
+    "kinds": {
+      "faq": "FAQ",
+      "article": "Article"
+    }
+  },
   "internalNotes": {
     "title": "Internal Notes",
     "empty": "No internal notes yet.",

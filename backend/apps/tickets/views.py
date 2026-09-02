@@ -18,6 +18,7 @@ from .history import build_history
 from .models import Category, Ticket, TicketActivity
 from .reply_suggestions import draft_reply
 from .serializers import CategorySerializer, TicketSerializer
+from .solution_suggestions import find_ticket_solutions
 from .status import is_valid_transition
 from .summarization import summarize_ticket
 
@@ -75,6 +76,7 @@ class TicketViewSet(BaseModelViewSet):
         "sla": Permissions.TICKETS_VIEW,
         "summarize": Permissions.TICKETS_VIEW,
         "suggest_reply": Permissions.TICKETS_MANAGE,
+        "suggest_solutions": Permissions.TICKETS_VIEW,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -319,3 +321,17 @@ class TicketViewSet(BaseModelViewSet):
         except AIServiceError as exc:
             raise AIServiceUnavailable() from exc
         return Response({"reply": reply})
+
+    @action(detail=True, methods=["post"], url_path="suggest-solutions")
+    def suggest_solutions(self, request, pk=None):
+        """AI-matched knowledge-base solutions — AI-4. Gated `tickets.view`
+        alone, the same reasoning `.summarize` uses — a read-oriented
+        convenience for whoever can already see the ticket, not a
+        mutation.
+        """
+        ticket = self.get_object()
+        try:
+            suggestion = find_ticket_solutions(ticket)
+        except AIServiceError as exc:
+            raise AIServiceUnavailable() from exc
+        return Response(suggestion)
