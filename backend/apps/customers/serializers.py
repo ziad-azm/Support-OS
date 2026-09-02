@@ -40,16 +40,40 @@ class CustomerSerializer(BaseModelSerializer):
         allow_null=True,
         validators=[UniqueValidator(queryset=Customer.objects.all())],
     )
+    # Same three reasons as `email` above, and the same trap: overriding a
+    # field opts it out of ModelSerializer's auto-derived UniqueValidator
+    # (verified against DRF 3.18 — see this class's own comment), so the
+    # validator must be declared by hand or a duplicate ERP id becomes an
+    # IntegrityError instead of a 400.
+    external_id = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        validators=[UniqueValidator(queryset=Customer.objects.all())],
+    )
 
     class Meta(BaseModelSerializer.Meta):
         model = Customer
-        fields = ("id", "name", "email", "phone", "company", "created_at", "updated_at")
+        fields = (
+            "id",
+            "name",
+            "email",
+            "phone",
+            "company",
+            "external_id",
+            "created_at",
+            "updated_at",
+        )
 
     def validate_email(self, value):
         """Blank -> None, so the unique constraint sees NULL.
 
         DRF does not call model `clean()`, so this cannot be left to the model.
         """
+        return value or None
+
+    def validate_external_id(self, value):
         return value or None
 
 

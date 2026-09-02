@@ -6,6 +6,8 @@ import authAr from '@/features/auth/locales/ar.json'
 import authEn from '@/features/auth/locales/en.json'
 import customersAr from '@/features/customers/locales/ar.json'
 import customersEn from '@/features/customers/locales/en.json'
+import integrationsAr from '@/features/integrations/locales/ar.json'
+import integrationsEn from '@/features/integrations/locales/en.json'
 import knowledgeBaseAr from '@/features/knowledge-base/locales/ar.json'
 import knowledgeBaseEn from '@/features/knowledge-base/locales/en.json'
 import liveChatAr from '@/features/live-chat/locales/ar.json'
@@ -49,6 +51,7 @@ export const resources = {
     auditLog: auditLogEn,
     accounts: accountsEn,
     customers: customersEn,
+    integrations: integrationsEn,
     tickets: ticketsEn,
     liveChat: liveChatEn,
     webForm: webFormEn,
@@ -67,6 +70,7 @@ export const resources = {
     auditLog: auditLogAr,
     accounts: accountsAr,
     customers: customersAr,
+    integrations: integrationsAr,
     tickets: ticketsAr,
     liveChat: liveChatAr,
     webForm: webFormAr,

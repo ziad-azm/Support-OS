@@ -455,6 +455,19 @@ export const router = createBrowserRouter([
             ],
           },
           {
+            element: <RequirePermission permission="integrations.manage" />,
+            children: [
+              {
+                path: 'settings/erp',
+                lazy: async () => {
+                  const { ErpSettingsPage } =
+                    await import('@/features/integrations/components/ErpSettingsPage')
+                  return { element: <ErpSettingsPage /> }
+                },
+              },
+            ],
+          },
+          {
             path: 'tasks',
             lazy: async () => {
               const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')

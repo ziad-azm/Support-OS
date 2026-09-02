@@ -2,7 +2,14 @@ from django.urls import path
 from drf_spectacular.views import SpectacularRedocView, SpectacularSwaggerView
 from rest_framework.routers import SimpleRouter
 
-from .views import ApiKeyViewSet, SchemaView
+from .views import (
+    ApiKeyViewSet,
+    ErpConnectionView,
+    ErpOrderViewSet,
+    ErpSyncRunViewSet,
+    ErpSyncTriggerView,
+    SchemaView,
+)
 
 app_name = "integrations"
 
@@ -11,6 +18,8 @@ app_name = "integrations"
 # apps/knowledge_base/urls.py.
 router = SimpleRouter()
 router.register("api-keys", ApiKeyViewSet, basename="api-key")
+router.register("erp/sync-runs", ErpSyncRunViewSet, basename="erp-sync-run")
+router.register("erp/orders", ErpOrderViewSet, basename="erp-order")
 
 # The three doc routes live here rather than in config/api_urls.py so this
 # app keeps its single include() line (backend/apps/README.md). Each view
@@ -18,6 +27,8 @@ router.register("api-keys", ApiKeyViewSet, basename="api-key")
 # wrap the YAML document or the HTML pages; their permissions come from
 # SPECTACULAR_SETTINGS["SERVE_PERMISSIONS"] (API_DOCS_PUBLIC).
 urlpatterns = router.urls + [
+    path("erp/connection/", ErpConnectionView.as_view(), name="erp-connection"),
+    path("erp/sync/", ErpSyncTriggerView.as_view(), name="erp-sync"),
     path("schema/", SchemaView.as_view(), name="schema"),
     path(
         "docs/",

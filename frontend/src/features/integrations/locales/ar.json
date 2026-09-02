@@ -1,0 +1,62 @@
+{
+  "erp": {
+    "title": "اتصال نظام تخطيط الموارد",
+    "navLabel": "مزامنة ERP",
+    "syncNow": "مزامنة الآن",
+    "syncQueued": "تم إدراج المزامنة في قائمة الانتظار.",
+    "scheduled": "مجدولة",
+    "saved": "تم حفظ الاتصال.",
+    "counts": "{{created}} تم إنشاؤها · {{updated}} تم تحديثها · {{skipped}} تم تخطيها · {{failed}} فشلت",
+    "tokenSet": "تم تكوين رمز مصادقة.",
+    "tokenUnset": "لم يتم تكوين رمز مصادقة.",
+    "tokenKeepHint": "اترك هذا الحقل فارغًا للاحتفاظ بالرمز الحالي.",
+    "historyTitle": "سجل المزامنة",
+    "historyEmpty": "لا توجد عمليات مزامنة بعد.",
+    "ordersTitle": "الطلبات التي تمت مزامنتها مؤخرًا",
+    "ordersEmpty": "لم تتم مزامنة أي طلبات بعد.",
+    "fields": {
+      "connectionTitle": "الاتصال",
+      "enabled": "مفعّل",
+      "baseUrl": "الرابط الأساسي",
+      "authToken": "رمز المصادقة",
+      "exportEnabled": "تصدير العملاء الجدد إلى نظام تخطيط الموارد",
+      "idFieldsTitle": "حقول الربط",
+      "customerExternalIdField": "حقل معرّف العميل",
+      "orderExternalIdField": "حقل معرّف الطلب",
+      "orderCustomerRefField": "حقل مرجع عميل الطلب",
+      "startedAt": "بدأت في",
+      "direction": "الاتجاه",
+      "state": "الحالة",
+      "counts": "الأعداد",
+      "triggeredBy": "بدأها",
+      "errorMessage": "الخطأ",
+      "orderNumber": "رقم الطلب",
+      "customer": "العميل",
+      "status": "الحالة",
+      "totalAmount": "الإجمالي",
+      "placedAt": "تاريخ الطلب",
+      "syncedAt": "تاريخ المزامنة"
+    },
+    "maps": {
+      "title": "تخطيط الحقول",
+      "customerLabel": "حقول العميل",
+      "orderLabel": "حقول الطلب",
+      "targetLabel": "يُطابق",
+      "add": "إضافة تخطيط",
+      "sourcePlaceholder": "اسم حقل نظام تخطيط الموارد",
+      "removeMapping": "إزالة تخطيط {{source}}",
+      "targets": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "company": "الشركة",
+        "order_number": "رقم الطلب",
+        "status": "الحالة",
+        "total_amount": "المبلغ الإجمالي",
+        "currency": "العملة",
+        "placed_at": "تاريخ الطلب"
+      }
+    },
+    "actions": { "save": "حفظ" }
+  }
+}

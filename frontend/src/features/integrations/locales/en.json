@@ -1,0 +1,62 @@
+{
+  "erp": {
+    "title": "ERP Connection",
+    "navLabel": "ERP Sync",
+    "syncNow": "Sync now",
+    "syncQueued": "Sync queued.",
+    "scheduled": "Scheduled",
+    "saved": "Connection saved.",
+    "counts": "{{created}} created · {{updated}} updated · {{skipped}} skipped · {{failed}} failed",
+    "tokenSet": "An auth token is configured.",
+    "tokenUnset": "No auth token is configured.",
+    "tokenKeepHint": "Leave this field blank to keep the current token.",
+    "historyTitle": "Sync history",
+    "historyEmpty": "No sync runs yet.",
+    "ordersTitle": "Recently synced orders",
+    "ordersEmpty": "No orders synced yet.",
+    "fields": {
+      "connectionTitle": "Connection",
+      "enabled": "Enabled",
+      "baseUrl": "Base URL",
+      "authToken": "Auth token",
+      "exportEnabled": "Export new customers to the ERP",
+      "idFieldsTitle": "Correlation fields",
+      "customerExternalIdField": "Customer id field",
+      "orderExternalIdField": "Order id field",
+      "orderCustomerRefField": "Order customer reference field",
+      "startedAt": "Started",
+      "direction": "Direction",
+      "state": "State",
+      "counts": "Counts",
+      "triggeredBy": "Triggered by",
+      "errorMessage": "Error",
+      "orderNumber": "Order number",
+      "customer": "Customer",
+      "status": "Status",
+      "totalAmount": "Total",
+      "placedAt": "Placed",
+      "syncedAt": "Synced"
+    },
+    "maps": {
+      "title": "Field mapping",
+      "customerLabel": "Customer fields",
+      "orderLabel": "Order fields",
+      "targetLabel": "Maps to",
+      "add": "Add mapping",
+      "sourcePlaceholder": "ERP field name",
+      "removeMapping": "Remove mapping for {{source}}",
+      "targets": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "company": "Company",
+        "order_number": "Order number",
+        "status": "Status",
+        "total_amount": "Total amount",
+        "currency": "Currency",
+        "placed_at": "Placed at"
+      }
+    },
+    "actions": { "save": "Save" }
+  }
+}

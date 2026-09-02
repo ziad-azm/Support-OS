@@ -29,6 +29,19 @@ class Customer(TimeStampedModel):
     # belongs to CUST-2.
     phone = models.CharField(_("phone"), max_length=40, blank=True)
     company = models.CharField(_("company"), max_length=200, blank=True)
+    # The ERP's own id for this customer — INT-2's correlation key, and the
+    # only thing that makes an import an upsert rather than a duplicate
+    # factory. Unique WHEN PRESENT, `null=True`/`blank=True`, normalised
+    # blank->NULL in `clean()` below: exactly the same three-part pattern
+    # `email` above already uses, for exactly the same verified reason —
+    # Postgres allows any number of NULLs in a unique column but rejects a
+    # second blank string, so a `""` reaching this column is an
+    # IntegrityError (a 500), not a validation message. Most rows have no
+    # ERP counterpart: a customer created in SupportOS has this blank until
+    # `export_customers` pushes it and stores the id the ERP returns.
+    external_id = models.CharField(
+        _("ERP external id"), max_length=100, unique=True, null=True, blank=True
+    )
     # SET_NULL, not PROTECT: contrast `accounts.User.role` (PROTECT — many
     # users share one role that must not vanish silently). This is a 1:1
     # link; losing portal login access must not block deleting or keeping
@@ -62,6 +75,8 @@ class Customer(TimeStampedModel):
         super().clean()
         if not self.email:
             self.email = None
+        if not self.external_id:
+            self.external_id = None
 
 
 class ContactDetail(TimeStampedModel):

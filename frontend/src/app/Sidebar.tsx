@@ -13,6 +13,7 @@ import {
   LayoutDashboardIcon,
   ListTodoIcon,
   LogOutIcon,
+  PlugIcon,
   SearchIcon,
   Settings2Icon,
   SettingsIcon,
@@ -117,11 +118,16 @@ export function Sidebar() {
     'accounts',
     'auditLog',
     'organization',
+    'integrations',
     'reports',
   ])
   const { user, logout, can } = useAuth()
   const showAdministration =
-    can('users.view') || can('roles.manage') || can('audit_log.view') || can('settings.manage')
+    can('users.view') ||
+    can('roles.manage') ||
+    can('audit_log.view') ||
+    can('settings.manage') ||
+    can('integrations.manage')
   const [collapsed, setCollapsed] = useState(readCollapsed)
 
   function toggleCollapsed() {
@@ -257,6 +263,14 @@ export function Sidebar() {
                 to="/settings"
                 icon={SettingsIcon}
                 label={t('organization:settings.title')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="integrations.manage">
+              <SidebarLink
+                to="/settings/erp"
+                icon={PlugIcon}
+                label={t('integrations:erp.navLabel')}
                 collapsed={collapsed}
               />
             </Can>

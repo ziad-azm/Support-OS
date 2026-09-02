@@ -2025,3 +2025,54 @@ declare their own `renderer_classes`, which is why serving YAML and HTML
 from under `/api/` does not need — and must not get — a global renderer
 addition. `config/tests/test_settings.py::DrfSettingsTests
 .test_only_the_envelope_renderer_is_registered` pins this.
+
+---
+
+## 30. ERP sync (INT-2)
+
+`INT-2` (Story 81) is this project's first sync with a system it does not
+own. Three rules follow from that and apply to `INT-3`/`INT-4` too.
+
+**A foreign system's field names are configuration, never code.**
+`ErpConnection.customer_field_map`/`order_field_map` translate ERP field
+names to SupportOS ones, and `apps/integrations/erp_sync.py` is the only
+module that applies them. A story that integrates a second external
+system adds its own map to its own config row — it does not hardcode a
+vendor's field name in a serializer or a task.
+
+**A field map may only target an explicit allowlist.**
+`CUSTOMER_SYNCABLE_FIELDS`/`ORDER_SYNCABLE_FIELDS`
+(`apps/integrations/erp_sync.py`) are enforced in three places, on
+purpose: `ErpConnection.clean()` (admin/`full_clean`),
+`ErpConnectionSerializer` (the API path — DRF does not call model
+`clean()`, § 22), and `apply_field_map` itself (a map written through the
+ORM bypasses both). `Customer.external_id` and `Customer.user` are
+deliberately **absent** from the allowlist: one is the correlation key the
+upsert depends on, the other is the portal-login link a bulk import must
+never re-point.
+
+**An unconfigured integration is a no-op, not an error, and its schedule
+ships enabled.** `run_erp_sync` returns immediately unless
+`ErpConnection.is_configured()`, which is what lets
+`0003_seed_erp_sync_schedule` seed an *enabled* `PeriodicTask` — the
+schedule existing and the connection being configured are two independent
+opt-ins, the same split § 24 already records for `SLA-3`.
+
+**A per-record failure never aborts a run; a connection-level failure
+does.** `erp_sync` counts a bad record into `ErpSyncRun.failed_count` and
+carries on — imperfect upstream data is the normal case, and one
+over-long name must not strand the other 4,999 records. An `ErpError`
+(host down, non-2xx, non-JSON body) ends the run as `failed`. Either way
+the `ErpSyncRun` row is the record; **no `AuditLog` row is written**, for
+the same reason § 29 gives for API keys.
+
+**A credential this project must replay cannot be hashed — so it is
+write-only instead.** `ErpConnection.auth_token` is stored in plain text
+(it is sent on every outbound call, unlike INT-1's `ApiKey`, which only
+ever needs a digest), is `write_only` in its serializer, and is reported
+to the UI only as the boolean `has_auth_token`. A blank token on `PATCH`
+leaves the stored value alone, so saving the form cannot wipe it.
+**Encryption at rest is not implemented** and is `INT-3`'s to decide — its
+own task text is "secure central config for … credentials". Until then,
+DB access is token access; § 10's never-log rule is what keeps it out of
+logs.

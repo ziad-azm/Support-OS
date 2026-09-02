@@ -489,6 +489,34 @@ once** — only `prefix` and a SHA-256 digest are stored, so a lost key is repla
 the row, so `last_used_at` and the issue date stay auditable. `PATCH {"is_active": true}` reverses
 it. An expired (`expires_at` in the past) or revoked key returns `401 authentication_failed`.
 
+### ERP sync (INT-2)
+
+`/settings/erp` (permission `integrations.manage`) configures one ERP connection: base URL,
+bearer token, and two **field maps** translating the ERP's field names to SupportOS ones. Nothing
+is contacted until **Enabled** is on and a base URL is set.
+
+| Endpoint | What it does |
+|---|---|
+| `GET`/`PATCH` `/api/erp/connection/` | The singleton config. `auth_token` is write-only — send `""` (or omit it) to keep the stored one. |
+| `POST /api/erp/sync/` | Enqueues a sync (`{"direction": "import"｜"export"}`); returns `202`. |
+| `GET /api/erp/sync-runs/` | Run history with per-entity counters. |
+| `GET /api/erp/orders/?customer=<id>` | The read-only order mirror. |
+
+**Direction.** Import pulls ERP customers onto `customers.Customer` (upserted by
+`Customer.external_id`) and ERP orders onto `integrations.ErpOrder`. Export pushes SupportOS
+customers that have no `external_id` yet and stores the id the ERP returns. **Orders are never
+exported** — the ERP owns them, and nothing in SupportOS creates one.
+
+**The assumed ERP contract** is `GET /customers`, `GET /orders`, `POST /customers`, bearer auth,
+each response either a bare JSON array or `{"results": [...]}`. Different field names are
+configuration; different paths or auth mean editing `apps/integrations/erp_client.py`.
+
+**Schedule.** `apps/integrations/migrations/0003_seed_erp_sync_schedule.py` seeds an hourly,
+enabled `PeriodicTask` for the import. It is inert until the connection is configured. Change the
+interval in `/admin/` (`django-celery-beat`), never in settings — `CONVENTIONS.md` § 24. **A
+Celery worker must be running** for any sync to happen (`README.md` § 6; on Windows,
+`celery -A config worker --pool=solo`).
+
 ### Consuming the API from the frontend
 
 **The rule:** features call `api.get` / `api.post` / `api.put` / `api.patch` / `api.delete` /
