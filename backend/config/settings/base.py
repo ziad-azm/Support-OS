@@ -409,3 +409,19 @@ CELERY_TIMEZONE = TIME_ZONE
 # hardcoded `beat_schedule` dict — so a future scheduled job (e.g. SLA-3's
 # escalation evaluation) is configured without a settings deploy.
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# --- AI (AI-0) ------------------------------------------------------------
+# The one server-side AI integration point every AI-1..AI-5 story calls
+# (SupportOs backlog.MD:822) — apps/ai/client.py, never a second
+# `import anthropic` anywhere else in this codebase. Read explicitly via
+# env(), the same WHATSAPP_*/SMS_* pattern (above), rather than relying on
+# the anthropic SDK's own ANTHROPIC_API_KEY auto-discovery — this project
+# reads every environment-differing value the same explicit way. No safe
+# default: apps/ai/client.py::get_client refuses to construct a client
+# against a blank key, the same "fail closed until configured" rule
+# WHATSAPP_*/SMS_* already establish. See Story 74 `## Edge Cases`.
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+# Overridable per environment so a later AI-* story (or an ops change) can
+# trade cost for quality without a code change — no feature hardcodes a
+# model id of its own.
+AI_MODEL = env("AI_MODEL", default="claude-opus-5")

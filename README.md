@@ -550,6 +550,8 @@ developer discovers it.
 | `SMS_FROM_NUMBER` | no | *(empty)* | The Twilio phone number outbound SMS is sent from. |
 | `SMS_WEBHOOK_URL` | no | *(empty — inbound webhook rejects every request until set)* | The exact URL configured in the Twilio console for the inbound SMS webhook — used, not reconstructed, because Twilio's signature depends on it. |
 | `MEDIA_ROOT` | no | `<repo>/backend/media` | Filesystem path where uploaded `Attachment` files are stored. No `MEDIA_URL` — files are served only through the permission-gated `AttachmentViewSet.download` action. |
+| `ANTHROPIC_API_KEY` | no | *(empty — AI features refuse to run until set)* | API key for Anthropic's Claude API — the one AI provider integration point (AI-0). |
+| `AI_MODEL` | no | `claude-opus-5` | Claude model id `apps.ai.client.generate_completion` uses by default. |
 
 ### Frontend — `frontend/.env`
 

@@ -1942,3 +1942,38 @@ create-and-link form.
     more intuitive framing in isolation — a single dashboard-wide
     reading direction beats four gauges that each need to be read
     differently.
+
+---
+
+## 28. AI service foundation (AI-0)
+
+`AI-0` (Story 74) is the shared foundation `AI-1`…`AI-5` build on — see
+§ EPIC 13 in `SupportOs backlog.MD`.
+
+**`apps/ai/client.py` is the only place `anthropic` is imported.** A
+feature calls `generate_completion(...)`; it never constructs its own
+`anthropic.Anthropic()` client or reads `settings.ANTHROPIC_API_KEY`
+directly. This is what "single AI integration point" (the backlog's own
+phrase) means in code: one client, one call signature, one exception
+type (`apps.ai.exceptions.AIServiceError`) every consumer catches instead
+of an `anthropic.*` exception class.
+
+**`apps/ai/prompts.py::ground_with_knowledge_base` is how an AI feature
+reads the knowledge base — never a second call into
+`apps.knowledge_base.search.search_knowledge_base` with `include_drafts`
+left to the caller's judgment.** It is hardcoded to `include_drafts=False`:
+an AI-generated answer must never surface unpublished KB content, unlike
+`KnowledgeBaseSearchView`'s permission-elevated human-facing search
+(§ `KB-3`).
+
+**No AI credential is ever logged, and neither is a prompt or a
+response.** Ticket content, KB content, and customer data can appear in
+any of the three; § 10's "never log secrets, never log request bodies"
+rule applies to `apps/ai/client.py`'s own error logging exactly as it
+does everywhere else — log the exception class or provider status code,
+never the payload.
+
+**`AI_MODEL` is an environment variable, not a per-feature constant.** A
+story that needs a different model tier for its own task passes `model=`
+to `generate_completion` explicitly; it does not add a second
+`AI_*_MODEL` environment variable.
