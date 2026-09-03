@@ -1,6 +1,8 @@
 import logging
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import SuspiciousFileOperation
 from django.http import FileResponse
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
@@ -289,6 +291,49 @@ class NoteViewSet(BaseModelViewSet):
 # storage-exhaustion/DoS vector, not that this exact number is final.
 MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024
 
+# PROD-3. An allowlist, never a denylist: a denylist is a list of the
+# extensions someone happened to think of. Covers what a support attachment
+# actually is — documents, images, archives, plain text, saved mail.
+#
+# Severity, stated honestly: this is defense-in-depth, NOT a live XSS fix.
+# `AttachmentViewSet.download` already serves every file with
+# `as_attachment=True` (Content-Disposition: attachment), so a stored
+# .svg/.html is downloaded rather than rendered inline — DO NOT remove that.
+# This closes the "we store and redistribute arbitrary executables" half.
+#
+# Note this is an extension check, not content sniffing: a .png containing
+# HTML still passes. Real content inspection needs libmagic, a new binary
+# dependency this project deliberately does not add. Extend this set rather
+# than switching to a denylist. See CONVENTIONS.md § 36.
+ALLOWED_ATTACHMENT_EXTENSIONS = frozenset(
+    {
+        ".pdf",
+        ".doc",
+        ".docx",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx",
+        ".csv",
+        ".txt",
+        ".log",
+        ".md",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".bmp",
+        ".tiff",
+        ".zip",
+        ".gz",
+        ".tar",
+        ".7z",
+        ".eml",
+        ".msg",
+    }
+)
+
 
 class AttachmentViewSet(BaseModelViewSet):
     """Attachment create/list/retrieve/destroy/download for one customer.
@@ -327,16 +372,34 @@ class AttachmentViewSet(BaseModelViewSet):
 
     def perform_create(self, serializer):
         file_obj = serializer.validated_data["file"]
+        # Size first: it is the cheaper check, and an over-large file should
+        # report its real problem rather than an incidental type mismatch.
         if file_obj.size > MAX_ATTACHMENT_SIZE_BYTES:
             max_mb = MAX_ATTACHMENT_SIZE_BYTES // (1024 * 1024)
             raise ValidationError(
                 {"file": [_("File must be %(max_mb)s MB or smaller.") % {"max_mb": max_mb}]}
             )
-        serializer.save(
-            uploaded_by=self.request.user,
-            original_filename=file_obj.name,
-            size=file_obj.size,
-        )
+        # PROD-3: type allowlist. An extensionless upload has `suffix == ""`,
+        # which is not in the set and is therefore rejected — deliberate.
+        extension = Path(file_obj.name).suffix.lower()
+        if extension not in ALLOWED_ATTACHMENT_EXTENSIONS:
+            raise ValidationError(
+                {"file": [_("Files of type “%(ext)s” are not accepted.") % {"ext": extension}]}
+            )
+        try:
+            serializer.save(
+                uploaded_by=self.request.user,
+                original_filename=file_obj.name,
+                size=file_obj.size,
+            )
+        except SuspiciousFileOperation as exc:
+            # PROD-3: Django rejects `..`/absolute paths in the generated
+            # upload path (django/db/models/fields/files.py:357, via
+            # `validate_file_name`). Already SAFE — the file is never
+            # written — but the raw exception is unhandled by
+            # `envelope_exception_handler` and renders as a 500. This makes
+            # it the 400 it always was semantically.
+            raise ValidationError({"file": [_("This file name is not accepted.")]}) from exc
 
     def perform_destroy(self, instance):
         # `instance.delete()` (the `ModelViewSet` default `perform_destroy`)

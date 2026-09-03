@@ -7,7 +7,6 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -15,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.agents.models import Task
 from apps.core.permissions import Permissions
 from apps.core.scoping import ScopedQuerysetMixin, ScopeFilter
+from apps.core.throttling import FailOpenScopedRateThrottle
 from apps.core.views import BaseModelViewSet
 
 from .models import AuditLog, Role
@@ -65,10 +65,15 @@ class InviteConfirmView(APIView):
     activating the account `UserAdminSerializer.create` left pending. No
     Authorization header — the token IS the credential, the same reasoning
     `LogoutView` above already documents for a differently-shaped case.
+
+    PROD-3: throttled on `auth_credentials` — the token IS the credential
+    here, so an unlimited endpoint is a signed-token brute-force target.
     """
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "auth_credentials"
 
     def post(self, request):
         serializer = InviteConfirmSerializer(data=request.data)
@@ -90,7 +95,11 @@ class PasswordResetRequestView(APIView):
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    # PROD-3 swapped `ScopedRateThrottle` for the fail-open subclass: the
+    # stock class raises out of `allow_request` when its cache is
+    # unreachable, which would 500 this endpoint on a Redis outage. Scope
+    # and rate are unchanged from SEC-7. See CONVENTIONS.md § 36.
+    throttle_classes = [FailOpenScopedRateThrottle]
     throttle_scope = "password_reset_request"
 
     def post(self, request):
@@ -106,12 +115,19 @@ class PasswordResetConfirmView(APIView):
     password on an already-active account — the opposite precondition
     from `InviteConfirmView` above, which only ever accepts a pending,
     `is_active=False` one. No Authorization header — the token IS the
-    credential, the same reasoning `LogoutView` above documents. Not
-    throttled — see `## Story Goal` finding 2.
+    credential, the same reasoning `LogoutView` above documents.
+
+    PROD-3: now throttled on `auth_credentials`. SEC-7 limited the *request*
+    half of this flow and deliberately left the *confirm* half open; the
+    PROD-3 audit found that asymmetry, and a signed token that can be
+    guessed without limit is the same brute-force target the request half
+    was protected against. See CONVENTIONS.md § 36.
     """
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "auth_credentials"
 
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
@@ -130,9 +146,16 @@ class ChangePasswordView(APIView):
     `APIView` in this codebase that needs to (`## Prerequisites`); a
     `ModelViewSet`'s own `get_serializer()` would do this automatically,
     but nothing here is a `ModelViewSet`.
+
+    PROD-3: throttled on `auth_credentials` — the serializer checks
+    `current_password`, so an unlimited endpoint brute-forces it from a
+    hijacked session. Keyed per user here rather than per IP, since the
+    caller is authenticated (`FailOpenScopedRateThrottle.get_cache_key`).
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "auth_credentials"
 
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})

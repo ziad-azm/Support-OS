@@ -12,6 +12,7 @@ from apps.ai.models import ChatbotSession
 from apps.ai.tasks import categorize_ticket
 from apps.communications.models import Message
 from apps.core.permissions import HasPermission, Permissions
+from apps.core.throttling import AiRateThrottle
 from apps.core.views import CustomerScopedModelViewSet
 from apps.sla.tasks import auto_assign_ticket
 from apps.tickets.models import Feedback, Ticket
@@ -174,6 +175,12 @@ class PortalChatbotView(APIView):
         "get": Permissions.PORTAL_ACCESS,
         "post": Permissions.PORTAL_ACCESS,
     }
+    # PROD-3: every POST here costs a paid provider call, and this was
+    # callable in a loop by any portal customer. `get` is included
+    # deliberately — `get_or_start_session` can CREATE a session, and the
+    # scope is shared with `post` so a client cannot alternate verbs to
+    # double its budget. Keyed per user. See CONVENTIONS.md § 36.
+    throttle_classes = [AiRateThrottle]
 
     def _customer(self):
         # Same guard, same reason as PortalTicketViewSet.perform_create:
@@ -209,6 +216,9 @@ class PortalChatbotHandoffView(APIView):
 
     permission_classes = [IsAuthenticated, HasPermission]
     permission_map = {"post": Permissions.PORTAL_ACCESS}
+    # PROD-3: shares the `ai` scope with `PortalChatbotView` above, so the
+    # handoff path cannot be used to top up a spent chat budget.
+    throttle_classes = [AiRateThrottle]
 
     def post(self, request):
         if not hasattr(request.user, "customer_profile"):

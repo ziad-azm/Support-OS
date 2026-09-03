@@ -338,6 +338,59 @@ cache decision in this project.
 
 ---
 
+## Security (PROD-3)
+
+The API rate-limits every endpoint. A view's own `throttle_classes` **replaces**
+the global baseline below rather than stacking with it, so the sensitive
+endpoints each declare a tight named scope of their own:
+
+| Scope | Rate | Applies to |
+|---|---|---|
+| `anon` / `user` | 300/hour · 2000/hour | The global baseline — every endpoint without its own scope. |
+| `password_reset_request` | 5/hour | `POST /api/auth/password-reset/request/`. |
+| `auth_credentials` | 10/minute | `token/`, `token/refresh/`, `invite/confirm/`, `password-reset/confirm/`, `change-password/` — shared across all five. |
+| `anon_write` | 10/hour | `live-chat/start/`, `web-form/submit/` — anonymous endpoints that create a `Customer`/`Ticket`. |
+| `webhook_inbound` | 600/minute | The three inbound provider webhooks. Set high deliberately: a dropped webhook is lost customer data. |
+| `ai` | 30/hour, **per user** | The three ticket AI actions and both portal chatbot endpoints — every call costs a paid provider request. |
+
+**`DJANGO_NUM_PROXIES` must match your real deployment topology, or rate
+limiting is wrong in one direction or the other.** With it at the `0`
+default and a proxy in front of Django, every client sharing that proxy is
+throttled as one (visible over-throttling). Set too high, a client can
+forge an `X-Forwarded-For` entry the throttle then trusts (a silent bypass).
+See `CONVENTIONS.md` § 36 for the full reasoning and the audit that found
+the project's one pre-existing throttle was bypassable this way.
+
+**`/api/health/` and the `/api/` catch-all 404 are permanently exempt** —
+throttling a load-balancer's own liveness probe would turn a traffic burst
+into a reported outage.
+
+**Rate limiting fails open, never closed.** A Redis outage never 500s a
+throttled endpoint; it logs a `WARNING` and allows the request. A security
+control that can take the whole API down on a cache blip gets switched off,
+and then there is no control.
+
+**Attachment uploads are allowlisted by file extension**, not denylisted —
+see `ALLOWED_ATTACHMENT_EXTENSIONS` in `apps/customers/views.py`. Downloads
+are always served with `Content-Disposition: attachment`, which is what
+makes the allowlist defense-in-depth rather than the only thing standing
+between a stored file and script execution — never remove it.
+
+**Authz coverage is enforced by `manage.py check`** (`core.W001`,
+`apps/core/checks.py`): any `HasPermission`-gated action missing a
+`permission_map` entry is reported as a warning, not left to silently fall
+back to authenticated-only.
+
+**`/api/schema/`, `/api/docs/` and `/api/redoc/` are public in dev, private
+in production** by default (`API_DOCS_PUBLIC`, above) — narrowed to
+`IsAuthenticated`, never removed.
+
+See `CONVENTIONS.md` § 36 for the full PROD-3 audit, including the three
+axes that were already clean before this story: authz coverage, secret
+handling, and Django's own `check --deploy` checklist.
+
+---
+
 ## Languages
 
 SupportOS supports **English** and **Arabic**. Switch languages with the selector rendered at
@@ -692,6 +745,8 @@ developer discovers it.
 | `POSTGRES_CONN_MAX_AGE` | no | `0` | Seconds to reuse a connection. `0` closes it after each request. |
 | `REDIS_URL` | no | `redis://localhost:6379/0` | Redis connection string — Celery's broker and result backend (SLA-0). |
 | `REDIS_CACHE_URL` | no | `redis://localhost:6379/1` | Redis connection for the Django cache (`PROD-2`). **Must be a different database number from `REDIS_URL`** — the cache is flushable, Celery's queue is not. |
+| `DJANGO_NUM_PROXIES` | no | `0` | Trusted proxies in front of Django (`PROD-3`). **Rate limiting keys on this** — see `CONVENTIONS.md` § 36. `0` trusts `REMOTE_ADDR` and ignores `X-Forwarded-For`; `1` is right behind a single nginx/ALB. |
+| `API_DOCS_PUBLIC` | no | `True` (dev), `False` (prod) | Whether `/api/schema/`, `/api/docs/` and `/api/redoc/` answer anonymous callers. When `False` they are narrowed to `IsAuthenticated`, never removed. |
 | `JWT_SIGNING_KEY` | no | `DJANGO_SECRET_KEY` | JWT signing key. Read now, consumed once JWT auth lands. |
 | `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` | no | `15` | Access-token lifetime. |
 | `JWT_REFRESH_TOKEN_LIFETIME_DAYS` | no | `7` | Refresh-token lifetime. |

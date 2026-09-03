@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from apps.core.permissions import HasPermission, Permissions
 from apps.core.renderers import PlainTextRenderer
+from apps.core.throttling import FailOpenScopedRateThrottle
 from apps.core.views import BaseModelViewSet
 from apps.tickets.models import Category
 from apps.tickets.serializers import CategorySerializer
@@ -119,6 +120,14 @@ class EmailInboundWebhookView(APIView):
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    # PROD-3: anonymous, and each creates a Ticket/Message. Rate is
+    # deliberately HIGH — a dropped webhook is lost customer data, and
+    # providers retry only for a bounded window. This bound exists to stop a
+    # flood from exhausting the database, not to shape a provider's
+    # legitimate burst. Never tighten it without measuring the provider's
+    # real delivery rate first. See CONVENTIONS.md § 36.
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "webhook_inbound"
 
     def post(self, request):
         # Fail closed: an unconfigured token must reject every request, not
@@ -151,6 +160,14 @@ class WhatsAppInboundWebhookView(APIView):
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    # PROD-3: anonymous, and each creates a Ticket/Message. Rate is
+    # deliberately HIGH — a dropped webhook is lost customer data, and
+    # providers retry only for a bounded window. This bound exists to stop a
+    # flood from exhausting the database, not to shape a provider's
+    # legitimate burst. Never tighten it without measuring the provider's
+    # real delivery rate first. See CONVENTIONS.md § 36.
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "webhook_inbound"
 
     def get_renderers(self):
         if self.request.method == "GET":
@@ -200,6 +217,14 @@ class SMSInboundWebhookView(APIView):
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    # PROD-3: anonymous, and each creates a Ticket/Message. Rate is
+    # deliberately HIGH — a dropped webhook is lost customer data, and
+    # providers retry only for a bounded window. This bound exists to stop a
+    # flood from exhausting the database, not to shape a provider's
+    # legitimate burst. Never tighten it without measuring the provider's
+    # real delivery rate first. See CONVENTIONS.md § 36.
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "webhook_inbound"
     parser_classes = [FormParser]
 
     def post(self, request):
@@ -237,6 +262,12 @@ class LiveChatStartView(APIView):
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    # PROD-3: creates a Customer AND a Ticket from wholly anonymous input —
+    # unbounded storage growth and agent-queue flooding. 10/hour per client
+    # is well above a real visitor opening a chat or filing a form, and far
+    # below a script. See CONVENTIONS.md § 36.
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "anon_write"
 
     def post(self, request):
         name = (request.data.get("name") or "").strip()
@@ -291,6 +322,12 @@ class WebFormSubmissionView(APIView):
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    # PROD-3: creates a Customer AND a Ticket from wholly anonymous input —
+    # unbounded storage growth and agent-queue flooding. 10/hour per client
+    # is well above a real visitor opening a chat or filing a form, and far
+    # below a script. See CONVENTIONS.md § 36.
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "anon_write"
 
     def post(self, request):
         # `WebFormAdapter.receive` writes each of these straight into

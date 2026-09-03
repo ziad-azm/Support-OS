@@ -71,6 +71,13 @@ class HealthView(APIView):
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    # PROD-3: throttles apply independently of permissions, so the global
+    # AnonRateThrottle baseline would otherwise rate-limit the load
+    # balancer's own liveness probe — and a 429 to a health check reads as a
+    # dead service, turning a traffic burst into a reported outage. This view
+    # returns no data and touches one connection check. A future global
+    # throttle mixin must preserve this exemption. See CONVENTIONS.md § 36.
+    throttle_classes: list = []
 
     def get(self, request):
         try:
@@ -125,6 +132,11 @@ class ApiNotFoundView(APIView):
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    # PROD-3: exempt for the same reason as `HealthView`. This view exists to
+    # turn an unmatched path into an enveloped 404; throttling it would only
+    # convert scanner noise into a different status code while consuming the
+    # same work. See CONVENTIONS.md § 36.
+    throttle_classes: list = []
 
     def _not_found(self, request, *args, **kwargs):
         raise NotFound()

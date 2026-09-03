@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from apps.ai.exceptions import AIServiceError, AIServiceUnavailable
 from apps.core.permissions import Permissions, permissions_for
 from apps.core.scoping import ScopedQuerysetMixin, ScopeFilter
+from apps.core.throttling import AiRateThrottle
 from apps.core.views import BaseModelViewSet
 from apps.sla.policy import compute_sla_status
 from apps.sla.tasks import auto_assign_ticket
@@ -308,7 +309,16 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         sla_status = compute_sla_status(ticket)
         return Response(sla_status)
 
-    @action(detail=True, methods=["post"], url_path="summarize")
+    # PROD-3: `throttle_classes` on the @action, not the class — a class
+    # attribute would throttle `list`/`retrieve` too. `AiRateThrottle`
+    # carries the "ai" scope itself and keys per user, so one caller cannot
+    # spend another's provider budget. See CONVENTIONS.md § 36.
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="summarize",
+        throttle_classes=[AiRateThrottle],
+    )
     def summarize(self, request, pk=None):
         """AI-generated conversation summary — AI-1. Gated `tickets.view`
         alone, the same reasoning `.history`/`.context`/`.sla` use — no
@@ -323,7 +333,12 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
             raise AIServiceUnavailable() from exc
         return Response({"summary": summary})
 
-    @action(detail=True, methods=["post"], url_path="suggest-reply")
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="suggest-reply",
+        throttle_classes=[AiRateThrottle],
+    )
     def suggest_reply(self, request, pk=None):
         """AI-drafted reply suggestion — AI-2. Gated `tickets.manage`,
         matching `ReplyForm`'s own gate (`<Can permission="tickets.manage">`,
@@ -337,7 +352,12 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
             raise AIServiceUnavailable() from exc
         return Response({"reply": reply})
 
-    @action(detail=True, methods=["post"], url_path="suggest-solutions")
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="suggest-solutions",
+        throttle_classes=[AiRateThrottle],
+    )
     def suggest_solutions(self, request, pk=None):
         """AI-matched knowledge-base solutions — AI-4. Gated `tickets.view`
         alone, the same reasoning `.summarize` uses — a read-oriented

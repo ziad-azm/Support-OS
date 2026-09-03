@@ -296,13 +296,65 @@ REST_FRAMEWORK = {
     # /api/ tree, not just the ones an author remembered to annotate.
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
-    # SEC-7: the request endpoint is the only throttled view in this
-    # project today. Keyed by IP for an anonymous caller (DRF's own
-    # `ScopedRateThrottle` default `get_ident` behavior) — a plain
-    # constant, not an ENV var, the same internal-tuning-knob reasoning
-    # `apps.accounts.tokens.RESET_TOKEN_MAX_AGE_SECONDS` documents for
-    # itself.
-    "DEFAULT_THROTTLE_RATES": {"password_reset_request": "5/hour"},
+    # PROD-3, and this is load-bearing: DRF's `BaseThrottle.get_ident`
+    # (rest_framework/throttling.py:23-40) falls back to
+    # `''.join(xff.split())` — the ENTIRE, CLIENT-SUPPLIED X-Forwarded-For
+    # header — when NUM_PROXIES is None, which was this project's state.
+    # An attacker varying that header gets a fresh throttle bucket per
+    # request, defeating every IP-keyed limit including SEC-7's existing
+    # password-reset one.
+    #
+    # 0 means "trust REMOTE_ADDR, ignore X-Forwarded-For" — correct when
+    # nothing proxies the app. Set DJANGO_NUM_PROXIES to the real number of
+    # trusted proxies in front of Django (1 for a single nginx/ALB); DRF
+    # then takes the Nth-from-last XFF entry, which a client cannot forge
+    # past a proxy that appends rather than trusts.
+    #
+    # prod.py already assumes a proxy exists (SECURE_PROXY_SSL_HEADER), so
+    # a production deploy almost certainly needs 1, not the 0 default. The
+    # default is the SAFE one, not the likely one: 0 under-counts distinct
+    # clients behind a proxy (throttling them as one), while a too-high
+    # value trusts forged header entries. Under-throttling a shared NAT is
+    # a support ticket; trusting a forged header is a bypass.
+    # See CONVENTIONS.md § 36.
+    "NUM_PROXIES": env.int("DJANGO_NUM_PROXIES", default=0),
+    # PROD-3: a generous global baseline, so no endpoint is completely
+    # unlimited, plus tight named scopes on what the PROD-3 audit flagged.
+    # These are the baseline only — a view with its own `throttle_classes`
+    # REPLACES them entirely rather than stacking, which is why every
+    # sensitive endpoint declares its own.
+    #
+    # Backed by CACHES["default"] (Redis, PROD-2). Before PROD-2 this was
+    # LocMemCache and every rate below would have been PER WORKER.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "apps.core.throttling.FailOpenAnonRateThrottle",
+        "apps.core.throttling.FailOpenUserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Deliberately generous: a busy agent's page loads fire several
+        # requests each, and the point of the baseline is to stop a runaway
+        # client, not to shape normal use. The named scopes do the real work.
+        "anon": "300/hour",
+        "user": "2000/hour",
+        # SEC-7's original, unchanged. Keyed by IP for an anonymous caller
+        # (DRF's own `ScopedRateThrottle` default `get_ident` behavior) — a
+        # plain constant, not an ENV var, the same internal-tuning-knob
+        # reasoning `apps.accounts.tokens.RESET_TOKEN_MAX_AGE_SECONDS`
+        # documents for itself.
+        "password_reset_request": "5/hour",
+        # Credential endpoints. Keyed per IP — the caller has no identity
+        # yet. Shared across all five, so the budgets are NOT independent.
+        "auth_credentials": "10/minute",
+        # Anonymous endpoints that CREATE rows (Customer/Ticket/Message).
+        "anon_write": "10/hour",
+        # Inbound provider webhooks. Set high on purpose: a dropped webhook
+        # is lost customer data, and providers retry only for a bounded
+        # window. This bound exists to stop a flood from exhausting the
+        # database, not to shape a provider's legitimate burst.
+        "webhook_inbound": "600/minute",
+        # Endpoints that spend money on a paid AI provider, per user.
+        "ai": "30/hour",
+    },
 }
 
 

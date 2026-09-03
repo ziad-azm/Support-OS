@@ -1,6 +1,9 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from .throttled_token_views import (
+    ThrottledTokenObtainPairView,
+    ThrottledTokenRefreshView,
+)
 from .views import (
     ChangePasswordView,
     InviteConfirmView,
@@ -13,8 +16,11 @@ from .views import (
 app_name = "accounts"
 
 urlpatterns = [
-    path("token/", TokenObtainPairView.as_view(), name="token_obtain"),
-    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    # PROD-3: the throttled subclasses, at the SAME paths and under the SAME
+    # route names — `reverse()` call sites and the frontend both depend on
+    # those staying identical. See apps/accounts/throttled_token_views.py.
+    path("token/", ThrottledTokenObtainPairView.as_view(), name="token_obtain"),
+    path("token/refresh/", ThrottledTokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("me/", MeView.as_view(), name="me"),
     path("invite/confirm/", InviteConfirmView.as_view(), name="invite_confirm"),

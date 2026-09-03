@@ -2497,3 +2497,152 @@ a measurement showing it matters** — this is a decision, not an oversight.
 (`apps/core/models.py:10`), which is why every `-created_at` default
 ordering in this project was already covered before `PROD-2`. **Never add a
 redundant `created_at` index.**
+
+---
+
+## 36. Security hardening mechanism (PROD-3)
+
+`PROD-3` (Story 92) was an audit first and a change second: 121 `/api/`
+routes were enumerated programmatically, 45 serializers instantiated and
+inspected, and `manage.py check --deploy` run against production settings.
+**Three of the intake's four axes came back clean.** Reproduce any claim
+below with the scripts described in Story 92's `## Verification Steps`
+before assuming it needs re-doing.
+
+**Authz coverage was already complete — zero real gaps across 121 routes.**
+The first audit pass reported 19 apparent `permission_map` gaps; every one
+was a false positive, because the router binds a route for a verb the view
+already drops via `http_method_names`, which 405s at Django's own
+`dispatch` **before `HasPermission` is ever consulted**
+(`AuditLogViewSet`'s write actions are the clearest example — closed
+deliberately, for immutability, not left unmapped). This is now enforced
+mechanically: `apps/core/checks.py::check_permission_map_coverage`,
+registered from `CoreConfig.ready()`, reports `core.W001` on
+`manage.py check` for any `HasPermission`-gated action missing a
+`permission_map` entry, exempting only verbs the view has already dropped
+via `http_method_names` and the two names in `EXEMPT` (owner-scoped
+personal resources, each with a written reason). **A `Warning`, not an
+`Error`** — it must stay visible in every `check` run without becoming a
+hostage to a legitimately authenticated-only view.
+
+**Secret handling was already clean.** 45 serializers, 16 credential-named
+fields, and the only 5 readable on output are `has_*` **booleans**
+("is this configured?"), never a value. Every stored credential
+(`EmailProviderConfig.host_password`, `WhatsAppProviderConfig.access_token`,
+`SmsProviderConfig.auth_token`, `ErpConnection.auth_token`,
+`WebhookSubscription.secret`) is `write_only`; `ApiKey` stores only a
+`sha256` digest.
+
+**`manage.py check --deploy` already reported zero security warnings**
+against `config.settings.prod` — every issue it does report is
+`drf_spectacular.W002` schema-generation noise on plain `APIView`s. `PROD-3`
+therefore adds **no** `SECURE_*` setting; there was nothing left to add.
+
+**Rate limiting was the one real gap: exactly one throttled endpoint in the
+whole API** (`PasswordResetRequestView`, SEC-7). Login, token refresh,
+invite/password-reset confirmation, change-password, both anonymous
+`Customer`+`Ticket` creators, all three inbound webhooks, and every
+AI-provider-backed endpoint were completely unthrottled.
+
+**`NUM_PROXIES` is load-bearing for every throttle in this project, present
+and future.** DRF's `BaseThrottle.get_ident` falls back to the entire,
+client-supplied `X-Forwarded-For` header when `NUM_PROXIES` is `None` —
+this project's state before `PROD-3` — which made every IP-keyed throttle,
+including SEC-7's own, bypassable by rotating that header on each request.
+`REST_FRAMEWORK["NUM_PROXIES"]` now reads `DJANGO_NUM_PROXIES` (default
+`0`, meaning "trust `REMOTE_ADDR`, no proxy"). **Get this wrong in either
+direction and rate limiting is wrong**: too low behind a real proxy
+throttles an entire NAT as one client (visible, a support ticket); too high
+trusts a forged header entry (silent, a bypass). Verified live in both
+directions: with `NUM_PROXIES=0`, thirteen requests each carrying a
+different forged `X-Forwarded-For` shared one bucket (10 × 401 then 429);
+with `NUM_PROXIES=1`, the same thirteen requests each got their own bucket
+(13 × 401) — proving the setting is read and that it must match the real
+topology, not be raised "to be safe."
+
+**DRF throttling is backed by `CACHES["default"]`, so it depends on
+`PROD-2`'s Redis exactly as report/count caching does** (`rest_framework/
+throttling.py:6,62`). On `LocMemCache`, the pre-`PROD-2` default, a rate is
+per-worker — N workers allow N× the configured rate. **A throttle added
+before a shared cache exists is not a throttle.**
+
+**Throttling fails open, never closed — this is `apps/core/throttling.py`'s
+whole reason to exist.** Plain DRF throttle classes have no exception
+handling around their cache calls (`allow_request`'s `cache.get`,
+`throttle_success`'s `cache.set`), so a Redis outage would raise *inside*
+the throttle and 500 every throttled endpoint — strictly worse than not
+throttling at all. `_FailOpenMixin` wraps the whole `allow_request` chain: a
+cache failure logs at `WARNING` (§ 10) and allows the request. **Every
+throttle class in this project must be a fail-open subclass**
+(`FailOpenAnonRateThrottle`, `FailOpenUserRateThrottle`,
+`FailOpenScopedRateThrottle`, `AiRateThrottle`) — never a bare
+`rest_framework.throttling.*` class. Verified live: with `REDIS_CACHE_URL`
+pointed at an unreachable port, `/api/auth/token/`, `/api/tickets/`,
+`/api/reports/dashboard/kpis/`, and `/api/live-chat/start/` all returned
+their normal status, never a 500, each logging exactly one `WARNING` tagged
+with its `request_id`.
+
+**A view's own `throttle_classes` replaces `DEFAULT_THROTTLE_CLASSES`; it
+does not stack.** A sensitive endpoint loses the `anon`/`user` baseline the
+moment it declares its own scope. A scope typo therefore silently removes
+*all* throttling from that view rather than falling back to the baseline —
+verify a new throttled endpoint actually 429s, don't assume it from the
+declaration alone.
+
+**`ScopedRateThrottle`/`FailOpenScopedRateThrottle` key on `request.user.pk`
+when authenticated and on IP otherwise** (`rest_framework/throttling.py:
+235-247`). This is why the credential scopes (`auth_credentials`) are
+effectively per-IP — the caller has no identity yet — and why the `ai`
+scope is per-user: one caller cannot spend another's provider budget, and
+an integration calling through a single API key concentrates the cost on
+that key's `User`, which is what makes it attributable rather than a bug.
+
+**A per-`@action` throttle needs its own class, not a class attribute.**
+`ScopedRateThrottle` reads `throttle_scope` off the *view*, which cannot
+vary per action on a viewset without also throttling every other action on
+it. `AiRateThrottle` carries its scope on itself instead, passed via
+`@action(throttle_classes=[...])`, so `TicketViewSet.summarize` can be
+limited without touching `list`/`retrieve`.
+
+**`/api/health/` and the `/api/` 404 catch-all are permanently
+throttle-exempt** (`throttle_classes: list = []`), verified live over 400
+consecutive requests each with zero `429`s. Throttling a load-balancer's own
+liveness probe converts a traffic burst into a reported outage. **Any
+future global throttle mixin must preserve both exemptions.**
+
+**A webhook throttle is set deliberately loose.** `webhook_inbound` at
+`600/minute` exists to stop a flood from exhausting the database, not to
+shape a provider's real burst — a dropped webhook is lost customer data,
+and providers retry only for a bounded window. **Never tighten this without
+measuring a provider's actual delivery rate first.**
+
+**Uploads are allowlisted by extension, never denylisted, and this is
+defense-in-depth, not an XSS fix.** `AttachmentViewSet.perform_create`
+checks `ALLOWED_ATTACHMENT_EXTENSIONS` after the existing size check.
+`download`'s `as_attachment=True` (`Content-Disposition: attachment`) is
+what actually stops a stored `.svg`/`.html` from rendering inline — **never
+remove `as_attachment=True`** — the allowlist alone only stops the
+"redistribute an arbitrary executable" half of the problem. It is an
+extension check, not content sniffing: a `.png` containing HTML still
+passes; real content inspection would need a new binary dependency
+(libmagic) this project deliberately does not add. Extend the set rather
+than switching to a denylist. A `SuspiciousFileOperation` from Django's own
+`validate_file_name` (a crafted `../` filename, already neutralised by
+Django before it reaches disk) is now caught and re-raised as a
+`ValidationError` — a 400, not the 500 it was before.
+
+**`/api/schema/`, `/api/docs/`, `/api/redoc/` default to public in dev and
+private in production.** `API_DOCS_PUBLIC` in `prod.py` **must recompute
+`SPECTACULAR_SETTINGS["SERVE_PERMISSIONS"]`**, not merely rebind the flag —
+`base.py` already computed that key from `base.py`'s own default, so
+setting `API_DOCS_PUBLIC` in `prod.py` alone would change a variable
+nothing reads again and leave the docs public. Verified live in both
+settings modules. The routes are narrowed to `IsAuthenticated`, never
+removed — an authenticated integrator keeps them.
+
+**Known limitation, recorded rather than hidden: login throttling is
+per-IP only.** `auth_credentials` does not stop a distributed
+credential-stuffing attack spread across many source addresses. The two
+real mitigations — a per-username failure counter, or an account-lockout
+policy — both carry real UX and lockout-DoS trade-offs a future story
+should decide deliberately, not inherit as a side effect of this one.
