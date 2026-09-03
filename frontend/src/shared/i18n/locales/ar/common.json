@@ -22,7 +22,7 @@
     },
     "notFound": "الصفحة غير موجودة."
   },
-  "debug": { "details": "تفاصيل التصحيح" },
+  "debug": { "details": "تفاصيل التصحيح", "reference": "المرجع:" },
   "language": { "label": "اللغة", "en": "English", "ar": "العربية" },
   "theme": {
     "label": "المظهر",

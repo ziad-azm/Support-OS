@@ -3,6 +3,7 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { logger } from '@/shared/lib/logger'
+import { captureError } from '@/shared/lib/monitoring'
 
 type Props = { children: ReactNode }
 type State = { hasError: boolean }
@@ -38,6 +39,7 @@ export class AppErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     logger.error('Unhandled render error:', error, info.componentStack)
+    captureError(error, { componentStack: info.componentStack })
   }
 
   render() {

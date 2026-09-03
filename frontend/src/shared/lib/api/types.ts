@@ -36,6 +36,8 @@ export type ApiErrorBody = {
   message: string
   /** Always an object — `{}` when the error is not field-scoped. */
   fields: Record<string, string[]>
+  /** Correlation id (PROD-1) — present on any error raised inside a request. */
+  request_id?: string
   /** Present only when the backend runs with DEBUG=True. Never depend on it. */
   debug?: { exception: string; traceback: string[] }
 }

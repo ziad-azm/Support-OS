@@ -9,6 +9,7 @@ Environment-specific overrides live in `dev.py` and `prod.py`; select one with
 DJANGO_SETTINGS_MODULE.
 """
 
+import logging
 from datetime import timedelta
 from pathlib import Path
 
@@ -77,6 +78,11 @@ AUTH_USER_MODEL = "accounts.User"
 MIDDLEWARE = [
     # Must sit above CommonMiddleware so preflight responses are not rewritten.
     "corsheaders.middleware.CorsMiddleware",
+    # PROD-1: as high as possible so every line logged below is correlated —
+    # but NOT above CorsMiddleware, which config/tests/test_settings.py:96-99
+    # pins at index 0. See CONVENTIONS.md § 34.
+    "apps.core.middleware.RequestIDMiddleware",
+    "apps.core.middleware.AccessLogMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     # Must sit after SessionMiddleware and before CommonMiddleware.
@@ -221,8 +227,15 @@ CORS_ALLOW_HEADERS = [
     "content-type",
     "user-agent",
     "x-csrftoken",
+    "x-request-id",
     "x-requested-with",
 ]
+
+# PROD-1: the two halves are NOT symmetrical. CORS_ALLOW_HEADERS above lets
+# the browser SEND X-Request-ID; this lets JavaScript READ it back off the
+# response. Omit it and the browser hides the header from JS with no console
+# warning — which reads exactly like "the backend isn't sending it".
+CORS_EXPOSE_HEADERS = ["x-request-id"]
 
 # --- Frontend (SEC-5) ----------------------------------------------------
 # Used to build the "set your password" link in SEC-5's invite email
@@ -293,30 +306,63 @@ REST_FRAMEWORK = {
 }
 
 
-# --- Logging -------------------------------------------------------------
+# --- Logging (PROD-1) ----------------------------------------------------
 # Without this, `apps.*` loggers have no handler and fall through to Python's
 # lastResort handler: WARNING+ only, no timestamp, no level, no logger name.
+#
+# Two formatters, one handler. `text` is the dev default because a human reads
+# that stream; `json` is the prod default (set in prod.py) because a collector
+# reads that one. ContextFilter is on the HANDLER, so every logger below
+# inherits request correlation without declaring it. See CONVENTIONS.md § 34.
 DJANGO_LOG_LEVEL = env("DJANGO_LOG_LEVEL", default="INFO")
+DJANGO_LOG_FORMAT = env("DJANGO_LOG_FORMAT", default="text")
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "context": {"()": "apps.core.logging.ContextFilter"},
+    },
     "formatters": {
-        "verbose": {
-            "format": "{asctime} {levelname} {name} {message}",
+        # `{request_id}` only resolves because ContextFilter runs on the
+        # handler and sets it on EVERY record. Move that filter onto a logger
+        # and this format raises ValueError on every line it does not cover.
+        "text": {
+            "format": "{asctime} {levelname} {name} [{request_id}] {message}",
             "style": "{",
+        },
+        "json": {
+            "()": "apps.core.logging.JsonFormatter",
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "filters": ["context"],
+            "formatter": DJANGO_LOG_FORMAT,
+        },
+        # A logger with NO handler and propagate=False does not go quiet: it
+        # falls to `logging.lastResort`, a WARNING-level stderr handler that
+        # prints the bare message with no formatting. Silencing a logger
+        # therefore needs an explicit NullHandler, not an empty list.
+        "null": {
+            "class": "logging.NullHandler",
         },
     },
     "root": {"handlers": ["console"], "level": "WARNING"},
     "loggers": {
-        # Our own code. `apps.core.exceptions` logs every unhandled 500 here.
+        # Our own code. `apps.core.exceptions` logs every unhandled 500 here,
+        # and `apps.core.middleware` logs every request here.
         "apps": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+        # PROD-1: `config.celery` lives outside the `apps` tree, so without
+        # this entry it falls through to root (WARNING) and its INFO lines are
+        # silently dropped — which would have turned removing debug_task's
+        # print() into a regression of the SLA-0 smoke test.
+        "config": {
             "handlers": ["console"],
             "level": DJANGO_LOG_LEVEL,
             "propagate": False,
@@ -327,9 +373,32 @@ LOGGING = {
             "propagate": False,
         },
         # 4xx/5xx raised by Django itself; ERROR keeps normal 404 noise out.
+        # Logs `request.path`, not the full path — verified in Django's own
+        # `log_response`, so no query string reaches this line.
         "django.request": {
             "handlers": ["console"],
             "level": "ERROR",
+            "propagate": False,
+        },
+        # PROD-1: SILENCED, and this is a secrets fix, not tidying. Channels'
+        # runserver access log prints the FULL path — query string included —
+        # so `?token=<EMAIL_INBOUND_WEBHOOK_TOKEN>` (COMM-1) landed in stdout
+        # on every inbound-email delivery, in plain violation of § 10.
+        # AccessLogMiddleware now logs every request with the same method,
+        # path, and status (plus duration and user, minus the query string),
+        # so this logger was also a duplicate line per request. No handler and
+        # no propagation. Daphne's own lifecycle messages ("Starting server
+        # at ...", "Listening on ...") come from the `daphne` logger and are
+        # unaffected. See CONVENTIONS.md § 34.
+        "django.channels.server": {
+            "handlers": ["null"],
+            "propagate": False,
+        },
+        # SLA-0's worker. Routed here so a task's log line is formatted and
+        # correlated (celery_task_id) the same way a request's is.
+        "celery": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
             "propagate": False,
         },
     },
@@ -489,3 +558,45 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "SORT_OPERATIONS": True,
 }
+
+
+# --- Error monitoring (PROD-1) -------------------------------------------
+# Entirely inert with SENTRY_DSN unset, which is the default in .env.example
+# and therefore in every existing clone: no network call, no import beyond
+# this module, no behaviour change.
+#
+# Initialised HERE and not in apps/core/apps.py::ready(), unlike Story 80's
+# `from . import authentication`: that pattern exists to make a decorator
+# register, and `ready()` runs after the app registry is built. Sentry must be
+# armed before that, or an exception raised while Django is still loading apps
+# — a bad migration import, a broken settings-dependent module — is exactly
+# the failure it never sees. See CONVENTIONS.md § 34.
+SENTRY_DSN = env("SENTRY_DSN", default="")
+SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", default="local")
+# Errors only. Performance tracing is PROD-2's decision, not this story's.
+SENTRY_TRACES_SAMPLE_RATE = env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0)
+
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    from apps.core.monitoring import before_send
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=SENTRY_ENVIRONMENT,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+            # ERROR+ becomes an event; INFO+ becomes a breadcrumb. This is what
+            # makes the access log show up as context on a 500.
+            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+        ],
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+        # CONVENTIONS.md § 10: no emails, no usernames, no IPs, no bodies.
+        send_default_pii=False,
+        max_request_body_size="never",
+        before_send=before_send,
+    )

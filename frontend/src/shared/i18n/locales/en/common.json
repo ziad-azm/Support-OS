@@ -22,7 +22,7 @@
     },
     "notFound": "Page not found."
   },
-  "debug": { "details": "Debug details" },
+  "debug": { "details": "Debug details", "reference": "Reference:" },
   "language": { "label": "Language", "en": "English", "ar": "العربية" },
   "theme": {
     "label": "Theme",

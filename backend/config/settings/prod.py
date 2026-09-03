@@ -17,3 +17,7 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+# PROD-1: structured by default in production. Still overridable — an operator
+# debugging a live container may want the text stream back.
+LOGGING["handlers"]["console"]["formatter"] = env("DJANGO_LOG_FORMAT", default="json")

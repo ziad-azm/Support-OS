@@ -44,6 +44,22 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): voi
 
 const retriedRequests = new WeakSet<object>()
 
+/**
+ * PROD-1 correlation id. 32 hex chars, which satisfies the backend's own
+ * `ID_RE` (`[A-Za-z0-9._-]{8,64}`), so the server adopts this id rather than
+ * minting its own — the id in the network tab IS the id in the server log.
+ */
+function newRequestId(): string {
+  // crypto.randomUUID is undefined on a non-localhost plain-HTTP origin (it
+  // requires a secure context). The fallback keeps the header valid rather
+  // than sending "undefined" — which the backend rejects against ID_RE and
+  // silently replaces, breaking the link with no visible symptom.
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID().replace(/-/g, '')
+  }
+  return `${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`
+}
+
 httpClient.interceptors.request.use((config) => {
   const token = tokenProvider()
   if (token) {
@@ -52,6 +68,12 @@ httpClient.interceptors.request.use((config) => {
   const language = i18next.resolvedLanguage ?? i18next.language
   if (language) {
     config.headers.set('Accept-Language', language)
+  }
+  // One id per logical call. The 401-refresh interceptor below replays the
+  // SAME `config` object, so a refreshed retry keeps the id it was first
+  // issued — the retry and the 401 that caused it correlate to one line.
+  if (!config.headers.has('X-Request-ID')) {
+    config.headers.set('X-Request-ID', newRequestId())
   }
   return config
 })
@@ -119,6 +141,7 @@ function unwrap<T>(envelope: unknown): ApiSuccessParts<T> {
       code: body.error.code,
       message: body.error.message,
       fields: body.error.fields ?? {},
+      requestId: body.error.request_id ?? null,
       debug: body.error.debug,
     })
   }

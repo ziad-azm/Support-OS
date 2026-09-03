@@ -4,6 +4,9 @@
  */
 type AppEnv = {
   readonly apiBaseUrl: string
+  /** Empty string = error monitoring disabled. The normal local default. */
+  readonly sentryDsn: string
+  readonly sentryEnvironment: string
 }
 
 function requireEnv(name: keyof ImportMetaEnv): string {
@@ -17,6 +20,18 @@ function requireEnv(name: keyof ImportMetaEnv): string {
   return value.trim().replace(/\/+$/, '')
 }
 
+/**
+ * For variables whose absence is normal, not a misconfiguration. `requireEnv`
+ * throws at boot on a blank value, and a blank Sentry DSN is the expected
+ * state in dev — booting must never depend on having an error tracker.
+ */
+function optionalEnv(name: keyof ImportMetaEnv, fallback = ''): string {
+  const value = import.meta.env[name]
+  return typeof value === 'string' ? value.trim() : fallback
+}
+
 export const env: AppEnv = {
   apiBaseUrl: requireEnv('VITE_API_BASE_URL'),
+  sentryDsn: optionalEnv('VITE_SENTRY_DSN'),
+  sentryEnvironment: optionalEnv('VITE_SENTRY_ENVIRONMENT', 'local'),
 }

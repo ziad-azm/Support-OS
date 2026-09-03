@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@sentry/react": "^10.73.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query": "^5.102.2",
     "axios": "^1.19.0",

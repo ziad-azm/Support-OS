@@ -388,6 +388,21 @@ keys.
 `{"non_field_errors": [...]}` when a validation error has no field to attach to. Client code never
 needs a null check on it.
 
+### Request correlation (`X-Request-ID`)
+
+Every response carries an **`X-Request-ID`** header, and every **error** body additionally carries
+**`error.request_id`** with the same value. That one string ties a user's screenshot to the access
+log line, the exception traceback, the Celery task, and the Sentry event.
+
+A client may propose its own id by sending the `X-Request-ID` **request** header. The server adopts
+it when it matches `[A-Za-z0-9._-]{8,64}`, and otherwise silently generates its own — an id is a
+hint, not input, so a malformed one is never a 400. The frontend sends one on every call
+(`src/shared/lib/api/client.ts`), so the id in the browser's network tab is the id in the server
+log. A 401 and its silently-refreshed retry deliberately share one id.
+
+`request_id` sits **inside `error`**, never at the top level and never in `meta` — the four
+top-level envelope keys are fixed. See `CONVENTIONS.md` § 34.
+
 ### Paginated
 
 ```json
@@ -657,7 +672,11 @@ developer discovers it.
 | `CORS_ALLOW_CREDENTIALS` | no | `True` | Allow cookies/auth headers on cross-origin requests. |
 | `DRF_PAGE_SIZE` | no | `25` | Default page size for list endpoints. |
 | `DRF_MAX_PAGE_SIZE` | no | `100` | Ceiling for the `?page_size=` query parameter. |
-| `DJANGO_LOG_LEVEL` | no | `INFO` | Level for the `apps.*` logger tree. See `CONVENTIONS.md` § Logging. |
+| `DJANGO_LOG_LEVEL` | no | `INFO` | Level for the `apps.*`, `config.*` and `celery` logger trees. See `CONVENTIONS.md` § Logging. |
+| `DJANGO_LOG_FORMAT` | no | `text` (`json` in prod) | Log output format: `text` for humans, `json` (one object per line) for a collector. See `CONVENTIONS.md` § 34. |
+| `SENTRY_DSN` | no | *(empty — error monitoring disabled)* | Sentry project DSN. Blank means the SDK is never initialised and no network call is made. |
+| `SENTRY_ENVIRONMENT` | no | `local` | Environment tag on every Sentry event. |
+| `SENTRY_TRACES_SAMPLE_RATE` | no | `0.0` | Performance-trace sampling. `0.0` = errors only; raising it is `PROD-2`'s call. |
 | `DJANGO_SECURE_SSL_REDIRECT` | no | `True` | **Prod only.** Redirect HTTP to HTTPS. |
 | `DJANGO_SECURE_HSTS_SECONDS` | no | `31536000` | **Prod only.** HSTS max-age. |
 | `EMAIL_HOST` | no | *(empty)* | SMTP host. Ignored in dev (console backend); needed in prod for real delivery. System email only (invite, password reset, notifications) — ticket-reply email now reads its own DB-stored config (INT-3). |
@@ -682,6 +701,8 @@ developer discovers it.
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `VITE_API_BASE_URL` | **yes** | — | Base URL of the SupportOS API. Read once in `src/config/env.ts`; a trailing slash is stripped. |
+| `VITE_SENTRY_DSN` | no | *(empty — disabled)* | Browser Sentry DSN. **Public by design** — a DSN is not a secret, but it is bundled into the shipped JS. |
+| `VITE_SENTRY_ENVIRONMENT` | no | `local` | Environment tag on browser events. |
 
 Only variables prefixed `VITE_` are exposed to client code by Vite. **Never put a secret in a
 `VITE_` variable** — everything with that prefix is bundled into the JavaScript shipped to the

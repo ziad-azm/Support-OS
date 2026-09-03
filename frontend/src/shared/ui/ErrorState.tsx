@@ -29,6 +29,15 @@ export function ErrorState({ error, onRetry }: { error: ApiRequestError; onRetry
             {t('actions.retry')}
           </Button>
         ) : null}
+        {error.requestId ? (
+          <p className="mt-2 text-xs opacity-70">
+            {t('debug.reference')}{' '}
+            {/* An id is code: bidi reordering makes it unreadable — and
+                unusable to paste into a log query — in an RTL document. Same
+                reasoning as the stack-trace block below. */}
+            <code dir="ltr">{error.requestId}</code>
+          </p>
+        ) : null}
         {error.debug ? (
           <details>
             <summary>{t('debug.details')}</summary>

@@ -2242,3 +2242,93 @@ no code may add a second consumer of that column.
 a feature — three features need the same list and `no-restricted-imports`
 (§15) forbids reaching across features for it. `features/organization/`
 owns only the management screens and the write path.
+
+---
+
+## 34. Observability & logging mechanism (PROD-1)
+
+§ 10 is the **policy** (logger names, the five levels, never log secrets).
+This section is the **mechanism** `PROD-1` (Story 88) built under it. § 10
+still governs how you write a log call; nothing here changes a call site.
+
+**Three layers, and a new logger gets all of them for free.** A `ContextVar`
+(`apps/core/logging.py`) holds the current request id; `ContextFilter` copies
+it onto every record; `JsonFormatter` serialises it. The filter is registered
+on the **`console` handler**, not on individual loggers — which is why
+`apps.*`, `config.*`, `django.*` and `celery.*` are all correlated without
+declaring anything, and why a new `logging.getLogger(__name__)` anywhere needs
+no correlation code at all. **Do not move that filter onto a logger.** The
+`text` formatter interpolates `{request_id}`, and a `{}`-style format naming an
+attribute a record does not carry raises `ValueError` on *every* line it sees —
+surfacing as garbage on stderr rather than as an exception anyone notices.
+
+**`text` for humans, `json` for collectors.** `DJANGO_LOG_FORMAT` defaults to
+`text` in `settings/base.py` and to `json` in `settings/prod.py`. JSON is one
+object per line, `ensure_ascii=False` (an Arabic subject must stay readable,
+§ 18) and `default=str` (a `UUID`/`datetime`/`Decimal` in `extra` must not
+raise `TypeError` from inside the logging machinery).
+
+**`request.path`, never `request.get_full_path()`, in any log call.** A query
+string can carry a credential: the inbound-email webhook (COMM-1)
+authenticates with `?token=<EMAIL_INBOUND_WEBHOOK_TOKEN>`, so logging full
+paths would write a shared secret to stdout on every delivery. This is § 10's
+"never log secrets" made specific, and it applies to Sentry too —
+`before_send` pops `query_string`, `data`, and `cookies` off every event.
+
+**`extra=` is scrubbed by key name, not by value.** `SENSITIVE_KEY_RE`
+(`apps/core/logging.py`) matches `password|secret|token|api_key|authorization|
+credential|cookie|session` as a case-insensitive substring of the **key** and
+replaces the value with `[redacted]`, recursively. Values are never inspected:
+a scrubber that guesses at value shapes both over- and under-redacts.
+
+**Reserved `extra` keys.** `request_id` and `user_id` are written
+authoritatively by `ContextFilter` — passing them in `extra` is pointless, they
+are overwritten. `celery_task_id`/`celery_task` are filled from
+`celery.current_task` only when the call site did **not** supply them. And
+`logging` itself raises `KeyError: "Attempt to overwrite 'x' in LogRecord"` for
+any `extra` key that collides with a real `LogRecord` attribute (`name`,
+`module`, `args`, `message`, …) — which is why `AccessLogMiddleware` passes
+`req_user_id`, not `user_id`. The full list is `apps/core/logging.py::RESERVED`.
+
+**`request_id` lives inside `error`, never at the top level and never in
+`meta`.** `apps/core/tests/test_exceptions.py:30` pins the envelope's four
+top-level keys on every error path, and `test_health.py:30` pins `meta` to
+`None` on a success. `error_envelope` adds it conditionally, exactly as it
+already did for `debug`. Any future envelope change inherits this constraint.
+
+**Django's own `django.request` lines carry no request id, and that is
+expected.** `django/core/handlers/base.py:140-143` runs the middleware chain
+and *then* calls `log_response`, so a 4xx/5xx line from that logger is emitted
+after `RequestIDMiddleware` has already reset the ContextVar. Nothing is lost:
+`AccessLogMiddleware` logs the same request with the id and the same status,
+and an unhandled 500's traceback (`apps/core/exceptions.py`) is logged *inside*
+the chain, correlated. **Do not "fix" this by dropping the reset** — a
+ContextVar surviving a request would mislabel a later one, and a log that is
+confidently wrong is worse than one that is blank.
+
+**Correlation stops at two boundaries, deliberately.** A Channels WebSocket
+connection never runs the HTTP middleware chain, so a consumer logs with an
+empty `request_id`. And a Celery task runs in another process, so the
+ContextVar does not travel with it — a task's lines correlate to each other via
+`celery_task_id`, not back to the request that queued them. Joining those would
+mean threading the id through every `.delay()` call site; if a later story
+wants that, it is a deliberate change, not an oversight to patch locally.
+
+**Sentry is DSN-gated and errors-only.** `sentry_sdk.init` sits inside
+`if SENTRY_DSN:` in `settings/base.py` — with the DSN blank (the
+`.env.example` default) the SDK is never even imported. It is initialised in
+settings rather than `AppConfig.ready()` precisely so it is armed *before* the
+app registry finishes building. `send_default_pii=False`,
+`max_request_body_size="never"`, and `before_send` together mean no event,
+breadcrumb, tag, or user field ever carries an email, a name, a role, a body, a
+cookie, a query string, or a header matching `SENSITIVE_KEY_RE`. The only
+identity sent is the numeric user id. `traces_sample_rate` defaults to `0.0`:
+turning on performance tracing is a `PROD-2` decision with its own cost, not
+something to enable in passing.
+
+**`print()` is absent from `apps/` and `config/`, and stays absent.** Verify
+with `grep -rn "print(" backend/apps backend/config --include="*.py"` — the
+only hits are `password_fingerprint` substring matches. `config/celery.py`'s
+`debug_task` was the last real one; note that its replacement needed the
+`config` logger entry in `LOGGING`, because `config.*` is outside the `apps`
+tree and would otherwise fall through to root at WARNING.

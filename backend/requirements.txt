@@ -14,3 +14,7 @@ django-celery-beat>=2.7,<3
 anthropic>=1.0,<2
 google-genai>=1.0,<3
 drf-spectacular>=0.30,<1
+# PROD-1: error monitoring. Entirely inert with SENTRY_DSN unset (the default
+# in .env.example), so this is a dependency the app never touches unless an
+# environment opts in. See CONVENTIONS.md § 34.
+sentry-sdk[django]>=2.68,<3

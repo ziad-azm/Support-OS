@@ -98,7 +98,18 @@ def _first_message(detail) -> str:
 def _internal_error_response(exc, context):
     request = context.get("request")
     logger.exception(
-        "Unhandled exception at %s", getattr(request, "path", "<unknown>"), exc_info=exc
+        "Unhandled exception at %s",
+        getattr(request, "path", "<unknown>"),
+        exc_info=exc,
+        # PROD-1: structured fields beside the message, so a JSON log line is
+        # filterable by path/method/class without parsing the message text.
+        # `getattr(..., None)` because context["request"] is None when the
+        # handler is called directly, which apps/core/tests does.
+        extra={
+            "http_path": getattr(request, "path", None),
+            "http_method": getattr(request, "method", None),
+            "exc_class": type(exc).__name__,
+        },
     )
     debug = None
     if settings.DEBUG:

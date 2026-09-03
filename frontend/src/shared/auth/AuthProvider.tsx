@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { api } from '@/shared/lib/api/client'
+import { setMonitoringUser } from '@/shared/lib/monitoring'
 
 import { AuthContext } from './AuthContext'
 import { hasPermission } from './permissions'
@@ -31,6 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const me = await api.get<AuthUser>('/auth/me/')
         if (cancelled) return
         setUser(me)
+        // Id only — never email, name, role, or permissions. CONVENTIONS.md § 10.
+        setMonitoringUser(me.id)
         setStatus('authenticated')
       } catch {
         if (cancelled) return
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await api.get<AuthUser>('/auth/me/')
       setUser(me)
+      setMonitoringUser(me.id)
       setStatus('authenticated')
     } catch (error) {
       // Tokens were issued but the profile fetch failed. Do not leave the
@@ -69,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refresh = getRefreshToken()
     clearTokens()
     setUser(null)
+    setMonitoringUser(null)
     setStatus('unauthenticated')
     if (refresh) {
       try {

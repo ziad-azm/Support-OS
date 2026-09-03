@@ -11,6 +11,13 @@ export class ApiRequestError extends Error {
   readonly code: ErrorCode | string
   readonly status: number | null
   readonly fields: Record<string, string[]>
+  /**
+   * PROD-1 correlation id, when the request reached the backend. Surfaced to
+   * the user by `ErrorState` so a support report and a log query meet at the
+   * same string. `null` for a timeout or an unreachable server — there was no
+   * response, so there is no server-side id.
+   */
+  readonly requestId: string | null
   readonly debug?: ApiErrorBody['debug']
 
   constructor(init: {
@@ -18,6 +25,7 @@ export class ApiRequestError extends Error {
     message: string
     status?: number | null
     fields?: Record<string, string[]>
+    requestId?: string | null
     debug?: ApiErrorBody['debug']
   }) {
     super(init.message)
@@ -25,6 +33,7 @@ export class ApiRequestError extends Error {
     this.code = init.code
     this.status = init.status ?? null
     this.fields = init.fields ?? {}
+    this.requestId = init.requestId ?? null
     this.debug = init.debug
   }
 
@@ -88,6 +97,12 @@ export function toApiRequestError(error: unknown): ApiRequestError {
 
     const status = error.response.status
     const body = error.response.data as { error?: unknown } | undefined
+    // Axios lowercases response header keys. This fallback matters more than
+    // the body one: a gateway 502 or an HTML 500 from outside the /api/ tree
+    // has no envelope to read `request_id` out of, but the header is still
+    // there whenever the request reached Django. Resolves to undefined unless
+    // the backend sets CORS_EXPOSE_HEADERS — see CONVENTIONS.md § 34.
+    const headerRequestId = (error.response.headers?.['x-request-id'] as string) ?? null
 
     if (body && isApiErrorBody(body.error)) {
       const apiError = body.error
@@ -96,6 +111,7 @@ export function toApiRequestError(error: unknown): ApiRequestError {
         message: apiError.message,
         status,
         fields: apiError.fields ?? {},
+        requestId: apiError.request_id ?? headerRequestId,
         debug: apiError.debug,
       })
     }
@@ -106,6 +122,7 @@ export function toApiRequestError(error: unknown): ApiRequestError {
       code: 'unknown_error',
       message: GENERIC_MESSAGE,
       status,
+      requestId: headerRequestId,
     })
   }
 

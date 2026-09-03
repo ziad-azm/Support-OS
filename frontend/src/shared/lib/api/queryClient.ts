@@ -1,5 +1,7 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 
+import { captureError } from '../monitoring'
+
 import { ApiRequestError } from './errors'
 
 const MAX_RETRIES = 2
@@ -22,6 +24,16 @@ export type QueryMeta = {
 
 export function createQueryClient(onError: (error: ApiRequestError) => void): QueryClient {
   const handle = (error: unknown) => {
+    // Report only what a user cannot fix and the backend may not have seen: a
+    // 5xx (the frontend half of a server error) and a non-ApiRequestError (a
+    // bug in our own code path). NOT 4xx — a validation error or a 403 is the
+    // system working. NOT isTransport — that is the user's network, and it
+    // would make every subway ride an incident.
+    if (!(error instanceof ApiRequestError)) {
+      captureError(error, { source: 'query' })
+    } else if (error.status !== null && error.status >= 500) {
+      captureError(error, { source: 'query', requestId: error.requestId, code: error.code })
+    }
     onError(
       error instanceof ApiRequestError
         ? error

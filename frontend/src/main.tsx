@@ -15,7 +15,13 @@ import { AppProviders } from './app/providers'
 import { router } from './app/router'
 import { env } from './config/env'
 import { logger } from './shared/lib/logger'
+import { initMonitoring } from './shared/lib/monitoring'
 import './index.css'
+
+// Before createRoot, and before the first logger call: `logger` forwards to
+// addMonitoringBreadcrumb, and a breadcrumb recorded before init is dropped.
+// A boot-time crash is the case error monitoring most needs to cover.
+initMonitoring()
 
 logger.info('API base URL:', env.apiBaseUrl)
 
