@@ -5,9 +5,13 @@
     "fields": {
       "name": "Organization name",
       "logoUrl": "Logo URL",
+      "primaryColor": "Brand colour",
       "defaultResponseMinutes": "Default response target (minutes)",
       "defaultResolutionMinutes": "Default resolution target (minutes)"
     },
+    "colorHint": "Enter a colour as #RRGGBB. Leave blank to use the default brand colour.",
+    "invalidColor": "Enter a colour as #RRGGBB.",
+    "colorPreview": "Brand colour preview",
     "actions": { "save": "Save" }
   },
   "departments": {

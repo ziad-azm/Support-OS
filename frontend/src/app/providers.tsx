@@ -13,6 +13,8 @@ import { ConfirmProvider } from '@/shared/ui/confirm/ConfirmProvider'
 import { ToastProvider } from '@/shared/ui/toast/ToastProvider'
 import { pushToast } from '@/shared/ui/toast/toastSink'
 
+import { BrandingSync } from './BrandingSync'
+
 export function AppProviders({ children }: { children: ReactNode }) {
   const { t } = useTranslation('errors')
   const dir = useDirection()
@@ -44,6 +46,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <ConfirmProvider>
             <AuthProvider>
               <QueryClientProvider client={queryClient}>
+                <BrandingSync />
                 {children}
                 {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
               </QueryClientProvider>

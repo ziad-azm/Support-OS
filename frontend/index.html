@@ -33,6 +33,24 @@
         ) {
           document.documentElement.classList.add('dark')
         }
+        // Same idea again, for branding: paint the brand colour before
+        // first paint. The bundle re-applies this authoritatively at boot
+        // (src/shared/branding/branding.ts). Key must match
+        // BRANDING_STORAGE_KEY in src/shared/branding/config.ts.
+        //
+        // UNLIKE the two keys above, this one holds JSON, not a bare
+        // string — hence JSON.parse. The values are already RESOLVED
+        // (the module computed the foreground and validated the hex before
+        // caching), so there is no colour maths here and no second copy of
+        // contrast.ts to drift.
+        var brand = JSON.parse(window.localStorage.getItem('supportos.branding') || 'null')
+        if (brand && typeof brand.primary === 'string' && brand.primary) {
+          document.documentElement.style.setProperty('--primary', brand.primary)
+          document.documentElement.style.setProperty(
+            '--primary-foreground',
+            brand.primaryForeground,
+          )
+        }
       } catch (e) {}
     </script>
   </head>

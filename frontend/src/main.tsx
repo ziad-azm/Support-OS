@@ -5,9 +5,15 @@ import { RouterProvider } from 'react-router'
 // Side-effect imports: must run before any component calling useTranslation()
 // or useTheme() is imported, or the first render sees an uninitialised
 // i18next instance / stale theme class. ./shared/validation reads the
-// i18next instance, so it must come after ./shared/i18n.
+// i18next instance, so it must come after ./shared/i18n. ./shared/branding
+// writes inline custom properties on <html> and must run before the first
+// component render for the same reason the theme class must; it comes
+// after ./shared/theme because both write to document.documentElement and
+// the theme's class is what decides which index.css block the
+// un-overridden tokens come from.
 import './shared/i18n'
 import './shared/theme'
+import './shared/branding'
 import './shared/validation'
 import './shared/auth'
 

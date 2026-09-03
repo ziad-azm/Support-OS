@@ -34,6 +34,32 @@ class BranchSerializer(BaseModelSerializer):
         fields = ("id", "name", "description", "created_at", "updated_at")
 
 
+class BrandingSerializer(serializers.ModelSerializer):
+    """The public face of `OrganizationSettings` — ORG-3.
+
+    THREE FIELDS, DELIBERATELY. This is served to anonymous callers
+    (`BrandingView`), so it is a separate class rather than a subclass of
+    `OrganizationSettingsSerializer` below: that one carries
+    `default_response_target_minutes`/`default_resolution_target_minutes`,
+    and inheriting from it would publish the organisation's SLA policy to
+    the internet the next time someone added a field to it. A narrow
+    hand-listed tuple is the whole safety mechanism here.
+
+    Not `BaseModelSerializer`: the timestamps that base exists for are not
+    part of a branding payload either.
+
+    Read-only by construction — `BrandingView` defines no write verb, and
+    branding is written through `PATCH /api/settings/` under
+    `settings.manage`. Narrow-public-mirror of a wider internal serializer,
+    the same shape `accounts.DepartmentBriefSerializer`/
+    `BranchBriefSerializer` use for `/auth/me/`.
+    """
+
+    class Meta:
+        model = OrganizationSettings
+        fields = ("name", "logo_url", "primary_color")
+
+
 class OrganizationSettingsSerializer(BaseModelSerializer):
     """Read/write over the one `OrganizationSettings` row.
 
@@ -56,6 +82,7 @@ class OrganizationSettingsSerializer(BaseModelSerializer):
             "id",
             "name",
             "logo_url",
+            "primary_color",
             "default_response_target_minutes",
             "default_resolution_target_minutes",
             "created_at",

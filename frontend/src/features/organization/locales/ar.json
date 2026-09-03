@@ -5,9 +5,13 @@
     "fields": {
       "name": "اسم المؤسسة",
       "logoUrl": "رابط الشعار",
+      "primaryColor": "لون العلامة",
       "defaultResponseMinutes": "هدف الاستجابة الافتراضي (بالدقائق)",
       "defaultResolutionMinutes": "هدف الحل الافتراضي (بالدقائق)"
     },
+    "colorHint": "أدخل لونًا بصيغة #RRGGBB. اتركه فارغًا لاستخدام لون العلامة الافتراضي.",
+    "invalidColor": "أدخل لونًا بصيغة #RRGGBB.",
+    "colorPreview": "معاينة لون العلامة",
     "actions": { "save": "حفظ" }
   },
   "departments": {

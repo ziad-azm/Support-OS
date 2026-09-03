@@ -6,6 +6,7 @@ import { useState } from 'react'
 import * as z from 'zod'
 
 import { useAuth } from '@/shared/auth'
+import { BrandMark, getBranding, useBranding } from '@/shared/branding'
 import { email, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
@@ -16,6 +17,27 @@ const schema = z.object({
   email: email(),
   password: requiredString(),
 })
+
+/** The centred mark above the login form. Renders the configured logo when
+ * one is set (ORG-3); otherwise the original `LogInIcon` circle, which
+ * already tracks `--primary`/`bg-primary` and therefore rebrands itself
+ * with no edit of its own the moment a brand colour is set — do not
+ * "simplify" this into a static colour. */
+function BrandLoginMark() {
+  const branding = useBranding().data ?? getBranding()
+  if (branding.logo_url !== '') {
+    return (
+      <div className="flex h-12 items-center justify-center">
+        <BrandMark className="h-12 max-w-48" />
+      </div>
+    )
+  }
+  return (
+    <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+      <LogInIcon className="size-6 text-primary" />
+    </div>
+  )
+}
 
 export function LoginPage() {
   const { t } = useTranslation('auth')
@@ -50,9 +72,7 @@ export function LoginPage() {
   return (
     <div className="flex w-full max-w-sm flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
-          <LogInIcon className="size-6 text-primary" />
-        </div>
+        <BrandLoginMark />
         <h1 className="text-2xl font-semibold tracking-tight">{t('login.title')}</h1>
       </div>
       <Card>

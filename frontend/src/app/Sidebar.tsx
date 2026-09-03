@@ -33,6 +33,7 @@ import { useTranslation } from 'react-i18next'
 
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 import { Can, useAuth } from '@/shared/auth'
+import { BrandMark } from '@/shared/branding'
 import { cn } from '@/shared/lib/cn'
 import { Button, buttonVariants } from '@/shared/ui/primitives/button'
 
@@ -161,7 +162,7 @@ export function Sidebar() {
       )}
     >
       <div className="flex items-center gap-2 border-b px-3 py-3">
-        {collapsed ? null : <span className="flex-1 truncate font-semibold">{t('app.name')}</span>}
+        {collapsed ? null : <BrandMark className="flex-1" />}
         <Button
           variant="ghost"
           size="icon-sm"

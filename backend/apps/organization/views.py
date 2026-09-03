@@ -1,4 +1,4 @@
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -6,7 +6,12 @@ from apps.core.permissions import HasPermission, Permissions
 from apps.core.views import BaseModelViewSet
 
 from .models import Branch, Department, OrganizationSettings
-from .serializers import BranchSerializer, DepartmentSerializer, OrganizationSettingsSerializer
+from .serializers import (
+    BranchSerializer,
+    BrandingSerializer,
+    DepartmentSerializer,
+    OrganizationSettingsSerializer,
+)
 
 
 class DepartmentViewSet(BaseModelViewSet):
@@ -65,6 +70,39 @@ class BranchViewSet(BaseModelViewSet):
     # Each name must match a `ColumnDef.id` on `BranchListPage` (§23).
     ordering_fields = ("name", "created_at")
     search_fields = ("name", "description")
+
+
+class BrandingView(APIView):
+    """Public branding — ORG-3. The only endpoint in this app reachable
+    without a session.
+
+    `authentication_classes = []` AND `permission_classes = [AllowAny]`,
+    the same explicit-open pair `HealthView` (apps/core/views.py:65-87)
+    uses. Both are needed: `AllowAny` alone would still run
+    authentication, so a stale or malformed `Authorization` header on a
+    visitor's first request would 401 the login page's own branding.
+
+    WHY THIS EXISTS AT ALL, rather than relaxing `SettingsView` below:
+    two different callers need branding and neither can have
+    `settings.manage`. An anonymous visitor on `/` or `/login` has no
+    session; a signed-in agent has one but is not an admin. Widening
+    `SettingsView` would have published the SLA defaults to both.
+
+    GET only, so any other verb 405s through Django's own
+    `http_method_not_allowed` — no `http_method_names` override needed,
+    the same reasoning `SettingsView` records for itself. No
+    `permission_map`: `HasPermission` is not in the permission classes, so
+    there is nothing to key.
+
+    Returns the serializer's plain dict; the renderer builds the envelope
+    (apps/core/views.py:65-70's rule).
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(BrandingSerializer(OrganizationSettings.load()).data)
 
 
 class SettingsView(APIView):

@@ -4,6 +4,7 @@ export type OrganizationSettings = {
   id: number
   name: string
   logo_url: string
+  primary_color: string
   default_response_target_minutes: number | null
   default_resolution_target_minutes: number | null
   created_at: string
@@ -14,6 +15,7 @@ export type OrganizationSettings = {
 export type SettingsInput = {
   name: string
   logo_url: string
+  primary_color: string
   default_response_target_minutes: number | null
   default_resolution_target_minutes: number | null
 }

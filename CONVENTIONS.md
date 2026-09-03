@@ -496,6 +496,34 @@ Radix's `Select.Item` requires a non-empty `value`. **Changing a filter
 resets the page** the same way changing `search` already does — a filtered
 result set can be narrower than the page the user was on.
 
+**Runtime branding is the one exception, and it is bounded (ORG-3).**
+`src/shared/branding/` is the only module allowed to write a colour at
+runtime, it writes exactly two custom properties — `--primary` and
+`--primary-foreground` — and it writes them as an inline style on
+`<html>`, which beats both `:root` and `.dark`. No component gains a
+colour literal and no utility class changes: `@theme inline`'s
+`--color-primary: var(--primary)` mapping is what carries the override
+to every `bg-primary`/`text-primary` in the app.
+
+`--primary-foreground` is **derived**, never configured
+(`contrast.ts`, WCAG relative luminance, 0.179 crossover), so every
+brand colour an admin can enter yields a legible pair. `--background`,
+`--foreground`, `--card`, `--muted`, `--border`, and `--ring` are not
+brandable — Story 51 derived them as a set with verified contrast
+ratios, and `--ring` in particular carries a WCAG 2.4.11 floor.
+
+**Branding is read publicly** (`GET /api/branding/`, `AllowAny`) because
+the login and landing pages have no session and a non-admin agent has no
+`settings.manage`. That endpoint serves a **separate three-field
+serializer**, never `OrganizationSettingsSerializer` — which carries the
+org's SLA defaults. Do not widen it, and do not make the public view
+inherit from the private one.
+
+Values are cached in `localStorage` and re-applied by `index.html`'s
+inline script before first paint, the same anti-FOUC contract the theme
+and language already use. The cache holds **resolved** CSS values so that
+script needs no colour maths.
+
 ---
 
 ## 20. Forms & validation

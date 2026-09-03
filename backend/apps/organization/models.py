@@ -1,8 +1,20 @@
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import TimeStampedModel
+
+# Exactly `#RRGGBB`. Anchored, case-insensitive. Three-digit shorthand,
+# `rgb()`, and colour names are all rejected on purpose: this string is
+# written straight into a CSS custom property and cached in localStorage,
+# so one canonical form means the stored value, the cached value, and the
+# painted value are the same seven characters. Mirrored on the frontend as
+# `HEX_COLOR_RE` (src/shared/branding/config.ts).
+HEX_COLOR_VALIDATOR = RegexValidator(
+    regex=r"^#(?:[0-9a-fA-F]{6})$",
+    message=_("Enter a colour as #RRGGBB."),
+)
 
 
 class Department(TimeStampedModel):
@@ -90,18 +102,43 @@ class OrganizationSettings(TimeStampedModel):
     `departments` and `branches` were both `JSONField(default=list)` string
     lists until ORG-1 (Story 87) and ORG-2 (Story 89) promoted them to the
     `Department` and `Branch` models above. This model now holds only
-    scalars — branding (`name`, `logo_url`) and the two org-wide SLA
-    defaults. There is no JSON column left, which is why `clean()` no
-    longer validates a list shape.
+    scalars — branding (`name`, `logo_url`, `primary_color`) and the two
+    org-wide SLA defaults. There is no JSON column left, which is why
+    `clean()` no longer validates a list shape.
 
     `logo_url` is a plain URL, not an uploaded file — combining a file
     upload with this model's JSON list fields in one request would need an
     unprecedented parsing path in this codebase (see Story 53
     `## Prerequisites`).
+
+    `primary_color` is read publicly through `BrandingView`, unlike every
+    other field here: the login page and the public landing page have no
+    session, and even a signed-in agent lacks `settings.manage`. That is
+    why the public serializer is a separate, narrower class — see
+    `serializers.py`.
     """
 
     name = models.CharField(_("organization name"), max_length=150, blank=True)
     logo_url = models.URLField(_("logo URL"), max_length=500, blank=True)
+    # The brand's accent colour — ORG-3. Overrides the `--primary` design
+    # token at runtime (src/shared/branding/), which `@theme inline` maps to
+    # `--color-primary`, so every `bg-primary`/`text-primary` utility in the
+    # app follows it with no class changes.
+    #
+    # Blank means "use the DSN default" (`#2563EB`, MASTER.md line 25), NOT
+    # "no colour" — the frontend removes its inline override rather than
+    # writing an empty value. See Story 90 `## Product rules`.
+    #
+    # No companion `primary_foreground_color`: the readable text colour is
+    # DERIVED from this one by WCAG relative luminance
+    # (src/shared/branding/contrast.ts). Storing it would let an admin
+    # configure an illegible pair.
+    primary_color = models.CharField(
+        _("brand colour"),
+        max_length=7,
+        blank=True,
+        validators=[HEX_COLOR_VALIDATOR],
+    )
     # Mirrors `SLAPolicy.response_target_minutes`/`resolution_target_minutes`
     # (apps/sla/models.py) exactly, but nullable: unlike a configured
     # `SLAPolicy` row (which always has both), the org-wide default is

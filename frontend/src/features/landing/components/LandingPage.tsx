@@ -2,6 +2,7 @@ import { BarChart3Icon, InboxIcon, SparklesIcon, TimerIcon } from 'lucide-react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 
+import { BrandMark } from '@/shared/branding'
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/shared/ui/ThemeToggle'
 import { Button } from '@/shared/ui/primitives/button'
@@ -28,7 +29,7 @@ export function LandingPage() {
     <div className="flex flex-col">
       <header className="border-b">
         <div className="container mx-auto flex flex-wrap items-center gap-4 px-4 py-3">
-          <span className="font-semibold">{t('app.name', { ns: 'common' })}</span>
+          <BrandMark />
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher />
             <ThemeToggle />

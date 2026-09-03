@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
 
 import { useAuth } from '@/shared/auth'
+import { BrandMark } from '@/shared/branding'
 import { cn } from '@/shared/lib/cn'
 import { Button, buttonVariants } from '@/shared/ui/primitives/button'
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
@@ -26,7 +27,7 @@ export function PortalLayout() {
     <div className="min-h-dvh bg-background">
       <header className="border-b">
         <div className="container mx-auto flex flex-wrap items-center gap-4 px-4 py-3">
-          <span className="font-semibold">{t('shell.title')}</span>
+          <BrandMark />
           <nav className="flex items-center gap-1">
             <NavLink
               to="/portal"
