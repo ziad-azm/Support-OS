@@ -312,6 +312,32 @@ second or two.
 
 ---
 
+## Performance & caching (PROD-2)
+
+The API caches two things, both behind Redis (`REDIS_CACHE_URL`, a **different**
+database from Celery's `REDIS_URL` — see the environment variable table below):
+the `COUNT(*)` a paginated list issues (only above `COUNT_CACHE_MIN_ROWS` rows,
+for `COUNT_CACHE_TTL_SECONDS`), and the eight `/api/reports/...` endpoints (for
+`REPORT_CACHE_TTL_SECONDS`), keyed by path + query string + language.
+
+**The app degrades to uncached, never to an error, if Redis is unreachable.**
+Every cache read/write goes through `apps/core/cache.py`, which swallows the
+failure and logs a `WARNING`. Losing the cache costs latency, not correctness.
+
+**`?search=` performance depends on the `pg_trgm` PostgreSQL extension.**
+DRF's `SearchFilter` compiles to `ILIKE '%term%'`, which no plain index can
+serve; `Customer.name` and `Ticket.subject` each carry a `pg_trgm` GIN index
+instead. The migration that adds it (`apps/customers/migrations/
+0009_customer_customer_name_trgm.py`) runs `CREATE EXTENSION IF NOT EXISTS
+pg_trgm`, which needs `CREATE EXTENSION` privilege — if your database role
+lacks it, ask a superuser to run that statement once by hand and re-run
+`migrate`.
+
+See `CONVENTIONS.md` § 35 for the measured evidence behind every index and
+cache decision in this project.
+
+---
+
 ## Languages
 
 SupportOS supports **English** and **Arabic**. Switch languages with the selector rendered at
@@ -665,6 +691,7 @@ developer discovers it.
 | `POSTGRES_PORT` | no | `5432` | Database port. |
 | `POSTGRES_CONN_MAX_AGE` | no | `0` | Seconds to reuse a connection. `0` closes it after each request. |
 | `REDIS_URL` | no | `redis://localhost:6379/0` | Redis connection string — Celery's broker and result backend (SLA-0). |
+| `REDIS_CACHE_URL` | no | `redis://localhost:6379/1` | Redis connection for the Django cache (`PROD-2`). **Must be a different database number from `REDIS_URL`** — the cache is flushable, Celery's queue is not. |
 | `JWT_SIGNING_KEY` | no | `DJANGO_SECRET_KEY` | JWT signing key. Read now, consumed once JWT auth lands. |
 | `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` | no | `15` | Access-token lifetime. |
 | `JWT_REFRESH_TOKEN_LIFETIME_DAYS` | no | `7` | Refresh-token lifetime. |

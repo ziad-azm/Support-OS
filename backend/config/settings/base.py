@@ -492,6 +492,45 @@ CELERY_TIMEZONE = TIME_ZONE
 # escalation evaluation) is configured without a settings deploy.
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+# --- Cache (PROD-2) -------------------------------------------------------
+# Django's default is LocMemCache: per-process, per-worker, never shared, and
+# wiped on reload — useless for a count shared across gunicorn/daphne workers.
+#
+# Built-in RedisCache, NOT django-redis: Django 5.2 ships the backend and
+# `redis` is already a dependency (SLA-0's broker), so CONVENTIONS.md § 17's
+# "check whether an existing one already does the job" is satisfied with no
+# new package. Contrast PROD-1, which had to add one.
+#
+# Database 1, deliberately NOT the 0 that CELERY_BROKER_URL uses above: a
+# cache is flushable by definition, and a FLUSHDB that also dropped queued
+# jobs would be a genuinely bad afternoon.
+REDIS_CACHE_URL = env("REDIS_CACHE_URL", default="redis://localhost:6379/1")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_CACHE_URL,
+        "KEY_PREFIX": "supportos",
+    }
+}
+
+# PROD-2 tuning knobs. Plain constants, not ENV vars — the same
+# internal-tuning-knob reasoning `DEFAULT_THROTTLE_RATES` (SEC-7) and
+# `RESET_TOKEN_MAX_AGE_SECONDS` already document for themselves.
+#
+# 30s matches the frontend's own `staleTime: 30_000`
+# (frontend/src/shared/lib/api/queryClient.ts:51): a count cached longer than
+# the window the client already treats data as fresh would be visible as a
+# stuck total; matched, it is invisible.
+COUNT_CACHE_TTL_SECONDS = 30
+# Below this, COUNT(*) is sub-millisecond (measured: 4.3 ms at 50,000 rows,
+# and it falls off linearly), so a Redis round-trip would cost more than the
+# query it replaces. Caching starts where the evidence says it starts.
+COUNT_CACHE_MIN_ROWS = 1_000
+# Reports are date-range aggregations over data that is minutes-stale by
+# nature; 5 minutes is well inside what a trend chart means.
+REPORT_CACHE_TTL_SECONDS = 300
+
 # --- AI (AI-0) ------------------------------------------------------------
 # The one server-side AI integration point every AI-1..AI-5 story calls
 # (SupportOs backlog.MD:822) — apps/ai/client.py, never a second

@@ -12,11 +12,16 @@ MUST declare its own, exactly as `CustomerScopedModelViewSet`
 (apps/core/views.py:34-55) already documents for its own subclasses.
 """
 
+from urllib.parse import urlencode
+
+from django.conf import settings
+from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.cache import cache_get, cache_set, digest
 from apps.core.permissions import HasPermission, Permissions
 from apps.tickets.models import Feedback, Ticket
 
@@ -57,11 +62,38 @@ class BaseReportView(APIView):
         raise NotImplementedError
 
     def get(self, request):
+        # PROD-2: measured at 250,000 tickets — sla/trend 468.6 ms,
+        # dashboard/kpis 406.3 ms (and that one is the HOME PAGE), sla/
+        # breach-rate 365.7 ms. These are date-range aggregations, NOT an
+        # N+1: Stories 57/58 already reduced them to 1-3 queries with
+        # Subquery batching, so there is nothing left to rewrite — only to
+        # avoid recomputing.
+        #
+        # The key is path + sorted query string + language, and that is
+        # SUFFICIENT and SAFE: report scoping is by query param
+        # (`?department=`/`?branch=`, apps/reports/tickets.py), never by
+        # caller identity — see apps/core/scoping.py's own docstring for
+        # that distinction. Language is in the key because CSV headers and
+        # some labels are translated (§ 18). `?export=csv` is part of the
+        # query string, so a CSV and a JSON response can never share an
+        # entry. See CONVENTIONS.md § 35.
+        cache_key = "report:" + digest(
+            request.path,
+            urlencode(sorted(request.query_params.items())),
+            get_language() or "",
+        )
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
         start, end = parse_date_range(request.query_params)
         bucket = parse_bucket(request.query_params)
         rows = self.get_report(request, start=start, end=end, bucket=bucket)
         if request.query_params.get(EXPORT_PARAM) == EXPORT_CSV:
+            # Not cached: a CSV response is a streaming file attachment, not
+            # a JSON body, and caching it would mean caching headers too.
             return csv_response(rows, columns=self.csv_columns, filename=self.csv_filename)
+        cache_set(cache_key, rows, settings.REPORT_CACHE_TTL_SECONDS)
         return Response(rows)
 
 

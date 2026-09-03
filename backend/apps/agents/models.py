@@ -54,6 +54,9 @@ class Task(TimeStampedModel):
         # Soonest-due first — a to-do list, not an audit log (contrast
         # `TicketActivity.Meta.ordering`, newest-first).
         ordering = ("due_at",)
+        # PROD-2: the default ordering above had no index. See
+        # CONVENTIONS.md § 35.
+        indexes = [models.Index(fields=["due_at"], name="task_due_at_idx")]
 
     def __str__(self) -> str:
         return self.title

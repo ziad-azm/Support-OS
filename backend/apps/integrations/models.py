@@ -237,6 +237,9 @@ class ErpOrder(TimeStampedModel):
         verbose_name = _("ERP order")
         verbose_name_plural = _("ERP orders")
         ordering = ("-placed_at", "-id")
+        # PROD-2: the default ordering above had no index. See
+        # CONVENTIONS.md § 35.
+        indexes = [models.Index(fields=["-placed_at", "-id"], name="erporder_placed_idx")]
 
     def __str__(self) -> str:
         return self.order_number or self.external_id
@@ -299,6 +302,9 @@ class ErpSyncRun(TimeStampedModel):
         verbose_name = _("ERP sync run")
         verbose_name_plural = _("ERP sync runs")
         ordering = ("-started_at",)
+        # PROD-2: the default ordering above had no index. See
+        # CONVENTIONS.md § 35.
+        indexes = [models.Index(fields=["-started_at"], name="erpsyncrun_started_idx")]
 
     def __str__(self) -> str:
         return f"{self.get_direction_display()} {self.started_at:%Y-%m-%d %H:%M}"

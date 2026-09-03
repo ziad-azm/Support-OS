@@ -2394,3 +2394,106 @@ only hits are `password_fingerprint` substring matches. `config/celery.py`'s
 `debug_task` was the last real one; note that its replacement needed the
 `config` logger entry in `LOGGING`, because `config.*` is outside the `apps`
 tree and would otherwise fall through to root at WARNING.
+
+---
+
+## 35. Performance & caching mechanism (PROD-2)
+
+`PROD-2` (Story 91) added no `select_related`/`prefetch_related` and rewrote
+no serializer. Every claim below is measured, not assumed — reproduce any of
+them with the seed-and-`EXPLAIN` harness in Story 91's `## Verification
+Steps` before adding to this section.
+
+**Measured baseline** (250,000 customers, 250,000 tickets, a realistic
+skewed status distribution — 97% `closed`, ~1% each `open`/`pending`/
+`resolved` — on local PostgreSQL):
+
+| Finding | Before | After | Change |
+|---|---:|---:|---|
+| `customers ORDER BY name LIMIT 25` | 14.5 ms (`Sort`) | 0.1 ms (`Index Scan`) | **233x** |
+| `customers WHERE name ILIKE '%…%'` | 41.2 ms (`Sort`) | 1.1 ms (GIN trgm) | **37x** |
+| `tickets WHERE status='open'` (**1%** of rows) | 0.6 ms | 0.1 ms | **5.2x** |
+| `tickets WHERE status='open'` (**25%** of rows) | 7.5 ms | 5.7 ms | **no change** |
+| `SELECT COUNT(*) FROM tickets_ticket` @50k rows | 4.3 ms (`Seq Scan`) | — | no index helps |
+| `SELECT COUNT(*) FROM tickets_ticket` @250k rows | **96.1 ms** (`Parallel Seq Scan`) | — | **grows linearly, forever** |
+| `/api/reports/dashboard/kpis/` end-to-end (the home page) | 406.3 ms | ~0 queries, cached | cache |
+| `/api/reports/sla/trend/` end-to-end | 468.6 ms | ~0 queries, cached | cache |
+
+**There was no N+1 anywhere in this API.** 28 endpoints — every list, the
+ticket detail/`history`/`context`/`sla` actions, `customers/<id>/timeline`,
+and all eight report endpoints — were measured with `CaptureQueriesContext`
+at 1 row and at 25 rows. Every query count was completely flat. The existing
+`select_related`/`prefetch_related` discipline and the `Subquery` batching in
+`apps/reports/sla.py`/`apps/reports/agents.py` (Stories 57/58) already do
+their job. **Before adding a `select_related` anywhere "for performance",
+measure first** — the base rate in this codebase is zero N+1, not one.
+
+**A filter does not justify a composite index — selectivity does.**
+`(status, -created_at)` on `tickets_ticket` bought *nothing* at a uniform 25%
+status distribution (Postgres correctly preferred a backward scan of the
+existing `created_at` index under `LIMIT 25`), and **5.2x** once the data was
+realistically skewed to ~1% `open`. Uniform test data produces the wrong
+answer in either direction. **Measure selectivity with realistic data before
+adding a composite index anywhere else in this project.**
+
+**`COUNT(*)` is the worst-scaling query in this API, and no index fixes it**
+— counting reads every row by definition. It is issued on every paginated
+response, including `HomePage`'s two `page_size=1` KPI tiles
+(`frontend/src/app/HomePage.tsx:107,110`), where it is the entire cost of the
+request. `apps/core/pagination.py::CachedCountPaginator` caches only the
+count, never the page of rows, behind `COUNT_CACHE_TTL_SECONDS` (30s,
+deliberately matched to the frontend's own `staleTime: 30_000`,
+`frontend/src/shared/lib/api/queryClient.ts:51`) and only above
+`COUNT_CACHE_MIN_ROWS` (1,000 — below that a Redis round-trip costs more than
+the query it would replace). `count`/`num_pages` cannot be removed from
+`meta.pagination` — `DataTablePagination.tsx:31,59` and `HomePage.tsx:137,144`
+read them directly.
+
+**Every `?search=` in this API compiles to `ILIKE '%term%'`** (DRF's
+`SearchFilter`), which no btree index — including the `varchar_pattern_ops`
+indexes Django already builds — can serve, because the leading `%` rules out
+any prefix match. A `pg_trgm` GIN index is the fix, measured at 37x.
+`Customer.name` and `Ticket.subject` carry one each; the other 13
+`search_fields` declarations in this project are on configuration or
+low-volume tables and do not.
+
+**Every cache read and write goes through `apps/core/cache.py`.** Its
+`cache_get`/`cache_set`/`cache_delete` swallow every exception and log at
+`WARNING` (§ 10) — a Redis outage degrades to uncached, **never** to a 500.
+**Do not call `django.core.cache` directly anywhere else.**
+
+**A cache key must fully determine the response it stores.** Report caching
+(`apps/reports/views.py::BaseReportView.get`) is safe *only* because report
+scoping is by query parameter (`apps/core/scoping.py::apply_scope_filters`,
+`?department=`/`?branch=`), never by caller identity — the key is
+`path + sorted query string + language`. **The identity-scoped `apps/portal/`
+tree is never cached on a path+query key**, and must not be by a future
+story: two customers hitting the identical URL get different rows, and a
+path-only key would leak one customer's data to another. A future cache on
+an identity-scoped view must include the user id in its key.
+
+**Two Redis databases, never shared.** `CELERY_BROKER_URL`/
+`CELERY_RESULT_BACKEND` (`REDIS_URL`, database 0) and `CACHES["default"]`
+(`REDIS_CACHE_URL`, database 1) are deliberately different databases on the
+same Redis instance — a cache `FLUSHDB` must never drop a queued Celery job.
+
+**Caching needed no new dependency.** Django's built-in
+`django.core.cache.backends.redis.RedisCache` and the `redis` package
+(already installed for Celery since `SLA-0`) were sufficient — `django-redis`
+was considered and rejected as redundant. Contrast `PROD-1`, which added
+`sentry-sdk`/`@sentry/react` because nothing already in the project did error
+tracking.
+
+**Deliberately unindexed:** `accounts.Role.name`, `agents.QuickReply.title`,
+`knowledge_base.FAQ.order`/`question`, `sla.EscalationRule.kind`/
+`threshold_minutes`, `sla.SLAPolicy.category__name`,
+`integrations.WebhookSubscription.name`, `customers.ContactDetail.channel`.
+All are configuration tables holding tens of rows, or (`ContactDetail`)
+always reached behind a required `?customer=` filter that narrows to a
+handful of rows first. **Do not add an index to a configuration table without
+a measurement showing it matters** — this is a decision, not an oversight.
+
+**`TimeStampedModel.created_at` already carries `db_index=True`**
+(`apps/core/models.py:10`), which is why every `-created_at` default
+ordering in this project was already covered before `PROD-2`. **Never add a
+redundant `created_at` index.**

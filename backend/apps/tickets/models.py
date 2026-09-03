@@ -1,3 +1,4 @@
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -138,6 +139,26 @@ class Ticket(TimeStampedModel):
         verbose_name = _("ticket")
         verbose_name_plural = _("tickets")
         ordering = ("-created_at",)
+        # PROD-2: `?status=` / `?priority=` are TicketViewSet's two most-used
+        # filters (views.py:126-145), always combined with the `-created_at`
+        # default ordering. Justified by QUEUE SKEW, not by the mere presence
+        # of a filter: measured at 25% selectivity these bought NOTHING
+        # (Postgres rightly preferred a backward scan of the existing
+        # created_at index under LIMIT 25), and at a realistic ~1% `open`
+        # share they bought 5.2x. See CONVENTIONS.md § 35 before adding a
+        # composite index anywhere else.
+        indexes = [
+            models.Index(fields=["status", "-created_at"], name="ticket_status_created_idx"),
+            models.Index(fields=["priority", "-created_at"], name="ticket_priority_created_idx"),
+            # `?search=` (TicketViewSet.search_fields: subject, description,
+            # customer__name) is ILIKE '%term%' — no btree can serve it.
+            # `subject` is the selective field to index; `description` is
+            # long-form text a trigram index on it would be large for little
+            # gain, and `customer__name` is served by Customer's own trigram
+            # index (apps/customers/models.py) through the join. See
+            # CONVENTIONS.md § 35.
+            GinIndex(fields=["subject"], name="ticket_subject_trgm", opclasses=["gin_trgm_ops"]),
+        ]
 
     def __str__(self) -> str:
         return self.subject
