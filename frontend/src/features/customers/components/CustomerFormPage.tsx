@@ -3,16 +3,28 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
+import { useBranches } from '@/shared/branches'
 import { nullableEmail, optionalString, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SelectField,
+  SubmitButton,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useCustomer } from '../api/useCustomer'
 import { useCreateCustomer, useUpdateCustomer } from '../api/useCustomerMutations'
 import type { Customer, CustomerInput } from '../types/customer'
+
+// Radix's `Select.Item` requires a non-empty `value` — this sentinel stands
+// in for "no branch" (ORG-2), the same role `DEPARTMENT_NONE` plays on the
+// user and ticket forms.
+const BRANCH_NONE = 'none'
 
 const schema = z.object({
   name: requiredString(200),
@@ -24,11 +36,18 @@ const schema = z.object({
   email: nullableEmail(),
   phone: optionalString(40),
   company: optionalString(200),
+  branch: z.string(),
 })
 
 type FormValues = z.output<typeof schema>
 
-const EMPTY_DEFAULTS: FormValues = { name: '', email: '', phone: '', company: '' }
+const EMPTY_DEFAULTS: FormValues = {
+  name: '',
+  email: '',
+  phone: '',
+  company: '',
+  branch: BRANCH_NONE,
+}
 
 function toDefaults(customer: Customer): FormValues {
   return {
@@ -36,6 +55,7 @@ function toDefaults(customer: Customer): FormValues {
     email: customer.email ?? '',
     phone: customer.phone,
     company: customer.company,
+    branch: customer.branch === null ? BRANCH_NONE : String(customer.branch),
   }
 }
 
@@ -50,6 +70,7 @@ function toCustomerInput(values: FormValues): CustomerInput {
     email: values.email,
     phone: values.phone ?? '',
     company: values.company ?? '',
+    branch: values.branch === BRANCH_NONE ? null : Number(values.branch),
   }
 }
 
@@ -88,6 +109,17 @@ function CustomerForm({
   const navigate = useNavigate()
   const { toast } = useToast()
   const [formErrors, setFormErrors] = useState<string[]>([])
+  // No second loading gate: the options query is independent of the
+  // customer query this form already waits on via `QueryBoundary`, and
+  // `UserFormPage` renders its own pickers the same way.
+  const branchesQuery = useBranches()
+  const branchOptions = [
+    { value: BRANCH_NONE, label: t('fields.noBranch') },
+    ...(branchesQuery.data?.items.map((branch) => ({
+      value: String(branch.id),
+      label: branch.name,
+    })) ?? []),
+  ]
 
   const form = useAppForm({
     schema,
@@ -123,6 +155,12 @@ function CustomerForm({
           <TextField control={form.control} name="email" label={t('fields.email')} type="email" />
           <TextField control={form.control} name="phone" label={t('fields.phone')} />
           <TextField control={form.control} name="company" label={t('fields.company')} />
+          <SelectField
+            control={form.control}
+            name="branch"
+            label={t('fields.branch')}
+            options={branchOptions}
+          />
           <FormErrorSummary errors={formErrors} />
           <SubmitButton pending={mutation.isPending}>{t('actions.save')}</SubmitButton>
         </form>

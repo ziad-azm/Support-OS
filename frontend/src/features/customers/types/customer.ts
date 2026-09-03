@@ -7,6 +7,8 @@ export type Customer = {
   phone: string
   company: string
   portal_access_enabled: boolean
+  branch: number | null
+  branch_name: string | null
   created_at: string
   updated_at: string
 }
@@ -17,4 +19,5 @@ export type CustomerInput = {
   email: string | null
   phone: string
   company: string
+  branch: number | null
 }

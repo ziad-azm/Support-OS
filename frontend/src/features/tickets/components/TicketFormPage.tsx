@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
+import { useBranches } from '@/shared/branches'
 import { useDepartments } from '@/shared/departments'
 import { choice, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
@@ -33,6 +34,9 @@ const CATEGORY_NONE = 'none'
 // Same sentinel shape as `CATEGORY_NONE` above, for the same Radix reason
 // — "no department" (ORG-1).
 const DEPARTMENT_NONE = 'none'
+// Same sentinel shape as `DEPARTMENT_NONE` above, for the same Radix reason
+// — "no branch" (ORG-2).
+const BRANCH_NONE = 'none'
 
 const ticketSchema = z.object({
   subject: requiredString(200),
@@ -46,6 +50,7 @@ const ticketSchema = z.object({
   customer: z.string().min(1),
   category: z.string().min(1),
   department: z.string().min(1),
+  branch: z.string().min(1),
   priority: choice(TICKET_PRIORITIES),
 })
 
@@ -57,6 +62,7 @@ const EMPTY_DEFAULTS: FormValues = {
   customer: '',
   category: CATEGORY_NONE,
   department: DEPARTMENT_NONE,
+  branch: BRANCH_NONE,
   priority: 'medium',
 }
 
@@ -67,6 +73,7 @@ function toDefaults(ticket: Ticket): FormValues {
     customer: String(ticket.customer),
     category: ticket.category === null ? CATEGORY_NONE : String(ticket.category),
     department: ticket.department === null ? DEPARTMENT_NONE : String(ticket.department),
+    branch: ticket.branch === null ? BRANCH_NONE : String(ticket.branch),
     priority: ticket.priority,
   }
 }
@@ -78,6 +85,7 @@ function toTicketInput(values: FormValues): TicketInput {
     customer: Number(values.customer),
     category: values.category === CATEGORY_NONE ? null : Number(values.category),
     department: values.department === DEPARTMENT_NONE ? null : Number(values.department),
+    branch: values.branch === BRANCH_NONE ? null : Number(values.branch),
     priority: values.priority,
   }
 }
@@ -120,6 +128,7 @@ function TicketForm({
   const customerOptionsQuery = useCustomerOptions()
   const categoriesQuery = useCategories()
   const departmentsQuery = useDepartments()
+  const branchesQuery = useBranches()
 
   const form = useAppForm({
     schema: ticketSchema,
@@ -164,10 +173,19 @@ function TicketForm({
       label: department.name,
     })) ?? []
 
+  const branchOptions =
+    branchesQuery.data?.items.map((branch) => ({
+      value: String(branch.id),
+      label: branch.name,
+    })) ?? []
+
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t(mode === 'create' ? 'new' : 'edit')}</h1>
-      {customerOptionsQuery.isPending || categoriesQuery.isPending || departmentsQuery.isPending ? (
+      {customerOptionsQuery.isPending ||
+      categoriesQuery.isPending ||
+      departmentsQuery.isPending ||
+      branchesQuery.isPending ? (
         <Loading />
       ) : (
         <Form {...form}>
@@ -202,6 +220,12 @@ function TicketForm({
                 { value: DEPARTMENT_NONE, label: t('fields.noDepartment') },
                 ...departmentOptions,
               ]}
+            />
+            <SelectField
+              control={form.control}
+              name="branch"
+              label={t('fields.branch')}
+              options={[{ value: BRANCH_NONE, label: t('fields.noBranch') }, ...branchOptions]}
             />
             <SelectField
               control={form.control}

@@ -40,14 +40,18 @@ DIMENSION_FIELDS = {
     "category": "category__name",
     "channel": ORIGIN_CHANNEL_FIELD,
     "department": "department__name",
+    "branch": "branch__name",
 }
 
-# The scopes both RPT-1 endpoints honour. A tuple, not a bare call, so
-# ORG-2 adds `ScopeFilter(param="branch", field="branch")` here once and
-# both reports pick it up. Applied via the shared
+# The scopes both RPT-1 endpoints honour. A tuple, so both reports pick up
+# every entry: ORG-1 added `department`, ORG-2 added `branch`, and neither
+# needed a change to `apply_scope_filters`. Applied via the shared
 # `apps.core.scoping.apply_scope_filters` — the reports are plain
 # `APIView`s, so they use the function rather than `ScopedQuerysetMixin`.
-TICKET_SCOPES = (ScopeFilter(param="department", field="department"),)
+TICKET_SCOPES = (
+    ScopeFilter(param="department", field="department"),
+    ScopeFilter(param="branch", field="branch"),
+)
 
 
 def scoped_tickets(query_params, queryset=None) -> QuerySet:

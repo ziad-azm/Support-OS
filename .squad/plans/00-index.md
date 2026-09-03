@@ -20,5 +20,5 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | ai-features | [ai-features/00-overview.md](ai-features/00-overview.md) | 74–79 (EPIC 13 fully planned, AI-0 through AI-5; AI-0–AI-4 implemented, AI-5 outstanding) |
 | integrations | [integrations/00-overview.md](integrations/00-overview.md) | 80–83 (EPIC 14 fully planned; INT-1/INT-2/INT-3 implemented, INT-4 planned) |
 | public-landing-page | [public-landing-page/00-overview.md](public-landing-page/00-overview.md) | 86 (EPIC 15 fully planned, LAND-1; planned, not yet implemented) |
-| multi-department-multi-branch-branding | [multi-department-multi-branch-branding/00-overview.md](multi-department-multi-branch-branding/00-overview.md) | 87 (EPIC 16, ORG-1 planned; ORG-2/ORG-3 not yet planned) |
+| multi-department-multi-branch-branding | [multi-department-multi-branch-branding/00-overview.md](multi-department-multi-branch-branding/00-overview.md) | 87, 89 (EPIC 16; ORG-1 implemented, ORG-2 (Story 89) planned, not yet implemented; ORG-3 not yet planned) |
 | production-readiness | [production-readiness/00-overview.md](production-readiness/00-overview.md) | 88 (EPIC 17 partially planned, PROD-1; planned, not yet implemented. PROD-2/PROD-3/PROD-4 not yet planned) |

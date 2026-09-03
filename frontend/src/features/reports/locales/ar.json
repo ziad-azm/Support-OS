@@ -83,8 +83,11 @@
     "noSeries": "بدون تقسيم",
     "dimension": "التصنيف حسب",
     "department": "القسم",
+    "branch": "الفرع",
     "allDepartments": "كل الأقسام",
-    "noDepartment": "بدون قسم"
+    "allBranches": "كل الفروع",
+    "noDepartment": "بدون قسم",
+    "noBranch": "بدون فرع"
   },
   "buckets": { "day": "يوم", "week": "أسبوع", "month": "شهر" },
   "dimensions": {
@@ -92,7 +95,8 @@
     "priority": "الأولوية",
     "category": "الفئة",
     "channel": "القناة",
-    "department": "القسم"
+    "department": "القسم",
+    "branch": "الفرع"
   },
   "statuses": {
     "open": "مفتوحة",

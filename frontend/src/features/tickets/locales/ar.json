@@ -16,6 +16,8 @@
     "noCategory": "بدون فئة",
     "department": "القسم",
     "noDepartment": "بدون قسم",
+    "branch": "الفرع",
+    "noBranch": "بدون فرع",
     "assignedAgent": "المسؤول",
     "unassigned": "غير مُعيَّن",
     "status": "الحالة",
@@ -40,10 +42,12 @@
     "status": "تصفية حسب الحالة",
     "priority": "تصفية حسب الأولوية",
     "department": "تصفية حسب القسم",
+    "branch": "تصفية حسب الفرع",
     "allCategories": "كل الفئات",
     "allStatuses": "كل الحالات",
     "allPriorities": "كل الأولويات",
     "allDepartments": "كل الأقسام",
+    "allBranches": "كل الفروع",
     "onlyMine": "تذاكري فقط"
   },
   "actions": {
@@ -79,6 +83,13 @@
     "emptyDescription": "ستظهر هنا تذاكر قسمك.",
     "noDepartment": "لست ضمن أي قسم",
     "noDepartmentDescription": "اطلب من أحد المسؤولين تعيينك إلى قسم لرؤية قائمة تذاكره."
+  },
+  "branchQueue": {
+    "title": "قائمة الفرع",
+    "empty": "لا توجد تذاكر في فرعك",
+    "emptyDescription": "ستظهر تذاكر فرعك هنا.",
+    "noBranch": "أنت غير مُعيَّن إلى فرع",
+    "noBranchDescription": "اطلب من المسؤول تعيينك إلى فرع لعرض قائمة تذاكره."
   },
   "status": {
     "updated": "تم تحديث الحالة.",

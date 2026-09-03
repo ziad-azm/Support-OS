@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
+import { useBranches } from '@/shared/branches'
 import { useDepartments } from '@/shared/departments'
 import { email, optionalString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
@@ -33,6 +34,9 @@ const ROLE_NONE = 'none'
 // Same sentinel shape as `ROLE_NONE` above, for the same Radix reason —
 // "no department" (ORG-1).
 const DEPARTMENT_NONE = 'none'
+// Same sentinel shape as `DEPARTMENT_NONE` above, for the same Radix
+// reason — "no branch" (ORG-2).
+const BRANCH_NONE = 'none'
 
 const baseShape = {
   email: email(),
@@ -40,6 +44,7 @@ const baseShape = {
   last_name: optionalString(150),
   role: z.string(),
   department: z.string(),
+  branch: z.string(),
 }
 
 const createSchema = z.object(baseShape)
@@ -67,6 +72,18 @@ function useDepartmentOptions(noDepartmentLabel: string) {
     })) ?? []),
   ]
   return { options, isPending: departmentsQuery.isPending }
+}
+
+function useBranchOptions(noBranchLabel: string) {
+  const branchesQuery = useBranches()
+  const options = [
+    { value: BRANCH_NONE, label: noBranchLabel },
+    ...(branchesQuery.data?.items.map((branch) => ({
+      value: String(branch.id),
+      label: branch.name,
+    })) ?? []),
+  ]
+  return { options, isPending: branchesQuery.isPending }
 }
 
 /**
@@ -104,6 +121,9 @@ function UserCreateForm() {
   const { options: departmentOptions, isPending: departmentsPending } = useDepartmentOptions(
     t('users.noDepartment'),
   )
+  const { options: branchOptions, isPending: branchesPending } = useBranchOptions(
+    t('users.noBranch'),
+  )
 
   const form = useAppForm({
     schema: createSchema,
@@ -113,6 +133,7 @@ function UserCreateForm() {
       last_name: '',
       role: ROLE_NONE,
       department: DEPARTMENT_NONE,
+      branch: BRANCH_NONE,
     } satisfies CreateFormValues,
   })
 
@@ -125,6 +146,7 @@ function UserCreateForm() {
       last_name: values.last_name ?? '',
       role: values.role === ROLE_NONE ? null : Number(values.role),
       department: values.department === DEPARTMENT_NONE ? null : Number(values.department),
+      branch: values.branch === BRANCH_NONE ? null : Number(values.branch),
     }
     createMutation.mutate(input, {
       onSuccess: () => {
@@ -142,7 +164,7 @@ function UserCreateForm() {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t('users.new')}</h1>
-      {rolesPending || departmentsPending ? (
+      {rolesPending || departmentsPending || branchesPending ? (
         <Loading />
       ) : (
         <Form {...form}>
@@ -178,6 +200,12 @@ function UserCreateForm() {
                   label={t('users.fields.department')}
                   options={departmentOptions}
                 />
+                <SelectField
+                  control={form.control}
+                  name="branch"
+                  label={t('users.fields.branch')}
+                  options={branchOptions}
+                />
               </CardContent>
             </Card>
             <FormErrorSummary errors={formErrors} />
@@ -205,6 +233,9 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
   const { options: departmentOptions, isPending: departmentsPending } = useDepartmentOptions(
     t('users.noDepartment'),
   )
+  const { options: branchOptions, isPending: branchesPending } = useBranchOptions(
+    t('users.noBranch'),
+  )
 
   const form = useAppForm({
     schema: editSchema,
@@ -214,6 +245,7 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
       last_name: user.last_name,
       role: user.role === null ? ROLE_NONE : String(user.role),
       department: user.department === null ? DEPARTMENT_NONE : String(user.department),
+      branch: user.branch === null ? BRANCH_NONE : String(user.branch),
       is_active: user.is_active,
     } satisfies EditFormValues,
   })
@@ -228,6 +260,7 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
       is_active: values.is_active,
       role: values.role === ROLE_NONE ? null : Number(values.role),
       department: values.department === DEPARTMENT_NONE ? null : Number(values.department),
+      branch: values.branch === BRANCH_NONE ? null : Number(values.branch),
     }
     updateMutation.mutate(input, {
       onSuccess: () => {
@@ -245,7 +278,7 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <h1 className="text-lg font-semibold">{t('users.edit')}</h1>
-      {rolesPending || departmentsPending ? (
+      {rolesPending || departmentsPending || branchesPending ? (
         <Loading />
       ) : (
         <Form {...form}>
@@ -279,6 +312,12 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
                   name="department"
                   label={t('users.fields.department')}
                   options={departmentOptions}
+                />
+                <SelectField
+                  control={form.control}
+                  name="branch"
+                  label={t('users.fields.branch')}
+                  options={branchOptions}
                 />
                 <SwitchField
                   control={form.control}

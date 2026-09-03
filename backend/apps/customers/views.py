@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from apps.accounts.models import AuditLog, Role
 from apps.accounts.tasks import send_invite_email
 from apps.core.permissions import Permissions, permissions_for
+from apps.core.scoping import ScopedQuerysetMixin, ScopeFilter
 from apps.core.views import BaseModelViewSet
 
 from .models import Attachment, ContactDetail, Customer, Note
@@ -26,15 +27,22 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-class CustomerViewSet(BaseModelViewSet):
+class CustomerViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     """Customer CRUD. The first consumer of `BaseModelViewSet`.
 
     Every action is mapped: an unmapped action would fall through to
     authenticated-only, which for a write endpoint is not what we want. See
     CONVENTIONS.md §22.
+
+    `ScopedQuerysetMixin` (ORG-2) is the simplest application of that mixin
+    in this codebase — this class has no `get_queryset` override of its own,
+    so there is no method to reconcile. It MUST stay first in the bases:
+    after `BaseModelViewSet`, Python's MRO puts `ModelViewSet.get_queryset`
+    first, the mixin never runs, and every `?branch=` silently returns an
+    unfiltered list. There is no error to see.
     """
 
-    queryset = Customer.objects.all()
+    queryset = Customer.objects.select_related("branch").all()
     serializer_class = CustomerSerializer
 
     permission_map = {
@@ -63,6 +71,13 @@ class CustomerViewSet(BaseModelViewSet):
     # `ColumnDef.id` on the frontend.
     ordering_fields = ("name", "email", "company", "created_at")
     search_fields = ("name", "email", "company")
+
+    # ORG-2's scoping declaration — `apps/core/scoping.py`. `?branch=none`
+    # lists customers with no branch; a malformed value is a 400, never a
+    # silently-unfiltered list. `branch_name` is deliberately absent from
+    # `ordering_fields` above — it is a joined display column, the same rule
+    # every other one in this codebase follows.
+    scope_filters = (ScopeFilter(param="branch", field="branch"),)
 
     @action(detail=True, methods=["get"], url_path="timeline")
     def timeline(self, request, pk=None):

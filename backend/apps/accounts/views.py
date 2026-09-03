@@ -175,7 +175,7 @@ class UserViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     # Now a real class attribute (SEC-1 had none): `ScopedQuerysetMixin`
     # reaches the base implementation through `super().get_queryset()`,
     # and `ModelViewSet.get_queryset` asserts without one.
-    queryset = User.objects.select_related("role", "department")
+    queryset = User.objects.select_related("role", "department", "branch")
     serializer_class = UserAdminSerializer
 
     permission_map = {
@@ -192,8 +192,13 @@ class UserViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     ordering_fields = ("email", "first_name", "last_name", "is_active", "date_joined")
     search_fields = ("email", "first_name", "last_name")
 
-    # ORG-1's reusable scoping declaration — see `apps/core/scoping.py`.
-    scope_filters = (ScopeFilter(param="department", field="department"),)
+    # ORG-1's reusable scoping declaration, now with ORG-2's second entry —
+    # added without one line of new parsing code, which was the point. The
+    # two compose with AND. See `apps/core/scoping.py`.
+    scope_filters = (
+        ScopeFilter(param="department", field="department"),
+        ScopeFilter(param="branch", field="branch"),
+    )
 
     def get_queryset(self):
         # Staff identities only. A portal customer's User row is

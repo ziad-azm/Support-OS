@@ -56,6 +56,23 @@ class Customer(TimeStampedModel):
         null=True,
         blank=True,
     )
+    # The branch that owns this customer relationship — ORG-2. SET_NULL and
+    # nullable for the same reasons `accounts.User.branch` and
+    # `tickets.Ticket.branch` are: deleting a branch must not delete or
+    # block deleting a customer, and every row that exists today has none.
+    #
+    # This is NOT a portal visibility boundary. Portal scoping is
+    # `Customer.user` -> `CustomerScopedModelViewSet` (CONVENTIONS.md §26),
+    # and it is untouched. `?branch=` on the staff customer list is a
+    # convenience filter and authorizes nothing (§33).
+    branch = models.ForeignKey(
+        "organization.Branch",
+        verbose_name=_("branch"),
+        related_name="customers",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = _("customer")

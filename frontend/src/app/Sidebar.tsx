@@ -14,6 +14,7 @@ import {
   LayoutDashboardIcon,
   ListTodoIcon,
   LogOutIcon,
+  MapPinIcon,
   MessagesSquareIcon,
   PlugIcon,
   SearchIcon,
@@ -133,6 +134,7 @@ export function Sidebar() {
     can('audit_log.view') ||
     can('settings.manage') ||
     can('departments.view') ||
+    can('branches.view') ||
     can('integrations.manage') ||
     can('communications.manage') ||
     can('webhooks.manage')
@@ -198,6 +200,17 @@ export function Sidebar() {
                 to="/tickets/department"
                 icon={Building2Icon}
                 label={t('tickets:departmentQueue.title')}
+                collapsed={collapsed}
+              />
+            ) : null}
+            {/* A distinct icon from the department queue above on purpose:
+                when the sidebar collapses to icons only, two adjacent
+                Building2Icon links would be indistinguishable. */}
+            {user?.branch ? (
+              <SidebarLink
+                to="/tickets/branch"
+                icon={MapPinIcon}
+                label={t('tickets:branchQueue.title')}
                 collapsed={collapsed}
               />
             ) : null}
@@ -292,6 +305,14 @@ export function Sidebar() {
                 to="/settings/departments"
                 icon={Building2Icon}
                 label={t('organization:departments.title')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="branches.view">
+              <SidebarLink
+                to="/settings/branches"
+                icon={MapPinIcon}
+                label={t('organization:branches.title')}
                 collapsed={collapsed}
               />
             </Can>

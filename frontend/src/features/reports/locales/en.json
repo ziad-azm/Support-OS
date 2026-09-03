@@ -83,8 +83,11 @@
     "noSeries": "No split",
     "dimension": "Breakdown by",
     "department": "Department",
+    "branch": "Branch",
     "allDepartments": "All departments",
-    "noDepartment": "No department"
+    "allBranches": "All branches",
+    "noDepartment": "No department",
+    "noBranch": "No branch"
   },
   "buckets": { "day": "Day", "week": "Week", "month": "Month" },
   "dimensions": {
@@ -92,7 +95,8 @@
     "priority": "Priority",
     "category": "Category",
     "channel": "Channel",
-    "department": "Department"
+    "department": "Department",
+    "branch": "Branch"
   },
   "statuses": {
     "open": "Open",

@@ -188,6 +188,16 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                // Must stay before `tickets/:id`, same reason as
+                // `tickets/department`.
+                path: 'tickets/branch',
+                lazy: async () => {
+                  const { BranchQueuePage } =
+                    await import('@/features/tickets/components/BranchQueuePage')
+                  return { element: <BranchQueuePage /> }
+                },
+              },
+              {
                 path: 'tickets/:id',
                 lazy: async () => {
                   const { TicketDetailPage } =
@@ -590,6 +600,47 @@ export const router = createBrowserRouter([
                   const { DepartmentFormPage } =
                     await import('@/features/organization/components/DepartmentFormPage')
                   return { element: <DepartmentFormPage /> }
+                },
+              },
+            ],
+          },
+          {
+            element: <RequirePermission permission="branches.view" />,
+            children: [
+              {
+                path: 'settings/branches',
+                lazy: async () => {
+                  const { BranchListPage } =
+                    await import('@/features/organization/components/BranchListPage')
+                  return { element: <BranchListPage /> }
+                },
+              },
+            ],
+          },
+          {
+            // Split from the `branches.view` list route above for the same
+            // reason the `departments.manage` group is split from its own
+            // list route: create/edit are writes the server gates on
+            // `branches.manage`, so a view-only holder must not be routed
+            // to a guaranteed dead end.
+            element: <RequirePermission permission="branches.manage" />,
+            children: [
+              {
+                // Must stay before `settings/branches/:id/edit`, the same
+                // declaration order `departments/new` uses.
+                path: 'settings/branches/new',
+                lazy: async () => {
+                  const { BranchFormPage } =
+                    await import('@/features/organization/components/BranchFormPage')
+                  return { element: <BranchFormPage /> }
+                },
+              },
+              {
+                path: 'settings/branches/:id/edit',
+                lazy: async () => {
+                  const { BranchFormPage } =
+                    await import('@/features/organization/components/BranchFormPage')
+                  return { element: <BranchFormPage /> }
                 },
               },
             ],

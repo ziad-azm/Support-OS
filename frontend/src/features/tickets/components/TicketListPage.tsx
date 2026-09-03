@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { Can } from '@/shared/auth'
+import { useBranches } from '@/shared/branches'
 import { useDepartments } from '@/shared/departments'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
@@ -58,9 +59,12 @@ export function TicketListPage() {
   // department" (`apps.core.scoping.UNSCOPED`) — so it needs no
   // client-side translation before it reaches `useTickets`.
   const [departmentFilter, setDepartmentFilter] = useState('all')
+  // Same two-sentinel contract as `departmentFilter` above (ORG-2).
+  const [branchFilter, setBranchFilter] = useState('all')
   const [onlyMine, setOnlyMine] = useState(false)
   const categoriesQuery = useCategories()
   const departmentsQuery = useDepartments()
+  const branchesQuery = useBranches()
 
   useEffect(() => {
     const handle = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS)
@@ -71,7 +75,7 @@ export function TicketListPage() {
   // reset to page 1, or the user can land on a now-nonexistent page.
   useEffect(() => {
     setPage(1)
-  }, [search, categoryFilter, priorityFilter, departmentFilter, onlyMine, setPage])
+  }, [search, categoryFilter, priorityFilter, departmentFilter, branchFilter, onlyMine, setPage])
 
   const query = useTickets({
     ...params,
@@ -79,6 +83,7 @@ export function TicketListPage() {
     ...(categoryFilter !== 'all' ? { category: categoryFilter } : {}),
     ...(priorityFilter !== 'all' ? { priority: priorityFilter as TicketPriority } : {}),
     ...(departmentFilter !== 'all' ? { department: departmentFilter } : {}),
+    ...(branchFilter !== 'all' ? { branch: branchFilter } : {}),
     ...(onlyMine ? { assigned_to_me: 'true' as const } : {}),
   })
 
@@ -112,6 +117,15 @@ export function TicketListPage() {
       // joined/derived display column, not in the viewset's
       // `ordering_fields` (ORG-1).
       cell: (row) => row.department_name ?? t('fields.noDepartment'),
+      priority: 'sm',
+    },
+    {
+      id: 'branch_name',
+      header: t('fields.branch'),
+      // Not sortable: mirrors `department_name`'s precedent — a
+      // joined/derived display column, not in the viewset's
+      // `ordering_fields` (ORG-2).
+      cell: (row) => row.branch_name ?? t('fields.noBranch'),
       priority: 'sm',
     },
     {
@@ -213,6 +227,20 @@ export function TicketListPage() {
             {(departmentsQuery.data?.items ?? []).map((department) => (
               <SelectItem key={department.id} value={String(department.id)}>
                 {department.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <SelectTrigger aria-label={t('filters.branch')} size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allBranches')}</SelectItem>
+            <SelectItem value="none">{t('fields.noBranch')}</SelectItem>
+            {(branchesQuery.data?.items ?? []).map((branch) => (
+              <SelectItem key={branch.id} value={String(branch.id)}>
+                {branch.name}
               </SelectItem>
             ))}
           </SelectContent>

@@ -10,6 +10,9 @@ export type TicketListParams = ServerTableParams & {
   // A string, because the value carries either a numeric department id
   // or the literal `'none'` — the backend scoping sentinel (ORG-1).
   department?: string
+  // A string, because the value carries either a numeric branch id or the
+  // literal `'none'` — the backend scoping sentinel (ORG-2).
+  branch?: string
   status?: TicketStatus
   priority?: TicketPriority
   assigned_to_me?: 'true'

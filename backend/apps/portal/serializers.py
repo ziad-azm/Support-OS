@@ -28,6 +28,13 @@ class PortalTicketSerializer(TicketSerializer):
     priority; staff triage assigns both later, the same way an unassigned
     `assigned_agent` already works.
 
+    `department` (ORG-1) and `branch` (ORG-2) are read-only for exactly the
+    same reason, and are the reason this class must re-check
+    `read_only_fields` whenever `TicketSerializer` grows a writable field:
+    `Meta.fields` is derived from that serializer's own tuple, so a new
+    staff-writable field lands on the portal automatically. `department`
+    was writable here between ORG-1 and ORG-2 because of that.
+
     `has_feedback` — PORTAL-5. `Feedback.ticket` is a `OneToOneField` with
     `related_name="feedback"`, so `hasattr(ticket, "feedback")` is the same
     verified-safe pattern Story 42 already used for `Customer.user`'s
@@ -45,6 +52,16 @@ class PortalTicketSerializer(TicketSerializer):
             "customer",
             "category",
             "priority",
+            # ORG-1 added `department` to `TicketSerializer` as a writable
+            # field and did not narrow it here, so a portal customer could
+            # POST `department: <any id>` and file into an arbitrary org
+            # unit. Not a visibility breach — neither field affects
+            # `CustomerScopedModelViewSet`'s `customer_field` scoping — but
+            # nothing intended it either. Both org units are staff triage
+            # decisions, the same reasoning this class's docstring already
+            # gives for `category` and `priority`. Closed by ORG-2.
+            "department",
+            "branch",
         )
 
     def get_has_feedback(self, ticket: Ticket) -> bool:

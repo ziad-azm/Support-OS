@@ -4,9 +4,17 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { Can } from '@/shared/auth'
+import { useBranches } from '@/shared/branches'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/primitives/select'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
 import { TableLink } from '@/shared/ui/data-table/TableLink'
 import type { ColumnDef } from '@/shared/ui/data-table/types'
@@ -35,6 +43,12 @@ export function CustomerListPage() {
 
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  // "all" is "no filter"; the literal "none" is a real, distinct filter
+  // value — the backend's own `?branch=none` sentinel for "no branch"
+  // (`apps.core.scoping.UNSCOPED`) — so it needs no client-side
+  // translation before it reaches `useCustomers` (ORG-2).
+  const [branchFilter, setBranchFilter] = useState('all')
+  const branchesQuery = useBranches()
 
   useEffect(() => {
     const handle = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS)
@@ -46,9 +60,13 @@ export function CustomerListPage() {
   // than the page the user was on. Reset explicitly.
   useEffect(() => {
     setPage(1)
-  }, [search, setPage])
+  }, [search, branchFilter, setPage])
 
-  const query = useCustomers({ ...params, ...(search ? { search } : {}) })
+  const query = useCustomers({
+    ...params,
+    ...(search ? { search } : {}),
+    ...(branchFilter !== 'all' ? { branch: branchFilter } : {}),
+  })
 
   const columns: readonly ColumnDef<Customer>[] = [
     {
@@ -77,6 +95,14 @@ export function CustomerListPage() {
       priority: 'sm',
     },
     {
+      id: 'branch_name',
+      header: t('fields.branch'),
+      // Not sortable: a joined display column absent from
+      // `CustomerViewSet.ordering_fields` (ORG-2).
+      cell: (row) => row.branch_name ?? t('fields.noBranch'),
+      priority: 'sm',
+    },
+    {
       id: 'created_at',
       header: t('fields.createdAt'),
       sortable: true,
@@ -100,12 +126,29 @@ export function CustomerListPage() {
           </Can>
         }
       />
-      <Input
-        value={searchInput}
-        onChange={(event) => setSearchInput(event.target.value)}
-        placeholder={t('searchPlaceholder')}
-        aria-label={t('search')}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder={t('searchPlaceholder')}
+          aria-label={t('search')}
+          className="max-w-xs"
+        />
+        <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <SelectTrigger aria-label={t('filters.branch')} size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allBranches')}</SelectItem>
+            <SelectItem value="none">{t('fields.noBranch')}</SelectItem>
+            {(branchesQuery.data?.items ?? []).map((branch) => (
+              <SelectItem key={branch.id} value={String(branch.id)}>
+                {branch.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <DataTable
         columns={columns}
         query={query}

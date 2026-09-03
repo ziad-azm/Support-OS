@@ -1,15 +1,11 @@
 import { useState } from 'react'
-import { PlusIcon, XIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
 
 import { nullablePositiveInt, optionalString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
-import { Badge } from '@/shared/ui/primitives/badge'
-import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
-import { Input } from '@/shared/ui/primitives/input'
-import { Form, FormField, FormItem, FormLabel } from '@/shared/ui/primitives/form'
+import { Form } from '@/shared/ui/primitives/form'
 import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
@@ -23,7 +19,6 @@ const schema = z
   .object({
     name: optionalString(150).transform((value) => value ?? ''),
     logo_url: optionalString(500).transform((value) => value ?? ''),
-    branches: z.array(z.string()),
     default_response_target_minutes: nullablePositiveInt(),
     default_resolution_target_minutes: nullablePositiveInt(),
   })
@@ -50,7 +45,6 @@ function toDefaults(settings: OrganizationSettings): FormValues {
   return {
     name: settings.name,
     logo_url: settings.logo_url,
-    branches: settings.branches,
     default_response_target_minutes: settings.default_response_target_minutes,
     default_resolution_target_minutes: settings.default_resolution_target_minutes,
   }
@@ -60,78 +54,11 @@ function toSettingsInput(values: FormValues): SettingsInput {
   return { ...values }
 }
 
-/**
- * A local, single-consumer "string list" editor — bound directly via
- * `FormField`'s render prop, the same "compose primitives, do not reach for
- * `useFieldArray`" convention `RoleFormPage`'s permissions checklist
- * (Story 49) already established, since `useFieldArray` appears nowhere in
- * this codebase. Not a new `shared/ui/form/` component: this has exactly
- * one consumer today (`SettingsPage`), the same reasoning CONVENTIONS.md
- * § 23 already applies to `TicketConversation` and Story 49's checklist.
- */
-function StringListField({
-  label,
-  addLabel,
-  placeholder,
-  value,
-  onChange,
-}: {
-  label: string
-  addLabel: string
-  placeholder: string
-  value: string[]
-  onChange: (next: string[]) => void
-}) {
-  const { t } = useTranslation('organization')
-  const [draft, setDraft] = useState('')
-
-  function addItem() {
-    const trimmed = draft.trim()
-    if (trimmed === '') return
-    onChange([...value, trimmed])
-    setDraft('')
-  }
-
-  return (
-    <FormItem>
-      <FormLabel>{label}</FormLabel>
-      <div className="flex flex-wrap gap-2">
-        {value.map((item, index) => (
-          <Badge key={`${item}-${index}`} variant="secondary" className="gap-1">
-            {item}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              aria-label={t('settings.removeItem', { item })}
-              onClick={() => onChange(value.filter((_, i) => i !== index))}
-            >
-              <XIcon className="size-3" />
-            </Button>
-          </Badge>
-        ))}
-      </div>
-      <div className="flex items-center gap-2">
-        <Input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder={placeholder}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              addItem()
-            }
-          }}
-        />
-        <Button type="button" variant="outline" size="sm" onClick={addItem}>
-          <PlusIcon />
-          {addLabel}
-        </Button>
-      </div>
-    </FormItem>
-  )
-}
-
+/** Branding and the two org-wide SLA defaults — scalars only. The
+ * `departments` and `branches` string-list editors this screen used to
+ * carry became the `Department` (ORG-1, Story 87) and `Branch` (ORG-2,
+ * Story 89) models, each with its own `/settings/<unit>` management screen,
+ * so the local `StringListField` component went with the second of them. */
 export function SettingsPage() {
   const query = useSettings()
   return (
@@ -189,19 +116,6 @@ function SettingsForm({ settings }: { settings: OrganizationSettings }) {
               />
             </CardContent>
           </Card>
-          <FormField
-            control={form.control}
-            name="branches"
-            render={({ field }) => (
-              <StringListField
-                label={t('settings.fields.branches')}
-                addLabel={t('settings.addBranch')}
-                placeholder={t('settings.newItemPlaceholder')}
-                value={field.value}
-                onChange={field.onChange}
-              />
-            )}
-          />
           <FormErrorSummary errors={formErrors} />
           <SubmitButton pending={mutation.isPending}>{t('settings.actions.save')}</SubmitButton>
         </form>

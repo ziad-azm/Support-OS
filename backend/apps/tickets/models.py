@@ -101,6 +101,22 @@ class Ticket(TimeStampedModel):
         null=True,
         blank=True,
     )
+    # SET_NULL and nullable, and writable through `TicketSerializer` on
+    # ordinary create/update — the same call `department` directly above
+    # makes, for the same reasons stated there. Moving a ticket between
+    # branches is routine triage, not a privileged state change, so this is
+    # NOT action-only the way `assigned_agent` is.
+    #
+    # Independent of `department`: a ticket may have either, both, or
+    # neither, and nothing validates a pair.
+    branch = models.ForeignKey(
+        "organization.Branch",
+        verbose_name=_("branch"),
+        related_name="tickets",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     status = models.CharField(
         _("status"), max_length=20, choices=Status.choices, default=Status.OPEN
     )

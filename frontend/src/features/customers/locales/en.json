@@ -12,7 +12,13 @@
     "email": "Email",
     "phone": "Phone",
     "company": "Company",
+    "branch": "Branch",
+    "noBranch": "No branch",
     "createdAt": "Created"
+  },
+  "filters": {
+    "branch": "Filter by branch",
+    "allBranches": "All branches"
   },
   "actions": {
     "save": "Save",

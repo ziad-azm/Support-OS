@@ -29,5 +29,6 @@ export const REPORT_DIMENSIONS = [
   'category',
   'channel',
   'department',
+  'branch',
 ] as const
 export type ReportDimension = (typeof REPORT_DIMENSIONS)[number]

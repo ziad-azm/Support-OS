@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from apps.core.permissions import ALL_PERMISSIONS, permissions_for
 from apps.core.serializers import BaseModelSerializer
-from apps.organization.models import Department
+from apps.organization.models import Branch, Department
 
 from .models import AuditLog, Role
 from .tasks import send_password_reset_email
@@ -41,6 +41,21 @@ class DepartmentBriefSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Department
+        fields = ("id", "name")
+
+
+class BranchBriefSerializer(serializers.ModelSerializer):
+    """The `/auth/me/` shape of a branch — id and name only.
+
+    A narrow, read-only mirror distinct from
+    `apps.organization.serializers.BranchSerializer` (which carries
+    `description` and the timestamps for the management screen), exactly as
+    `DepartmentBriefSerializer` above is. The session payload should carry
+    the caller's branch, not a record of it.
+    """
+
+    class Meta:
+        model = Branch
         fields = ("id", "name")
 
 
@@ -105,6 +120,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     role = RoleSerializer(read_only=True)
     department = DepartmentBriefSerializer(read_only=True)
+    branch = BranchBriefSerializer(read_only=True)
     permissions = serializers.SerializerMethodField()
 
     class Meta:
@@ -117,9 +133,10 @@ class UserSerializer(serializers.ModelSerializer):
             "is_staff",
             "role",
             "department",
+            "branch",
             "permissions",
         )
-        read_only_fields = ("id", "is_staff", "role", "department", "permissions")
+        read_only_fields = ("id", "is_staff", "role", "department", "branch", "permissions")
 
     def get_permissions(self, user) -> list[str]:
         """The SAME resolution the API enforces with, including the superuser
@@ -161,6 +178,11 @@ class UserAdminSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(
         source="department.name", read_only=True, allow_null=True
     )
+    # Same dotted-source + `allow_null=True` pattern as `department_name`
+    # above, for the same verified reason. `branch` itself needs no explicit
+    # declaration: DRF derives `required=False, allow_null=True` from the
+    # model FK's own `null=True, blank=True`.
+    branch_name = serializers.CharField(source="branch.name", read_only=True, allow_null=True)
 
     class Meta:
         model = User
@@ -176,6 +198,8 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "role_name",
             "department",
             "department_name",
+            "branch",
+            "branch_name",
             "date_joined",
             "last_login",
         )

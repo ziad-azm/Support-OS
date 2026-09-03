@@ -129,6 +129,24 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True,
         blank=True,
     )
+    # SET_NULL and nullable for the same reasons `department` directly above
+    # is (see its comment): a branch is an org-chart label, deleting one
+    # must leave every account's access untouched, and every account that
+    # exists today has no branch. String reference, not an import:
+    # `apps.organization` must stay free of any `accounts` dependency so the
+    # migration graph has no cycle (ORG-1 `## Prerequisites`).
+    #
+    # Independent of `department`, not nested under it: this codebase models
+    # no department-within-branch hierarchy, and neither intake asks for
+    # one. A user may have both, either, or neither.
+    branch = models.ForeignKey(
+        "organization.Branch",
+        verbose_name=_("branch"),
+        related_name="users",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     objects = UserManager()
 

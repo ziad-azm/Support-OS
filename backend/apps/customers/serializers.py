@@ -53,6 +53,13 @@ class CustomerSerializer(BaseModelSerializer):
         validators=[UniqueValidator(queryset=Customer.objects.all())],
     )
     portal_access_enabled = serializers.SerializerMethodField()
+    # Same verified dotted-source + `allow_null=True` pattern as
+    # `TicketSerializer.department_name` (apps/tickets/serializers.py:28-32).
+    # `branch` itself needs no declaration — DRF derives
+    # `required=False, allow_null=True` from the model FK. Unlike `email`
+    # and `external_id` above, this field is NOT overridden, so it keeps
+    # every auto-derived validator.
+    branch_name = serializers.CharField(source="branch.name", read_only=True, allow_null=True)
 
     class Meta(BaseModelSerializer.Meta):
         model = Customer
@@ -64,6 +71,8 @@ class CustomerSerializer(BaseModelSerializer):
             "company",
             "external_id",
             "portal_access_enabled",
+            "branch",
+            "branch_name",
             "created_at",
             "updated_at",
         )

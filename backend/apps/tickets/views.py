@@ -53,7 +53,7 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     """Ticket CRUD. The second consumer of `BaseModelViewSet`, after Customer."""
 
     queryset = Ticket.objects.select_related(
-        "customer", "category", "assigned_agent", "department"
+        "customer", "category", "assigned_agent", "department", "branch"
     ).all()
     serializer_class = TicketSerializer
 
@@ -90,11 +90,14 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     ordering_fields = ("subject", "status", "priority", "created_at")
     search_fields = ("subject", "description", "customer__name")
 
-    # ORG-1's reusable scoping declaration. ORG-2 appends
-    # `ScopeFilter(param="branch", field="branch")` here and writes no
-    # parsing code. `?department=none` lists tickets with no department;
-    # see `apps/core/scoping.py`.
-    scope_filters = (ScopeFilter(param="department", field="department"),)
+    # ORG-1's reusable scoping declaration, now with ORG-2's second entry —
+    # added without one line of new parsing code, which was the point.
+    # `?department=none`/`?branch=none` list tickets with no department/
+    # branch; the two compose with AND. See `apps/core/scoping.py`.
+    scope_filters = (
+        ScopeFilter(param="department", field="department"),
+        ScopeFilter(param="branch", field="branch"),
+    )
 
     def perform_create(self, serializer):
         ticket = serializer.save()

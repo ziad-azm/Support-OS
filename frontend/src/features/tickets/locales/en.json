@@ -16,6 +16,8 @@
     "noCategory": "No category",
     "department": "Department",
     "noDepartment": "No department",
+    "branch": "Branch",
+    "noBranch": "No branch",
     "assignedAgent": "Assignee",
     "unassigned": "Unassigned",
     "status": "Status",
@@ -40,10 +42,12 @@
     "status": "Filter by status",
     "priority": "Filter by priority",
     "department": "Filter by department",
+    "branch": "Filter by branch",
     "allCategories": "All categories",
     "allStatuses": "All statuses",
     "allPriorities": "All priorities",
     "allDepartments": "All departments",
+    "allBranches": "All branches",
     "onlyMine": "Only my tickets"
   },
   "actions": {
@@ -79,6 +83,13 @@
     "emptyDescription": "Tickets in your department will appear here.",
     "noDepartment": "You are not in a department",
     "noDepartmentDescription": "Ask an admin to assign you to a department to see its ticket queue."
+  },
+  "branchQueue": {
+    "title": "Branch queue",
+    "empty": "No tickets in your branch",
+    "emptyDescription": "Tickets in your branch will appear here.",
+    "noBranch": "You are not in a branch",
+    "noBranchDescription": "Ask an admin to assign you to a branch to see its ticket queue."
   },
   "status": {
     "updated": "Status updated.",

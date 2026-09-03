@@ -84,6 +84,16 @@ export function UserListPage() {
       priority: 'sm',
     },
     {
+      id: 'branch_name',
+      header: t('users.fields.branch'),
+      // Not sortable, same reason as `department_name` above. No filter
+      // `Select` either: `?department=`/`?branch=` are both live on the API
+      // but neither has a picker on this screen — see Story 89's scope
+      // boundary, which declines to add one without the other.
+      cell: (row) => row.branch_name ?? t('users.noBranch'),
+      priority: 'sm',
+    },
+    {
       id: 'is_active',
       header: t('users.fields.status'),
       sortable: true,

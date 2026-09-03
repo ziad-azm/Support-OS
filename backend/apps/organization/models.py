@@ -5,13 +5,6 @@ from django.utils.translation import gettext_lazy as _
 from apps.core.models import TimeStampedModel
 
 
-def _validate_string_list(value, field_name: str) -> None:
-    if not isinstance(value, list):
-        raise ValidationError({field_name: _("Must be a list of strings.")})
-    if any(not isinstance(item, str) or not item.strip() for item in value):
-        raise ValidationError({field_name: _("Every entry must be a non-empty string.")})
-
-
 class Department(TimeStampedModel):
     """A functional unit — ORG-1. Agents (`accounts.User.department`) and
     tickets (`tickets.Ticket.department`) point at one; both FKs are
@@ -48,6 +41,39 @@ class Department(TimeStampedModel):
         return self.name
 
 
+class Branch(TimeStampedModel):
+    """A physical or regional location — ORG-2. Users
+    (`accounts.User.branch`), customers (`customers.Customer.branch`), and
+    tickets (`tickets.Ticket.branch`) point at one; all three FKs are
+    nullable `SET_NULL`, so deleting a branch leaves every row intact and
+    merely unassigned.
+
+    Replaces `OrganizationSettings.branches`, the second and last
+    `JSONField` string list SEC-4 shipped as a placeholder. ORG-1 promoted
+    the `departments` half and left this one alone deliberately;
+    CONVENTIONS.md §33 recorded the constraint that held until now ("no
+    code may add a second consumer of that column").
+
+    Shaped exactly like `Department` above, which is itself shaped like
+    `tickets.Category` (apps/tickets/models.py:8-23). Three copies of the
+    same four lines is the right answer here: a shared abstract base for
+    "a named org unit" would couple `Department` and `Branch` migrations
+    together for no behavioural gain, and they are free to diverge (a
+    branch may later grow an address or a timezone; a department will not).
+    """
+
+    name = models.CharField(_("name"), max_length=100, unique=True)
+    description = models.CharField(_("description"), max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = _("branch")
+        verbose_name_plural = _("branches")
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class OrganizationSettings(TimeStampedModel):
     """The one organization-wide settings record — SEC-4's "central
     configurable settings" backing branding, department/branch lists, and
@@ -61,12 +87,12 @@ class OrganizationSettings(TimeStampedModel):
     implementation of the well-known "pk=1" pattern rather than a new
     dependency.
 
-    `branches` is a `JSONField(default=list)` string list, not a separate
-    `Branch` table — the same "a list of strings that doesn't need its own
-    table today" call `Role.permissions` (apps/accounts/models.py:56) made,
-    and the same call this model made for `departments` until ORG-1
-    (Story 87) promoted that half to the real `Department` model above.
-    ORG-2 does the same to `branches`.
+    `departments` and `branches` were both `JSONField(default=list)` string
+    lists until ORG-1 (Story 87) and ORG-2 (Story 89) promoted them to the
+    `Department` and `Branch` models above. This model now holds only
+    scalars — branding (`name`, `logo_url`) and the two org-wide SLA
+    defaults. There is no JSON column left, which is why `clean()` no
+    longer validates a list shape.
 
     `logo_url` is a plain URL, not an uploaded file — combining a file
     upload with this model's JSON list fields in one request would need an
@@ -76,7 +102,6 @@ class OrganizationSettings(TimeStampedModel):
 
     name = models.CharField(_("organization name"), max_length=150, blank=True)
     logo_url = models.URLField(_("logo URL"), max_length=500, blank=True)
-    branches = models.JSONField(_("branches"), default=list, blank=True)
     # Mirrors `SLAPolicy.response_target_minutes`/`resolution_target_minutes`
     # (apps/sla/models.py) exactly, but nullable: unlike a configured
     # `SLAPolicy` row (which always has both), the org-wide default is
@@ -104,7 +129,6 @@ class OrganizationSettings(TimeStampedModel):
         (CONVENTIONS.md § 22).
         """
         super().clean()
-        _validate_string_list(self.branches, "branches")
         if (
             self.default_response_target_minutes is not None
             and self.default_resolution_target_minutes is not None

@@ -10,6 +10,12 @@ export type AuthDepartment = {
   name: string
 }
 
+/** Mirrors `apps.accounts.serializers.BranchBriefSerializer` (ORG-2). */
+export type AuthBranch = {
+  id: number
+  name: string
+}
+
 /** Mirrors `apps.accounts.serializers.UserSerializer` verbatim — snake_case,
  * per CONVENTIONS.md §12. */
 export type AuthUser = {
@@ -23,6 +29,10 @@ export type AuthUser = {
    * and the sidebar link to it. Read-only — changing a user's department
    * goes through `PATCH /api/users/<id>/` (SEC-1's screen), never here. */
   department: AuthDepartment | null
+  /** The caller's own branch, or `null`. Drives `/tickets/branch` and the
+   * sidebar link to it. Read-only — changing a user's branch goes through
+   * `PATCH /api/users/<id>/` (SEC-1's screen), never here. */
+  branch: AuthBranch | null
   /** Flat, already resolved by the backend — includes the superuser bypass.
    * Never derive permissions from `role` on the client. See CONVENTIONS.md §22. */
   permissions: string[]

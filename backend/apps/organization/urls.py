@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import DepartmentViewSet, SettingsView
+from .views import BranchViewSet, DepartmentViewSet, SettingsView
 
 app_name = "organization"
 
@@ -11,6 +11,7 @@ app_name = "organization"
 # `apps/tickets/urls.py:7-12` records.
 router = SimpleRouter()
 router.register("departments", DepartmentViewSet, basename="department")
+router.register("branches", BranchViewSet, basename="branch")
 
 urlpatterns = router.urls + [
     path("settings/", SettingsView.as_view(), name="settings"),

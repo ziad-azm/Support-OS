@@ -5,8 +5,8 @@ from rest_framework.views import APIView
 from apps.core.permissions import HasPermission, Permissions
 from apps.core.views import BaseModelViewSet
 
-from .models import Department, OrganizationSettings
-from .serializers import DepartmentSerializer, OrganizationSettingsSerializer
+from .models import Branch, Department, OrganizationSettings
+from .serializers import BranchSerializer, DepartmentSerializer, OrganizationSettingsSerializer
 
 
 class DepartmentViewSet(BaseModelViewSet):
@@ -33,6 +33,36 @@ class DepartmentViewSet(BaseModelViewSet):
     }
 
     # Each name must match a `ColumnDef.id` on `DepartmentListPage` (§23).
+    ordering_fields = ("name", "created_at")
+    search_fields = ("name", "description")
+
+
+class BranchViewSet(BaseModelViewSet):
+    """Branch CRUD — ORG-2. `DepartmentViewSet` above, for the other org
+    unit.
+
+    Two permissions, not one: `branches.view` reaches every staff role
+    because the ticket form's picker, the customer form's picker, and three
+    list filters all need the list; `branches.manage` is admin-only. See
+    migration `0010_grant_branch_permissions`.
+
+    NOT a `ScopedQuerysetMixin` consumer — a branch is the thing other
+    models are scoped BY, not a thing that is itself scoped.
+    """
+
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
+
+    permission_map = {
+        "list": Permissions.BRANCHES_VIEW,
+        "retrieve": Permissions.BRANCHES_VIEW,
+        "create": Permissions.BRANCHES_MANAGE,
+        "update": Permissions.BRANCHES_MANAGE,
+        "partial_update": Permissions.BRANCHES_MANAGE,
+        "destroy": Permissions.BRANCHES_MANAGE,
+    }
+
+    # Each name must match a `ColumnDef.id` on `BranchListPage` (§23).
     ordering_fields = ("name", "created_at")
     search_fields = ("name", "description")
 

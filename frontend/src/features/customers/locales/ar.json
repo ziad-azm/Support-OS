@@ -12,7 +12,13 @@
     "email": "البريد الإلكتروني",
     "phone": "الهاتف",
     "company": "الشركة",
+    "branch": "الفرع",
+    "noBranch": "بدون فرع",
     "createdAt": "تاريخ الإنشاء"
+  },
+  "filters": {
+    "branch": "تصفية حسب الفرع",
+    "allBranches": "كل الفروع"
   },
   "actions": {
     "save": "حفظ",

@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
 
-from .models import Department, OrganizationSettings
+from .models import Branch, Department, OrganizationSettings
 
 
 class DepartmentSerializer(BaseModelSerializer):
@@ -20,12 +20,34 @@ class DepartmentSerializer(BaseModelSerializer):
         fields = ("id", "name", "description", "created_at", "updated_at")
 
 
+class BranchSerializer(BaseModelSerializer):
+    """CRUD over `Branch` — ORG-2's management screen. Shaped exactly like
+    `DepartmentSerializer` above: the model field's own `unique=True` is
+    what DRF derives the uniqueness validator from, so no hand-declared
+    `UniqueValidator` is needed (contrast `CustomerSerializer.email`, which
+    overrides the generated field and therefore must declare one —
+    apps/customers/serializers.py:36-43).
+    """
+
+    class Meta(BaseModelSerializer.Meta):
+        model = Branch
+        fields = ("id", "name", "description", "created_at", "updated_at")
+
+
 class OrganizationSettingsSerializer(BaseModelSerializer):
-    """Read/write over the one `OrganizationSettings` row. `validate_branches`
-    mirrors `OrganizationSettings.clean()`'s own list-of-strings check for
-    the API path — DRF does not call model `clean()`, the same split
-    `RoleAdminSerializer.validate_permissions`/`Role.clean()` already
-    establishes (CONVENTIONS.md § 22).
+    """Read/write over the one `OrganizationSettings` row.
+
+    Branding (`name`, `logo_url`) and the two org-wide SLA defaults, and
+    nothing else — the `departments` and `branches` JSON string lists this
+    serializer used to validate became the `Department` (ORG-1) and
+    `Branch` (ORG-2) models, each with its own viewset, so both
+    `validate_departments`/`validate_branches` and the `_validate_string_list`
+    helper they shared are gone.
+
+    `validate` below still mirrors `OrganizationSettings.clean()`'s own SLA
+    target comparison for the API path — DRF does not call model `clean()`,
+    the same split `RoleAdminSerializer.validate_permissions`/`Role.clean()`
+    already establishes (CONVENTIONS.md § 22).
     """
 
     class Meta(BaseModelSerializer.Meta):
@@ -34,22 +56,11 @@ class OrganizationSettingsSerializer(BaseModelSerializer):
             "id",
             "name",
             "logo_url",
-            "branches",
             "default_response_target_minutes",
             "default_resolution_target_minutes",
             "created_at",
             "updated_at",
         )
-
-    def _validate_string_list(self, value, field_name: str):
-        if not isinstance(value, list):
-            raise serializers.ValidationError(_("Must be a list of strings."))
-        if any(not isinstance(item, str) or not item.strip() for item in value):
-            raise serializers.ValidationError(_("Every entry must be a non-empty string."))
-        return value
-
-    def validate_branches(self, value):
-        return self._validate_string_list(value, "branches")
 
     def validate(self, attrs):
         response = attrs.get(

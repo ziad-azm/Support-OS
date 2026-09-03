@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DownloadIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { useBranches } from '@/shared/branches'
 import { useDepartments } from '@/shared/departments'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
@@ -74,12 +75,15 @@ export function TicketReportsPage() {
   const [dimension, setDimension] = useState<ReportDimension>('status')
   const [department, setDepartment] = useState('all')
   const departmentsQuery = useDepartments()
+  const [branch, setBranch] = useState('all')
+  const branchesQuery = useBranches()
 
   function labelForDimensionValue(dim: ReportDimension, key: string): string {
     if (dim === 'status') return t(`statuses.${key}`, { defaultValue: key })
     if (dim === 'priority') return t(`priorities.${key}`, { defaultValue: key })
     if (dim === 'channel') return t(`channels.${key}`, { defaultValue: key })
-    // category/department: a category or department name is user data,
+    // category/department/branch: a category, department, or branch name
+    // is user data,
     // not a translatable key, except the server's own "Uncategorized"
     // fallback label.
     return key
@@ -91,6 +95,7 @@ export function TicketReportsPage() {
     bucket,
     ...(series !== 'none' ? { series } : {}),
     ...(department !== 'all' ? { department } : {}),
+    ...(branch !== 'all' ? { branch } : {}),
   }
   const volumeQuery = useTicketVolume(volumeParams)
   const { series: volumeSeries, totalCount: volumeSeriesCount } = toChartSeries(
@@ -103,6 +108,7 @@ export function TicketReportsPage() {
     ...(to ? { to } : {}),
     dimension,
     ...(department !== 'all' ? { department } : {}),
+    ...(branch !== 'all' ? { branch } : {}),
   }
   const breakdownQuery = useTicketBreakdown(breakdownParams)
 
@@ -188,6 +194,20 @@ export function TicketReportsPage() {
             {(departmentsQuery.data?.items ?? []).map((dept) => (
               <SelectItem key={dept.id} value={String(dept.id)}>
                 {dept.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={branch} onValueChange={setBranch}>
+          <SelectTrigger aria-label={t('filters.branch')} size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allBranches')}</SelectItem>
+            <SelectItem value="none">{t('filters.noBranch')}</SelectItem>
+            {(branchesQuery.data?.items ?? []).map((br) => (
+              <SelectItem key={br.id} value={String(br.id)}>
+                {br.name}
               </SelectItem>
             ))}
           </SelectContent>

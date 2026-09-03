@@ -30,6 +30,9 @@ class TicketSerializer(BaseModelSerializer):
     department_name = serializers.CharField(
         source="department.name", read_only=True, allow_null=True
     )
+    # Same verified dotted-source + `allow_null=True` pattern as
+    # `department_name` above. `branch` itself needs no declaration.
+    branch_name = serializers.CharField(source="branch.name", read_only=True, allow_null=True)
     # Same verified-safe dotted-source pattern as `category_name` above and
     # `NoteSerializer.author_name` (Story 21): `allow_null=True` is what
     # makes this return `None` instead of erroring when `assigned_agent` is
@@ -60,6 +63,8 @@ class TicketSerializer(BaseModelSerializer):
             "category_name",
             "department",
             "department_name",
+            "branch",
+            "branch_name",
             "assigned_agent",
             "assigned_agent_name",
             "status",

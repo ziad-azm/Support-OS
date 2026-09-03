@@ -2195,7 +2195,7 @@ default to not.
 
 ---
 
-## 33. Organizational scoping (ORG-1)
+## 33. Organizational scoping (ORG-1, ORG-2)
 
 Two scoping primitives exist, and they answer different questions:
 
@@ -2213,8 +2213,17 @@ parsing:
 ```python
 class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     queryset = Ticket.objects.all()
-    scope_filters = (ScopeFilter(param="department", field="department"),)
+    scope_filters = (
+        ScopeFilter(param="department", field="department"),
+        ScopeFilter(param="branch", field="branch"),
+    )
 ```
+
+A second scope is a second tuple entry and nothing else — `apps/core/scoping.py`
+was not modified when ORG-2 added `branch`. Multiple scopes compose with
+**AND** (`apply_scope_filters` chains `.filter()` calls), so
+`?department=3&branch=7` narrows on both and a no-overlap combination
+returns an empty page — not a 400, and not an OR.
 
 `ScopedQuerysetMixin` must come **before** `BaseModelViewSet` in the bases,
 and the viewset must have a real `queryset` class attribute (its own
@@ -2230,18 +2239,43 @@ filter; a numeric id filters by that id; the literal `"none"` filters for
 rows with no value; anything else is a **400**. A malformed filter is
 never a silently-unfiltered list.
 
-**`Department` replaced `OrganizationSettings.departments`.** SEC-4 shipped
-departments and branches as `JSONField` string lists, explicitly as a
-placeholder until something referenced an individual one. ORG-1 promoted
-the departments half to `organization.Department` with a data migration
-(`0004_migrate_settings_departments`) and dropped the column. **`branches`
-is still a JSON list** — ORG-2 promotes it the same way, and until it does,
-no code may add a second consumer of that column.
+**`Department` and `Branch` replaced the two JSON string lists.** SEC-4
+shipped `departments` and `branches` as `JSONField` string lists, explicitly
+as placeholders until something referenced an individual one. ORG-1 promoted
+the departments half to `organization.Department`
+(`0004_migrate_settings_departments`); ORG-2 promoted the branches half to
+`organization.Branch` (`0008_migrate_settings_branches`). Both dropped their
+column afterwards, so **`OrganizationSettings` now holds only scalars** —
+branding (`name`, `logo_url`) and the two org-wide SLA defaults. No JSON
+list column remains, and neither `_validate_string_list` helper survives.
+A future story wanting a list of things on that model should create a model,
+not a column: that is now the established answer, twice over.
 
-**Frontend:** department options live in `src/shared/departments/`, not in
-a feature — three features need the same list and `no-restricted-imports`
-(§15) forbids reaching across features for it. `features/organization/`
-owns only the management screens and the write path.
+`Department` is pointed at by `accounts.User.department` and
+`tickets.Ticket.department`; `Branch` by `accounts.User.branch`,
+`customers.Customer.branch`, and `tickets.Ticket.branch`. All five are
+nullable `SET_NULL` — deleting an org unit unassigns, never cascades and
+never blocks.
+
+Note that `PortalTicketSerializer.Meta.fields` is **derived** from
+`TicketSerializer.Meta.fields`, so every field added to the staff ticket
+serializer lands on the portal automatically and must be considered for
+`read_only_fields` in the same change. `department` was writable by portal
+customers between ORG-1 and ORG-2 for exactly this reason.
+
+**Frontend:** department options live in `src/shared/departments/` and branch
+options in `src/shared/branches/`, not in a feature — three and four features
+respectively need the same list, and `no-restricted-imports` (§15) forbids
+reaching across features for it. `features/organization/` owns only the
+management screens and the write path, and its mutation hooks invalidate the
+**shared** key prefix so every picker refreshes.
+
+**A scope filter is not an access boundary.** `?department=`/`?branch=`
+narrow a list the caller was already authorized to read in full. Any staff
+account with `tickets.view` can list any branch's tickets, by design.
+Restricting *what a staff account may see* to its own org unit is a change to
+the top row of this section's table, not the bottom one — it needs its own
+story and its own audit of every report, export, and queue.
 
 ---
 

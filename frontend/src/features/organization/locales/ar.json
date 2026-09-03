@@ -5,14 +5,9 @@
     "fields": {
       "name": "اسم المؤسسة",
       "logoUrl": "رابط الشعار",
-      "branches": "الفروع",
       "defaultResponseMinutes": "هدف الاستجابة الافتراضي (بالدقائق)",
       "defaultResolutionMinutes": "هدف الحل الافتراضي (بالدقائق)"
     },
-    "addBranch": "إضافة فرع",
-    "newItemPlaceholder": "الاسم",
-    "remove": "إزالة",
-    "removeItem": "إزالة {{item}}",
     "actions": { "save": "حفظ" }
   },
   "departments": {
@@ -39,6 +34,32 @@
     "delete": {
       "title": "حذف القسم؟",
       "description": "تحتفظ التذاكر والوكلاء في هذا القسم بسجلاتهم؛ سيصبحون فقط غير معيّنين."
+    }
+  },
+  "branches": {
+    "title": "الفروع",
+    "new": "فرع جديد",
+    "edit": "تعديل الفرع",
+    "search": "البحث في الفروع",
+    "searchPlaceholder": "البحث بالاسم",
+    "empty": "لا توجد فروع بعد",
+    "emptyDescription": "أنشئ فرعًا لتنظيم المستخدمين والعملاء والتذاكر حسب الموقع.",
+    "noSearchResults": "لا توجد فروع تطابق بحثك",
+    "created": "تم إنشاء الفرع.",
+    "updated": "تم تحديث الفرع.",
+    "fields": {
+      "name": "الاسم",
+      "description": "الوصف",
+      "createdAt": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "save": "حفظ",
+      "delete": "حذف"
+    },
+    "delete": {
+      "title": "حذف الفرع؟",
+      "description": "يحتفظ المستخدمون والعملاء والتذاكر في هذا الفرع بسجلاتهم؛ سيصبحون فقط غير معيَّنين."
     }
   }
 }

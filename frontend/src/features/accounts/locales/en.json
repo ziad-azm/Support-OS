@@ -10,6 +10,7 @@
     "noSearchResults": "No users match that search.",
     "noRole": "No role",
     "noDepartment": "No department",
+    "noBranch": "No branch",
     "superuser": "Superuser",
     "inviteHint": "They'll receive an email with a link to set their own password.",
     "fields": {
@@ -18,6 +19,7 @@
       "lastName": "Last name",
       "role": "Role",
       "department": "Department",
+      "branch": "Branch",
       "status": "Status",
       "actions": "Actions"
     },

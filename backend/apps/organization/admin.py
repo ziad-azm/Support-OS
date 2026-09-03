@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from .models import Department, OrganizationSettings
+from .models import Branch, Department, OrganizationSettings
 
 
 @admin.register(Department)
@@ -12,6 +12,18 @@ class DepartmentAdmin(admin.ModelAdmin):
     `DepartmentViewSet`/`/settings/departments` the same way
     `RoleAdmin`/`UserAdmin` coexist with SEC-1's frontend: a manual
     fallback, not the primary path.
+    """
+
+    list_display = ("name", "description", "created_at")
+    search_fields = ("name", "description")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(Branch)
+class BranchAdmin(admin.ModelAdmin):
+    """`DepartmentAdmin` above, for `Branch` — an ordinary `ModelAdmin`, a
+    manual fallback rather than the primary path (`/settings/branches` is
+    that).
     """
 
     list_display = ("name", "description", "created_at")

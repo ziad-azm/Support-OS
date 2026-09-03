@@ -11,6 +11,8 @@ export type AdminUser = {
   role_name: string | null
   department: number | null
   department_name: string | null
+  branch: number | null
+  branch_name: string | null
   date_joined: string
   last_login: string | null
 }
@@ -24,6 +26,7 @@ export type UserCreateInput = {
   last_name: string
   role: number | null
   department: number | null
+  branch: number | null
 }
 
 /** Edit write shape. `is_active` is only ever settable here — deactivating

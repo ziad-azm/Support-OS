@@ -5,14 +5,9 @@
     "fields": {
       "name": "Organization name",
       "logoUrl": "Logo URL",
-      "branches": "Branches",
       "defaultResponseMinutes": "Default response target (minutes)",
       "defaultResolutionMinutes": "Default resolution target (minutes)"
     },
-    "addBranch": "Add branch",
-    "newItemPlaceholder": "Name",
-    "remove": "Remove",
-    "removeItem": "Remove {{item}}",
     "actions": { "save": "Save" }
   },
   "departments": {
@@ -39,6 +34,32 @@
     "delete": {
       "title": "Delete department?",
       "description": "Tickets and agents in this department keep their records; they simply become unassigned."
+    }
+  },
+  "branches": {
+    "title": "Branches",
+    "new": "New branch",
+    "edit": "Edit branch",
+    "search": "Search branches",
+    "searchPlaceholder": "Search by name",
+    "empty": "No branches yet",
+    "emptyDescription": "Create a branch to organize users, customers, and tickets by location.",
+    "noSearchResults": "No branches match your search",
+    "created": "Branch created.",
+    "updated": "Branch updated.",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete branch?",
+      "description": "Users, customers, and tickets in this branch keep their records; they simply become unassigned."
     }
   }
 }
