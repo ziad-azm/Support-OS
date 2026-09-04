@@ -1,0 +1,180 @@
+# Optional dev-parity stack — PROD-4 (Story 93).
+#
+# Docker is NEVER required to run SupportOS. This file is a drop-in
+# alternative to README §§ 1-6 for developers who would rather not install
+# PostgreSQL, Redis, Python and Node locally. It runs the SAME commands the
+# README documents, against the SAME `config.settings.dev`.
+#
+# Every host port is offset from the non-Docker defaults (8001 vs 8000, 5174
+# vs 5173, 5433 vs 5432, 6380 vs 6379) so this stack can run ALONGSIDE a
+# local setup without stopping anything. 8001/5174 are the same alternates
+# README § 5 already documents for the "if a port is taken" case.
+#
+# DO NOT `--scale backend`: CHANNEL_LAYERS is InMemoryChannelLayer
+# (config/settings/base.py:508-512), so a second replica silently breaks
+# WebSocket delivery — messages send, they just never arrive for clients on
+# the other replica. See CONVENTIONS.md § 37.
+#
+# `restart: unless-stopped` on every service: verified live that Django's
+# StatReloader can hard-crash under a Windows Docker Desktop bind mount
+# (`OSError: [Errno 14] Bad address` inside `pathlib.Path.is_dir()` while
+# scanning a locale/ directory) — observed once, during a long idle period
+# that also included a Docker Desktop daemon restart, and NOT reproduced
+# under repeated normal edit-and-reload cycles. Root cause is a Docker
+# Desktop file-sharing driver quirk, not application code.
+#
+# This policy is standard best practice and correct as written, but ITS
+# EFFECT WAS NOT CONFIRMED on the machine this was built on: Docker Desktop
+# 4.16.3 / Engine 20.10.22 (December 2022 — quite old) did not visibly
+# restart a container after `docker kill` / `docker compose kill` in
+# repeated live tests. If a container is unexpectedly `Exited` and does not
+# come back on its own, `docker compose up -d` is the reliable fallback
+# regardless of Docker Desktop version. See CONVENTIONS.md § 37.
+
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:16-alpine
+    # env_file, NOT `${POSTGRES_DB}` interpolation: Compose resolves `${...}`
+    # from the HOST environment or a root `.env` file, never from
+    # `.env.docker`. Interpolating here silently yielded empty strings and the
+    # container refused to initialise. `env_file` passes the values straight
+    # into the container, which is where the official image reads them.
+    #
+    # The image runs CREATE ROLE / CREATE DATABASE from these on first start —
+    # README § 2's SQL, automated. NOTE: only honoured on an EMPTY data
+    # directory; changing the password later needs `down -v`.
+    env_file: [.env.docker]
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # $$ escapes the $ so the variable is expanded by the shell INSIDE the
+      # container (where the postgres image has already set it), not
+      # interpolated by Compose on the host.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    restart: unless-stopped
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # No volume on purpose: this Redis is a broker and a cache, both of which
+    # a local dev install also treats as disposable.
+
+  backend:
+    restart: unless-stopped
+    build: ./backend
+    env_file: [.env.docker]
+    environment: &backend_env
+      # These six MUST be set here, not in .env.docker: they are the values
+      # that differ inside the Compose network, and `environment:` outranks
+      # both `env_file:` and the bind-mounted backend/.env that
+      # django-environ's read_env() would otherwise supply (it never
+      # overwrites an existing OS variable — environ.py:1064-1066).
+      POSTGRES_HOST: postgres
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/1
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      # Both origins, not just :5174: confirmed live that two existing tests
+      # (config/tests/test_settings.py::test_cors_allows_the_vite_dev_origin
+      # and apps/core/tests/test_health.py's CORS preflight test) hardcode an
+      # assertion against :5173. Keeping it in the allow-list alongside :5174
+      # is also strictly more useful, not just test-satisfying: it lets the
+      # Docker backend serve a HOST-run (non-Docker) frontend too, for anyone
+      # mixing the two paths.
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174
+      FRONTEND_URL: http://localhost:5174
+    volumes:
+      - ./backend:/backend
+      - backend_media:/backend/media
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    # migrate then serve, in one command: this is the ONLY service that
+    # migrates, so worker/beat cannot race it. They wait on the healthcheck
+    # below, which cannot pass until runserver is up, which cannot happen
+    # until migrate has finished.
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    healthcheck:
+      # urllib, not curl: python:3.12-slim ships no curl and this project does
+      # not add a package for a healthcheck. /api/health/ is public and
+      # throttle-exempt (PROD-3), so it is safe to poll.
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      # Generous, for the first run: a cold start applies every migration
+      # against an empty database before runserver can answer.
+      start_period: 30s
+
+  worker:
+    restart: unless-stopped
+    build: ./backend
+    env_file: [.env.docker]
+    environment: *backend_env
+    volumes:
+      - ./backend:/backend
+      - backend_media:/backend/media
+    depends_on:
+      backend: { condition: service_healthy }
+    # NO --pool=solo. README § 6's solo-pool note is a WINDOWS HOST workaround
+    # for the missing fork(); this container is Linux regardless of host OS,
+    # so the default prefork pool is correct and faster.
+    command: celery -A config worker -l info
+
+  beat:
+    restart: unless-stopped
+    build: ./backend
+    env_file: [.env.docker]
+    environment: *backend_env
+    volumes:
+      - ./backend:/backend
+    depends_on:
+      backend: { condition: service_healthy }
+    # DatabaseScheduler (base.py:545) reads the schedule from PostgreSQL, so
+    # beat needs migrations applied — hence the same healthcheck gate.
+    command: celery -A config beat -l info
+
+  frontend:
+    restart: unless-stopped
+    build: ./frontend
+    environment:
+      # Absolute, and pointing at the HOST-published backend port: the browser
+      # runs on the host, not inside the Compose network, so `backend:8000`
+      # would be unresolvable. It must ALSO stay absolute so getWebSocketUrl
+      # (src/shared/lib/ws.ts) can derive ws:// from it by scheme replacement
+      # — a relative "/api" yields a schemeless URL that `new WebSocket()`
+      # rejects, breaking sockets while REST keeps working.
+      VITE_API_BASE_URL: http://localhost:8001/api
+    volumes:
+      - ./frontend:/app
+      # Anonymous volume, masking the bind mount above at this one subpath so
+      # the container keeps its own Linux-built node_modules instead of the
+      # host's. Without it, Vite fails on an exec-format error.
+      - /app/node_modules
+    ports:
+      - "5174:5173"
+
+volumes:
+  postgres_data:
+  backend_media:

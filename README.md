@@ -27,6 +27,7 @@ re-deriving a standard.
 │   │   └── …               customers, tickets, communications, agents, sla, knowledge_base, …
 │   ├── config/             Django project package: settings/, urls.py, api_urls.py, wsgi.py, tests/
 │   ├── .env.example        Backend environment contract — copy to backend/.env
+│   ├── Dockerfile          Optional container image — see § Docker
 │   ├── manage.py           Django CLI entry point
 │   └── requirements.txt    Python runtime dependencies
 ├── frontend/               React + Vite + TypeScript web client
@@ -34,8 +35,11 @@ re-deriving a standard.
 │   ├── src/features/       One folder per feature — see src/README.md for the rule
 │   ├── src/shared/         Cross-feature ui/, lib/api/ (the one Axios instance), hooks/
 │   ├── src/config/env.ts   The only module that reads import.meta.env
+│   ├── Dockerfile          Optional container image — see § Docker
 │   └── .env.example        Frontend environment contract — copy to frontend/.env
 ├── .squad/                 squad-kit: story intakes, implementation plans, project config
+├── docker-compose.yml      Optional dev-parity stack — NEVER required, see § Docker
+├── .env.docker.example     Environment contract for the optional Docker path
 ├── SupportOs backlog.MD    Full product backlog (epics → stories → tasks) and shared specs
 ├── CONVENTIONS.md          The CONV spec — single source of truth, reference-based
 └── README.md               This file — the only document needed to run the project locally
@@ -55,10 +59,12 @@ what the project is verified against.
 | Node.js | 20 | 24.15.0 |
 | npm | 10 | 11.12.1 |
 | git | 2.40 | 2.54.0 |
+| Docker + Compose v2 | *optional* | 20.10.22 / v2.15.1 |
 
 *`pnpm` is not used in this repo — all frontend commands use `npm`.*
 
-**Docker is not required.** See [Docker (optional, future)](#docker-optional-future).
+**Docker is not required.** The row above is only for the optional container path — see
+[Docker (optional)](#docker-optional). Everything else in this README works without it.
 
 ---
 
@@ -259,11 +265,21 @@ restarting the Vite dev server.
 
 ---
 
-## 6. Run Celery (optional, SLA-0)
+## 6. Run Celery (SLA-0)
 
-Nothing in this project dispatches a real background task yet — skip this
-section until a feature needs it. `config.celery.debug_task` exists purely
-as a wiring smoke test.
+**Celery is no longer optional.** Fifteen modules across the project dispatch or define real
+background tasks, so without a running worker the following silently do not happen — no error, the
+work simply never runs:
+
+- invite and password-reset email (`apps.accounts.tasks`)
+- SLA escalation evaluation (`apps.sla.tasks`) and ticket auto-assignment
+- in-app and email notifications (`apps.notifications`)
+- AI summaries, suggested replies and the chatbot's async work (`apps.ai`)
+- ERP sync and outbound webhook delivery (`apps.integrations`)
+- task reminders (`apps.agents.tasks`)
+
+You can still skip this section while working on a feature that touches none of them, but the app
+is not fully functional without it. `beat` is needed on top of the worker for anything scheduled.
 
 ### Install and start Redis locally
 
@@ -884,9 +900,71 @@ are excluded by the squad-kit managed block at the top of `.gitignore`. Do not "
 
 ---
 
-## Docker (optional, future)
+## Docker (optional)
 
-Docker is **not** required to run SupportOS. No `Dockerfile` or compose file ships with this
-repository today, and none of the steps above needs one. If container files are added later they
-are strictly an optional convenience — the local-PostgreSQL steps above remain the supported path
-for local development.
+Docker is **not** required to run SupportOS. Everything above — the local PostgreSQL, Redis,
+Python and Node setup in §§ 1-6 — remains **the supported path**, and nothing in those steps needs
+a container. This section is a convenience for developers who would rather not install those four
+things locally, and nothing more.
+
+The stack runs the **same commands** §§ 5-6 already document (`manage.py runserver`,
+`celery -A config worker`, `celery -A config beat`, `npm run dev`) against the **same**
+`config.settings.dev`. It is a different way to start the same processes, not a different
+architecture. There is deliberately **no production compose file** — see `CONVENTIONS.md` § 37.
+
+### Quickstart
+
+```powershell
+Copy-Item .env.docker.example .env.docker    # POSIX: cp .env.docker.example .env.docker
+# then edit .env.docker and fill in DJANGO_SECRET_KEY:
+#   python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"
+docker compose up --build
+```
+
+The app is then at <http://localhost:5174/> and the API at <http://localhost:8001/api/health/>.
+Create a user to sign in with:
+
+```powershell
+docker compose exec backend python manage.py createsuperuser
+```
+
+### Ports — and why they are offset
+
+Every host port is deliberately **not** the one the non-Docker path uses, so **both stacks can run
+at the same time** without stopping anything. `8001` and `5174` are the same alternates § 5 already
+documents for the "if a port is taken" case.
+
+| Service | In container | On your machine | Non-Docker equivalent |
+|---|---|---|---|
+| frontend | 5173 | **5174** | 5173 |
+| backend | 8000 | **8001** | 8000 |
+| postgres | 5432 | **5433** | 5432 |
+| redis | 6379 | **6380** | 6379 |
+
+### Everyday commands
+
+```powershell
+docker compose logs -f backend                          # follow one service
+docker compose exec backend python manage.py test       # the test suite, in the container
+docker compose exec backend ruff check .                # the linter is in the image too
+docker compose up -d                                     # after changing .env.docker
+docker compose down                                     # stop; KEEPS the database and uploads
+docker compose down -v                                  # stop and DESTROY the database and uploads
+```
+
+**`docker compose down -v` deletes your database and every uploaded attachment.** Plain
+`docker compose down` keeps both — they live in named volumes (`postgres_data`, `backend_media`).
+
+A **source edit needs no rebuild**: `backend/` and `frontend/` are bind-mounted, so `runserver`'s
+autoreloader and Vite's HMR behave exactly as they do locally. A **dependency change does** —
+re-run `docker compose up --build`, and after a `package.json` change also `docker compose down -v`
+first, because the container's `node_modules` lives in a volume that a rebuild alone will not
+refresh.
+
+### Never scale the backend
+
+**Do not run `docker compose up --scale backend=2`.** `CHANNEL_LAYERS` is Django Channels'
+`InMemoryChannelLayer` (`backend/config/settings/base.py`), which is single-process by design, so a
+second replica would silently break WebSocket delivery — live chat and notifications would send
+without arriving for some users, with no error anywhere. Moving to `channels_redis` is the
+prerequisite for any multi-replica setup, and is not part of this stack.

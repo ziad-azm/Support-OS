@@ -1,0 +1,9 @@
+# Build-context exclusions for the optional Compose stack — PROD-4 (Story 93).
+# Mirrors .gitignore. `node_modules/` is the one that matters: oxlint and
+# esbuild resolve platform-specific binaries at install time, so a host-built
+# tree is the wrong platform and must never reach the image.
+node_modules/
+dist/
+.env
+.env.*
+!.env.example

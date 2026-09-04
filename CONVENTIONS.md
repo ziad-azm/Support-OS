@@ -2646,3 +2646,90 @@ credential-stuffing attack spread across many source addresses. The two
 real mitigations — a per-username failure counter, or an account-lockout
 policy — both carry real UX and lockout-DoS trade-offs a future story
 should decide deliberately, not inherit as a side effect of this one.
+
+---
+
+## 37. Optional Docker packaging (PROD-4)
+
+**Docker is optional and must stay optional.** `README.md` §§ 1-6 — locally
+installed PostgreSQL, Redis, Python and Node — is *the supported path*. A
+change that makes a container required to run, test, or develop SupportOS
+contradicts `SupportOs backlog.MD:969` ("must not become required for local
+dev; local (non-Docker) path stays first-class") and this section. `PROD-4`
+(Story 93) adds `docker-compose.yml`, two `Dockerfile`s, two `.dockerignore`s
+and `.env.docker.example`, and **changes not one line under `backend/apps/`,
+`backend/config/`, or `frontend/src/`**. That is the shape any future change
+here should keep.
+
+**The stack is dev-parity, not a deployment.** It runs `config.settings.dev`
+and the same commands the README documents — `manage.py runserver`,
+`celery -A config worker`, `celery -A config beat`, `npm run dev` — with the
+source bind-mounted so reload works exactly as it does locally. It is a
+different way to start the same processes, not a different architecture.
+
+**There is deliberately no production compose file**, and the reason is three
+decisions this repo has never made. A future story that wants one must make
+them on purpose rather than inherit them:
+
+1. **Static files are served by nothing under `DEBUG=False`.** There is no
+   `whitenoise`, no `staticfiles_urlpatterns()` in `config/urls.py`, and
+   Django's DEBUG static-serving is a **`runserver` feature, not an ASGI
+   application one** — so a bare `daphne config.asgi:application` leaves
+   `/admin/` and `/api/docs/` unstyled. Fixing it means a new dependency or an
+   nginx volume-sharing design.
+2. **`prod.py` defaults `SECURE_SSL_REDIRECT` to `True`.** Behind a
+   plain-HTTP local proxy that never sets `X-Forwarded-Proto: https` that is an
+   immediate redirect loop.
+3. **`DJANGO_NUM_PROXIES` becomes load-bearing** (§ 36). Behind a reverse
+   proxy it must be `1`; the current stack puts no proxy in front of Django,
+   so `0` is correct and anything else is a rate-limiting bug.
+
+**Never scale the backend service.** `CHANNEL_LAYERS` is
+`InMemoryChannelLayer` (`config/settings/base.py`), single-process by design,
+so `--scale backend=2` means a WebSocket broadcast reaches only the clients on
+the replica that produced it — **live chat and notification push half-work
+with no error anywhere**, which is far worse than an outright failure.
+Switching to `channels_redis` is the prerequisite for any multi-replica
+topology, and is its own story.
+
+**Container-network values belong in `docker-compose.yml`, never in
+`.env.docker`.** Six keys differ inside the Compose network:
+`POSTGRES_HOST`, `REDIS_URL`, `REDIS_CACHE_URL`, `DJANGO_ALLOWED_HOSTS`,
+`CORS_ALLOWED_ORIGINS`, `FRONTEND_URL`. They are set in each service's
+`environment:` block, which outranks `env_file:` **and** outranks the
+bind-mounted `backend/.env` — because `django-environ`'s `read_env()` never
+overwrites a variable that already exists in the environment
+(`environ/environ.py`), and returns quietly when the file is absent. That one
+property is what lets the Docker path be self-contained without forbidding a
+coexisting `backend/.env`, whose remaining values (AI keys, SMTP) usefully
+carry over.
+
+**`VITE_API_BASE_URL` must stay an absolute `http://` URL.**
+`getWebSocketUrl` (`frontend/src/shared/lib/ws.ts`) derives `ws://` from it by
+replacing the scheme, so a relative `/api` yields a schemeless string that
+`new WebSocket()` rejects. The failure is partial and therefore nasty: **REST
+keeps working and only WebSockets break.** This is why the containerized
+topology stays cross-origin (frontend `:5174` → backend `:8001`) exactly like
+local dev, rather than being collapsed behind one origin.
+
+**`--pool=solo` is a Windows-*host* workaround and must never appear in the
+container's Celery command.** README § 6 prescribes it correctly for Windows
+developers because Windows lacks `fork()`; the container is Linux regardless of
+host OS, so the default prefork pool is both correct and faster.
+
+**Host ports are offset by design** — `5433`/`6380`/`8001`/`5174` against the
+non-Docker `5432`/`6379`/`8000`/`5173` — so both stacks run simultaneously.
+Changing one means changing `VITE_API_BASE_URL`, `CORS_ALLOWED_ORIGINS` and
+`FRONTEND_URL` together, or the browser silently fails CORS.
+
+**`docker compose down -v` destroys the database and every uploaded
+attachment.** `postgres_data` and `backend_media` are named volumes precisely
+so plain `down` does not. Note also that `postgres:16-alpine` only honours
+`POSTGRES_*` on an **empty** data directory — changing the password later
+requires `down -v` or an `ALTER ROLE`.
+
+**Celery is not optional, and README § 6's old claim that "nothing dispatches
+a real background task yet" was stale.** Fifteen modules dispatch or define
+tasks; without a worker, invite/password-reset email, SLA escalation,
+auto-assignment, notifications, AI jobs, ERP sync and webhook delivery all
+silently do not run. Any stack claiming parity includes `worker` and `beat`.

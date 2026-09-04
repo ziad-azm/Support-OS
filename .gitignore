@@ -27,6 +27,10 @@ npm-debug.log*
 .env
 .env.*
 !.env.example
+# PROD-4: the negation above names `.env.example` exactly, so the Docker
+# path's own example file needs its own. `.env.docker` itself stays ignored
+# by the `.env.*` rule above.
+!.env.docker.example
 
 # --- Editors / OS ---
 .vscode/

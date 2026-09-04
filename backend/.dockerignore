@@ -1,0 +1,14 @@
+# Build-context exclusions for the optional Compose stack — PROD-4 (Story 93).
+# Mirrors .gitignore. `.venv/` is the one that matters most: without it the
+# build context carries a host-built virtualenv — hundreds of megabytes of the
+# wrong platform's binaries — into every image build.
+.venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+staticfiles/
+media/
+.env
+.env.*
+!.env.example
+db.sqlite3
