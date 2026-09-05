@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { Can } from '@/shared/auth'
+import { HEX_COLOR_RE } from '@/shared/branding/config'
+import { foregroundFor } from '@/shared/branding/contrast'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
@@ -113,7 +115,19 @@ export function ArticleBrowsePage() {
                         </CardTitle>
                         <div className="flex items-center gap-2">
                           {article.category_name ? (
-                            <Badge variant="secondary">{article.category_name}</Badge>
+                            <Badge
+                              variant="secondary"
+                              style={
+                                article.category_color && HEX_COLOR_RE.test(article.category_color)
+                                  ? {
+                                      backgroundColor: article.category_color,
+                                      color: foregroundFor(article.category_color),
+                                    }
+                                  : undefined
+                              }
+                            >
+                              {article.category_name}
+                            </Badge>
                           ) : null}
                           {article.status !== 'published' ? (
                             <Badge variant="outline">{t('articles.manage.statuses.draft')}</Badge>

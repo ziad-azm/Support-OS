@@ -108,9 +108,13 @@
     "noSearchResults": "No categories match that search.",
     "fields": {
       "name": "Name",
+      "color": "Color",
       "createdAt": "Created",
       "actions": "Actions"
     },
+    "colorHint": "Enter a color as #RRGGBB. Leave blank to use the badge's default style.",
+    "invalidColor": "Enter a color as #RRGGBB.",
+    "colorPreview": "Category badge preview",
     "actions": {
       "save": "Save",
       "delete": "Delete"

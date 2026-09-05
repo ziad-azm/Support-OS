@@ -2,6 +2,7 @@ import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
+import { HEX_COLOR_RE } from '@/shared/branding/config'
 import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Button } from '@/shared/ui/primitives/button'
@@ -48,7 +49,16 @@ export function CategoryListPage() {
       header: t('categories.fields.name'),
       sortable: true,
       cell: (row) => (
-        <TableLink to={`/knowledge-base/categories/${row.id}/edit`}>{row.name}</TableLink>
+        <div className="flex items-center gap-2">
+          {HEX_COLOR_RE.test(row.color) ? (
+            <span
+              className="size-3 shrink-0 rounded-full border"
+              style={{ backgroundColor: row.color }}
+              aria-hidden="true"
+            />
+          ) : null}
+          <TableLink to={`/knowledge-base/categories/${row.id}/edit`}>{row.name}</TableLink>
+        </div>
       ),
     },
     {

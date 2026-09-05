@@ -675,14 +675,19 @@ export const router = createBrowserRouter([
               return { element: <PreferencesPage /> }
             },
           },
+          {
+            // Inside `RequireAuth`, not a sibling of it: an unmatched path
+            // must redirect a signed-out visitor to `/login` first, the same
+            // as any real route above. A sibling catch-all would render
+            // `NotFoundPage` (inside `RootLayout`'s staff Sidebar) for an
+            // anonymous visitor instead of ever asking them to log in.
+            path: '*',
+            lazy: async () => {
+              const { NotFoundPage } = await import('./NotFoundPage')
+              return { element: <NotFoundPage /> }
+            },
+          },
         ],
-      },
-      {
-        path: '*',
-        lazy: async () => {
-          const { NotFoundPage } = await import('./NotFoundPage')
-          return { element: <NotFoundPage /> }
-        },
       },
     ],
   },

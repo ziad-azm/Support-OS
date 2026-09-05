@@ -1,7 +1,17 @@
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import TimeStampedModel
+
+# Exactly `#RRGGBB`, matching `apps.organization.models.HEX_COLOR_VALIDATOR`
+# (same regex, same message) — duplicated rather than imported cross-app,
+# the same "three copies of the same four lines" call that module's own
+# `Department`/`Branch` docstring already makes for a small shared shape.
+HEX_COLOR_VALIDATOR = RegexValidator(
+    regex=r"^#(?:[0-9a-fA-F]{6})$",
+    message=_("Enter a colour as #RRGGBB."),
+)
 
 
 class FAQ(TimeStampedModel):
@@ -35,6 +45,12 @@ class Category(TimeStampedModel):
     """
 
     name = models.CharField(_("name"), max_length=100, unique=True)
+    # The badge background colour for this category wherever an Article's
+    # category is shown as a badge (KB-2's `ArticleBrowsePage`). Blank, not
+    # required: an uncoloured category falls back to the badge's default
+    # style, the same "opt-in" call `organization.OrganizationSettings.
+    # primary_color` already makes.
+    color = models.CharField(_("color"), max_length=7, blank=True, validators=[HEX_COLOR_VALIDATOR])
 
     class Meta:
         verbose_name = _("category")

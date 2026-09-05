@@ -108,9 +108,13 @@
     "noSearchResults": "لا توجد فئات مطابقة لهذا البحث.",
     "fields": {
       "name": "الاسم",
+      "color": "اللون",
       "createdAt": "تاريخ الإنشاء",
       "actions": "الإجراءات"
     },
+    "colorHint": "أدخل لونًا بصيغة #RRGGBB. اتركه فارغًا لاستخدام النمط الافتراضي للشارة.",
+    "invalidColor": "أدخل لونًا بصيغة #RRGGBB.",
+    "colorPreview": "معاينة شارة الفئة",
     "actions": {
       "save": "حفظ",
       "delete": "حذف"

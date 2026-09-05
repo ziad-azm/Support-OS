@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
@@ -128,10 +129,13 @@ function ArticleForm({
           tone: 'success',
           message: t(mode === 'create' ? 'articles.manage.created' : 'articles.manage.updated'),
         })
-        // Clears `isDirty` before navigating away — otherwise the
-        // unsaved-changes guard would block this very navigation right
-        // after a successful save.
-        form.reset(values)
+        // `flushSync`, not a bare call: `form.reset` schedules a state
+        // update but does not itself commit before this function returns,
+        // so `navigate()` on the next line would run against `useBlocker`'s
+        // still-stale `isDirty=true` closure from before the reset — the
+        // guard would block this very navigation right after a successful
+        // save. Forcing the commit first is what actually clears it in time.
+        flushSync(() => form.reset(values))
         navigate('/knowledge-base/articles/manage')
       },
       onError: (error) => {

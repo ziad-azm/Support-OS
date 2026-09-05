@@ -24,7 +24,7 @@ class CategoryAdmin(admin.ModelAdmin):
     `## Story Goal`.
     """
 
-    list_display = ("name", "created_at")
+    list_display = ("name", "color", "created_at")
     search_fields = ("name",)
     readonly_fields = ("created_at", "updated_at")
 

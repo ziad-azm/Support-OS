@@ -11,6 +11,7 @@ export type Article = {
   body_ar: string
   category: number | null
   category_name: string | null
+  category_color: string | null
   status: ArticleStatus
   created_at: string
   updated_at: string

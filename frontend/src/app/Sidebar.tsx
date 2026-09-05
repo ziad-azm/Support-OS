@@ -4,6 +4,7 @@ import {
   BarChart3Icon,
   BookOpenIcon,
   Building2Icon,
+  ChevronDownIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
   ContactIcon,
@@ -38,6 +39,7 @@ import { cn } from '@/shared/lib/cn'
 import { Button, buttonVariants } from '@/shared/ui/primitives/button'
 
 const COLLAPSE_STORAGE_KEY = 'supportos.sidebar.collapsed'
+const SECTION_COLLAPSE_STORAGE_KEY = 'supportos.sidebar.sections.collapsed'
 
 function readCollapsed(): boolean {
   try {
@@ -50,6 +52,28 @@ function readCollapsed(): boolean {
   // collapsed on narrow viewports so the sidebar doesn't eat most of a
   // phone's width before the user ever gets to toggle it themselves.
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
+}
+
+/** Per-section open/closed state, keyed by `NavSection`'s `id`. Every
+ *  section defaults to open (unchanged behavior) until a viewer folds one
+ *  away — same per-viewer, non-critical persistence as `COLLAPSE_STORAGE_KEY`. */
+function readCollapsedSections(): Record<string, boolean> {
+  try {
+    const stored = localStorage.getItem(SECTION_COLLAPSE_STORAGE_KEY)
+    if (stored) return JSON.parse(stored) as Record<string, boolean>
+  } catch {
+    // Per-viewer convenience only — fall back to every section open.
+  }
+  return {}
+}
+
+function writeCollapsedSections(value: Record<string, boolean>) {
+  try {
+    localStorage.setItem(SECTION_COLLAPSE_STORAGE_KEY, JSON.stringify(value))
+  } catch {
+    // Per-viewer convenience only — a private window or blocked storage just
+    // means the preference doesn't persist, not a broken sidebar.
+  }
 }
 
 /**
@@ -92,23 +116,39 @@ function SidebarLink({
   )
 }
 
-/** Labeled wrapper around a multi-link nav group (`UX-002`) — the label
- *  hides when `collapsed`, matching every other text label in this file. */
+/** Labeled, collapsible wrapper around a multi-link nav group (`UX-002`) —
+ *  the label and its toggle hide when the whole sidebar is `collapsed` to
+ *  icons-only, matching every other text label in this file. When the
+ *  sidebar itself is expanded, a viewer can fold a section closed to shrink
+ *  the overall list instead of scrolling past groups they don't use. */
 function NavSection({
   label,
   collapsed,
+  open,
+  onToggle,
   children,
 }: {
   label: string
   collapsed: boolean
+  open: boolean
+  onToggle: () => void
   children: ReactNode
 }) {
+  if (collapsed) {
+    return <div className="flex flex-col gap-1">{children}</div>
+  }
   return (
     <div className="flex flex-col gap-1">
-      {collapsed ? null : (
-        <span className="px-2 text-xs font-medium text-muted-foreground">{label}</span>
-      )}
-      {children}
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex items-center justify-between rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+      >
+        <span>{label}</span>
+        <ChevronDownIcon className={cn('size-3.5 transition-transform', !open && '-rotate-90')} />
+      </button>
+      {open ? children : null}
     </div>
   )
 }
@@ -140,6 +180,15 @@ export function Sidebar() {
     can('communications.manage') ||
     can('webhooks.manage')
   const [collapsed, setCollapsed] = useState(readCollapsed)
+  const [collapsedSections, setCollapsedSections] = useState(readCollapsedSections)
+
+  function toggleSection(id: string) {
+    setCollapsedSections((current) => {
+      const next = { ...current, [id]: !current[id] }
+      writeCollapsedSections(next)
+      return next
+    })
+  }
 
   function toggleCollapsed() {
     setCollapsed((current) => {
@@ -181,7 +230,12 @@ export function Sidebar() {
             collapsed={collapsed}
           />
         </Can>
-        <NavSection label={t('sidebar.sections.support')} collapsed={collapsed}>
+        <NavSection
+          label={t('sidebar.sections.support')}
+          collapsed={collapsed}
+          open={!collapsedSections.support}
+          onToggle={() => toggleSection('support')}
+        >
           <Can permission="tickets.view">
             <SidebarLink
               to="/tickets"
@@ -237,7 +291,12 @@ export function Sidebar() {
           />
         </NavSection>
         <Can permission="knowledge_base.view">
-          <NavSection label={t('knowledgeBase:title')} collapsed={collapsed}>
+          <NavSection
+            label={t('knowledgeBase:title')}
+            collapsed={collapsed}
+            open={!collapsedSections.knowledgeBase}
+            onToggle={() => toggleSection('knowledgeBase')}
+          >
             <SidebarLink
               to="/knowledge-base"
               end
@@ -268,7 +327,12 @@ export function Sidebar() {
           </NavSection>
         </Can>
         {showAdministration ? (
-          <NavSection label={t('sidebar.sections.administration')} collapsed={collapsed}>
+          <NavSection
+            label={t('sidebar.sections.administration')}
+            collapsed={collapsed}
+            open={!collapsedSections.administration}
+            onToggle={() => toggleSection('administration')}
+          >
             <Can permission="users.view">
               <SidebarLink
                 to="/users"
@@ -344,7 +408,12 @@ export function Sidebar() {
           </NavSection>
         ) : null}
         <Can permission="reports.view">
-          <NavSection label={t('reports:navSection')} collapsed={collapsed}>
+          <NavSection
+            label={t('reports:navSection')}
+            collapsed={collapsed}
+            open={!collapsedSections.reports}
+            onToggle={() => toggleSection('reports')}
+          >
             <SidebarLink
               to="/reports/tickets"
               icon={BarChart3Icon}

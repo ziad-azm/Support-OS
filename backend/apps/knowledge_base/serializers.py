@@ -14,7 +14,7 @@ class FAQSerializer(BaseModelSerializer):
 class CategorySerializer(BaseModelSerializer):
     class Meta(BaseModelSerializer.Meta):
         model = Category
-        fields = ("id", "name", "created_at", "updated_at")
+        fields = ("id", "name", "color", "created_at", "updated_at")
 
 
 class ArticleSerializer(BaseModelSerializer):
@@ -22,6 +22,7 @@ class ArticleSerializer(BaseModelSerializer):
     # (Story 18) — `allow_null=True` is what makes this return `None` instead
     # of erroring when `category` is unset.
     category_name = serializers.CharField(source="category.name", read_only=True, allow_null=True)
+    category_color = serializers.CharField(source="category.color", read_only=True, allow_null=True)
 
     class Meta(BaseModelSerializer.Meta):
         model = Article
@@ -33,6 +34,7 @@ class ArticleSerializer(BaseModelSerializer):
             "body_ar",
             "category",
             "category_name",
+            "category_color",
             "status",
             "created_at",
             "updated_at",
