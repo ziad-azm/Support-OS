@@ -1,8 +1,20 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
+from apps.customers.models import ContactDetail
 
 from .models import EmailProviderConfig, Message, SmsProviderConfig, WhatsAppProviderConfig
+
+# Maps a Message channel to the ContactDetail channel it draws candidate
+# `target_address` values from — WhatsApp/SMS/Email each have a different
+# `ContactDetail.Channel` slug than their own `Message.Channel` one (`sms`
+# vs `phone`), so this cannot be a shared identity mapping.
+_CONTACT_CHANNEL_FOR_MESSAGE_CHANNEL = {
+    Message.Channel.EMAIL: ContactDetail.Channel.EMAIL,
+    Message.Channel.SMS: ContactDetail.Channel.PHONE,
+    Message.Channel.WHATSAPP: ContactDetail.Channel.WHATSAPP,
+}
 
 
 class MessageSerializer(BaseModelSerializer):
@@ -21,12 +33,63 @@ class MessageSerializer(BaseModelSerializer):
             "channel",
             "body",
             "metadata",
+            "target_address",
             "created_at",
             "updated_at",
         )
         # `metadata` is adapter-only data no UI ever sets — read-only via the
         # API. Verified this tuple-concatenation shape works (`## Prerequisites`).
         read_only_fields = BaseModelSerializer.Meta.read_only_fields + ("metadata",)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        target_address = attrs.get("target_address", "")
+        if not target_address:
+            return attrs
+
+        channel = attrs.get("channel") or getattr(self.instance, "channel", None)
+        ticket = attrs.get("ticket") or getattr(self.instance, "ticket", None)
+        contact_channel = _CONTACT_CHANNEL_FOR_MESSAGE_CHANNEL.get(channel)
+        # `web_form`/`chat` have no addressable destination at all — a
+        # `target_address` on either is always invalid, the same as an
+        # unrecognised channel would be.
+        if ticket is None or contact_channel is None:
+            raise serializers.ValidationError(
+                {"target_address": [_("This channel does not support choosing a target address.")]}
+            )
+
+        customer = ticket.customer
+        # A `ContactDetail` row for this channel is always a valid
+        # candidate, regardless of the opt-out/opt-in flags below — those
+        # flags govern only the PRIMARY `email`/`phone` fields on `Customer`
+        # itself, never a customer's own separately-added secondary
+        # contacts.
+        known_addresses = set(
+            ContactDetail.objects.filter(customer=customer, channel=contact_channel).values_list(
+                "value", flat=True
+            )
+        )
+        if channel == Message.Channel.EMAIL and customer.email and customer.email_contact_enabled:
+            known_addresses.add(customer.email)
+        elif channel == Message.Channel.SMS and customer.phone and customer.phone_contact_enabled:
+            known_addresses.add(customer.phone)
+        # WhatsApp is opt-in twice over: `whatsapp_enabled` is the shortcut
+        # for "the PRIMARY phone above is ALSO my WhatsApp number"; a
+        # dedicated `ContactDetail(channel="whatsapp")` row (already
+        # included above, unconditionally) remains the way to register a
+        # DIFFERENT number as WhatsApp-only.
+        elif channel == Message.Channel.WHATSAPP and customer.phone and customer.whatsapp_enabled:
+            known_addresses.add(customer.phone)
+
+        if target_address not in known_addresses:
+            raise serializers.ValidationError(
+                {
+                    "target_address": [
+                        _("Must be one of this customer's own known addresses for this channel.")
+                    ]
+                }
+            )
+        return attrs
 
 
 class EmailProviderConfigSerializer(BaseModelSerializer):

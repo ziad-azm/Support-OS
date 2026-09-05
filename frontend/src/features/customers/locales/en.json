@@ -10,7 +10,10 @@
   "fields": {
     "name": "Name",
     "email": "Email",
+    "emailContactEnabled": "Use this email for contact",
     "phone": "Phone",
+    "phoneContactEnabled": "Use this number for contact (SMS)",
+    "whatsappEnabled": "Also use this number for WhatsApp",
     "company": "Company",
     "branch": "Branch",
     "noBranch": "No branch",
@@ -52,7 +55,8 @@
     "empty": "No contact channels yet.",
     "fields": {
       "channel": "Channel",
-      "value": "Value"
+      "value": "Value",
+      "alsoWhatsapp": "Also use this number for WhatsApp"
     },
     "channels": {
       "email": "Email",

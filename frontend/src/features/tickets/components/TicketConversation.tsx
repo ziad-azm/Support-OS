@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
 
@@ -31,25 +31,53 @@ import { useToast } from '@/shared/ui/toast/useToast'
 import { useCreateMessage } from '../api/useMessageMutations'
 import { useMessages } from '../api/useMessages'
 import { useQuickReplies } from '../api/useQuickReplies'
+import { useCustomerContactDetails } from '../api/useCustomerContactDetails'
 import { useSuggestTicketReply, useSummarizeTicket } from '../api/useTicketMutations'
 import { useTicketChatSocket } from '../api/useTicketChatSocket'
+import { useTicketContext } from '../api/useTicketContext'
 import { MESSAGE_CHANNELS } from '../types/message'
-import type { Message, MessageInput } from '../types/message'
+import type { Message, MessageChannel, MessageInput } from '../types/message'
 
 const replySchema = z.object({
   channel: choice(MESSAGE_CHANNELS),
   body: requiredString(5000),
+  // No sentinel/"auto" value — whenever a choice is shown at all, it is
+  // always a real, concrete address (defaulted to the customer's primary
+  // one), so the agent sees exactly where a reply is going rather than an
+  // opaque "default" placeholder. Blank only while the dropdown itself is
+  // hidden (a single or no known address for the channel) — see the
+  // `useEffect` in `ReplyForm` that keeps this in sync with `channel`.
+  target_address: z.string().default(''),
 })
 
 type ReplyFormValues = z.output<typeof replySchema>
 
-const EMPTY_REPLY: ReplyFormValues = { channel: 'email', body: '' }
+const EMPTY_REPLY: ReplyFormValues = { channel: 'email', body: '', target_address: '' }
 
 // `direction` has no default (mirrors the backend model) and is never a
 // field the user picks — a reply composed through this form is always
 // outbound. See Story 13 `## Story Goal`.
 function toMessageInput(ticketId: number, values: ReplyFormValues): MessageInput {
-  return { ticket: ticketId, direction: 'outbound', channel: values.channel, body: values.body }
+  return {
+    ticket: ticketId,
+    direction: 'outbound',
+    channel: values.channel,
+    body: values.body,
+    target_address: values.target_address,
+  }
+}
+
+/** Which `ContactDetail.channel` a `Message.channel` draws `target_address`
+ * candidates from — mirrors `backend/apps/communications/serializers.py`'s
+ * `_CONTACT_CHANNEL_FOR_MESSAGE_CHANNEL`. `chat`/`web_form` have no
+ * addressable destination, hence no entry — `null` from this map means
+ * "this channel never shows a target-address choice." */
+const CONTACT_CHANNEL_FOR_MESSAGE_CHANNEL: Partial<
+  Record<MessageChannel, 'email' | 'phone' | 'whatsapp'>
+> = {
+  email: 'email',
+  sms: 'phone',
+  whatsapp: 'whatsapp',
 }
 
 export function TicketConversation({ ticketId }: { ticketId: number }) {
@@ -156,6 +184,79 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
 
   const suggestReplyMutation = useSuggestTicketReply(ticketId)
 
+  // Candidate `target_address` values for the currently selected channel —
+  // this customer's primary email/phone (`Customer.email`/`Customer.phone`)
+  // plus any secondary `ContactDetail` rows. Both queries are read-only and
+  // share their cache with `CustomerContextPanel`/the customer's own
+  // Contact channels section (`ticketKeys`/`customerKeys` query keys), so
+  // this rarely fires an extra request in practice.
+  const channel = form.watch('channel')
+  const contactChannel = CONTACT_CHANNEL_FOR_MESSAGE_CHANNEL[channel]
+  const contextQuery = useTicketContext(ticketId)
+  const customerId = contextQuery.data?.customer.id
+  const contactDetailsQuery = useCustomerContactDetails(customerId ?? 0, {
+    enabled: customerId !== undefined && contactChannel !== undefined,
+  })
+
+  const { options: addressCandidates, primary: primaryAddress } = useMemo(() => {
+    if (contactChannel === undefined) {
+      return { options: [] as string[], primary: null as string | null }
+    }
+    // Mirrors `MessageSerializer.validate`'s identical resolution on the
+    // backend. The primary email/phone counts only when its own opt-in/
+    // opt-out flag allows it — `email_contact_enabled`/`phone_contact_enabled`
+    // default to on (matches this project's behavior before those flags
+    // existed), `whatsapp_enabled` defaults to off (WhatsApp has always
+    // been opt-in). A dedicated `ContactDetail` row for this channel is
+    // always a candidate regardless of these flags — they govern only the
+    // customer's PRIMARY fields, never a separately-added secondary contact.
+    const customer = contextQuery.data?.customer
+    const primary =
+      channel === 'email'
+        ? customer?.email_contact_enabled
+          ? (customer.email ?? null)
+          : null
+        : channel === 'sms'
+          ? customer?.phone_contact_enabled
+            ? customer.phone || null
+            : null
+          : channel === 'whatsapp'
+            ? customer?.whatsapp_enabled
+              ? customer.phone || null
+              : null
+            : null
+    const values = new Set<string>()
+    if (primary) values.add(primary)
+    for (const contact of contactDetailsQuery.data?.items ?? []) {
+      if (contact.channel === contactChannel) values.add(contact.value)
+    }
+    return { options: [...values], primary }
+  }, [channel, contactChannel, contextQuery.data, contactDetailsQuery.data])
+
+  // Keeps `target_address` in sync whenever the channel changes or the
+  // candidate list resolves: defaults to the customer's PRIMARY address
+  // (shown explicitly, never an opaque "auto" placeholder) so the agent
+  // always sees a concrete destination; falls back to whichever address
+  // happens to be the only one on file if there's no primary. Blank
+  // (meaning "let the adapter's own default resolution decide" — unchanged
+  // from before this field existed) only when there's nothing to choose
+  // from.
+  //
+  // Depends on the `<SelectField name="target_address">` below staying
+  // MOUNTED at all times (see its own comment) — `form.setValue` here is
+  // an imperative call from a sibling scope, and a `Controller`'s own
+  // subscription setup can lag slightly behind a component that just
+  // mounted, so a `setValue` landing in the very render a field first
+  // mounts can be silently missed. `useLayoutEffect`, not `useEffect`, so
+  // this still runs before paint on every relevant change.
+  useLayoutEffect(() => {
+    if (addressCandidates.length === 0) {
+      form.setValue('target_address', '')
+    } else {
+      form.setValue('target_address', primaryAddress ?? addressCandidates[0])
+    }
+  }, [addressCandidates, primaryAddress, form])
+
   function handleSuggestReply() {
     suggestReplyMutation.mutate(undefined, {
       onSuccess: (data) => {
@@ -228,6 +329,33 @@ function ReplyForm({ ticketId }: { ticketId: number }) {
             label: t(`conversation.channels.${value}`),
           }))}
         />
+        {/* Always mounted — visually hidden via the `hidden` attribute
+            instead of conditionally unmounted — when there's nothing to
+            choose from (the common case: one email, or none). Unmounting
+            and remounting this in the SAME render the candidate list first
+            grows past one is what caused a real bug: `Controller`'s own
+            subscription setup lags slightly behind a component that just
+            mounted, so the very `form.setValue` call meant to
+            default-select it landed before the newly-mounted field had
+            subscribed and was silently missed — the dropdown then showed
+            permanently blank until the agent manually picked something,
+            confirmed live with Playwright. Keeping it mounted from the
+            start means it is always already subscribed by the time the
+            candidate list changes, so `setValue` reliably reaches it. */}
+        <div hidden={addressCandidates.length <= 1}>
+          <SelectField
+            control={form.control}
+            name="target_address"
+            label={t('conversation.fields.targetAddress')}
+            options={addressCandidates.map((value) => ({
+              value,
+              label:
+                value === primaryAddress
+                  ? t('conversation.targetAddress.primaryOption', { value })
+                  : value,
+            }))}
+          />
+        </div>
         <TextareaField control={form.control} name="body" label={t('conversation.fields.body')} />
         <FormErrorSummary errors={formErrors} />
         <SubmitButton pending={mutation.isPending} className="self-start">

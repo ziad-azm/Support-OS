@@ -11,7 +11,10 @@ export type TicketContextCustomer = {
   id: number
   name: string
   email: string | null
+  email_contact_enabled: boolean
   phone: string
+  phone_contact_enabled: boolean
+  whatsapp_enabled: boolean
   company: string
   created_at: string
   updated_at: string

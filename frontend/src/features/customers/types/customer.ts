@@ -4,7 +4,10 @@ export type Customer = {
   id: number
   name: string
   email: string | null
+  email_contact_enabled: boolean
   phone: string
+  phone_contact_enabled: boolean
+  whatsapp_enabled: boolean
   company: string
   portal_access_enabled: boolean
   branch: number | null
@@ -17,7 +20,10 @@ export type Customer = {
 export type CustomerInput = {
   name: string
   email: string | null
+  email_contact_enabled: boolean
   phone: string
+  phone_contact_enabled: boolean
+  whatsapp_enabled: boolean
   company: string
   branch: number | null
 }

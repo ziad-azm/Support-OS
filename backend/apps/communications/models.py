@@ -19,10 +19,10 @@ class Message(TimeStampedModel):
 
     class Channel(models.TextChoices):
         EMAIL = "email", _("Email")
-        WHATSAPP = "whatsapp", _("WhatsApp")
-        CHAT = "chat", _("Live chat")
         SMS = "sms", _("SMS")
+        WHATSAPP = "whatsapp", _("WhatsApp")
         WEB_FORM = "web_form", _("Web form")
+        CHAT = "chat", _("Live chat")
 
     # CASCADE, not PROTECT: contrast `Ticket.customer` (Story 12, PROTECT —
     # the customer outlives the relationship). A message has no existence
@@ -41,6 +41,18 @@ class Message(TimeStampedModel):
     # email Message-ID, a WhatsApp message SID, ...). Read-only via the API
     # — see MessageSerializer (task 3).
     metadata = models.JSONField(_("metadata"), default=dict, blank=True)
+    # Explicit override of which of the customer's own known addresses/
+    # numbers an OUTBOUND message is delivered to, chosen by the agent when
+    # a customer has more than one for this channel (e.g. two emails under
+    # Contact channels). Blank (the default, and the only value ever set on
+    # an INBOUND message) means "let the channel adapter's own default
+    # resolution decide" — `Customer.email`/`Customer.phone` first, falling
+    # back to a `customers.ContactDetail` row — unchanged from before this
+    # field existed. `MessageSerializer.validate` restricts a non-blank
+    # value to one of the ticket's own customer's known addresses for this
+    # channel — never an arbitrary string — so this can only ever redirect
+    # a reply to an address that customer is already known to hold.
+    target_address = models.CharField(_("target address"), max_length=254, blank=True)
 
     class Meta:
         verbose_name = _("message")

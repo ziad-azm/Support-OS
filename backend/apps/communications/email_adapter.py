@@ -3,7 +3,7 @@ import re
 from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 
-from apps.customers.models import Customer
+from apps.customers.models import ContactDetail, Customer
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
@@ -68,10 +68,34 @@ class EmailAdapter(ChannelAdapter):
 
     def send(self, message: Message) -> None:
         customer = message.ticket.customer
-        if not customer.email:
+        # `message.target_address` (an agent's explicit choice, validated by
+        # `MessageSerializer.validate` against this customer's own known
+        # addresses) wins when set. Otherwise, `Customer.email` (the one
+        # unique, primary address) wins whenever it's set AND
+        # `email_contact_enabled` (a staff member can switch this off
+        # without blanking the address itself — e.g. the customer asked not
+        # to be emailed) — the same "primary first" call this project
+        # already makes for a customer's identity everywhere else (CUST-1).
+        # A secondary `ContactDetail(channel="email")` row is a fallback for
+        # a customer whose primary email is blank OR disabled, never a
+        # competing target — contrast `WhatsAppAdapter.send`/
+        # `SMSAdapter.send`, which have no equivalent primary field on
+        # `Customer` to prefer and so go straight to `ContactDetail`. Same
+        # `.first()` tie-break as those two if a customer somehow has more
+        # than one secondary email on file.
+        to_address = (
+            message.target_address
+            or (customer.email if customer.email_contact_enabled else None)
+            or (
+                ContactDetail.objects.filter(customer=customer, channel=ContactDetail.Channel.EMAIL)
+                .values_list("value", flat=True)
+                .first()
+            )
+        )
+        if not to_address:
             raise ValueError(
                 f"Cannot send email for ticket #{message.ticket_id}: "
-                "its customer has no email address."
+                "its customer has no email address on file."
             )
         config = EmailProviderConfig.load()
         if not config.is_configured():
@@ -98,7 +122,7 @@ class EmailAdapter(ChannelAdapter):
             subject=message.ticket.subject,
             body=message.body,
             from_email=config.default_from_email,
-            to=[customer.email],
+            to=[to_address],
             reply_to=[reply_to],
             connection=connection,
         )

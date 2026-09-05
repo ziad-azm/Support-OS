@@ -8,6 +8,7 @@ import { nullableEmail, optionalString, requiredString } from '@/shared/validati
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Form } from '@/shared/ui/primitives/form'
 import {
+  CheckboxField,
   FormErrorSummary,
   SelectField,
   SubmitButton,
@@ -34,7 +35,20 @@ const schema = z.object({
   // an empty value is coalesced back to `''` in `toCustomerInput` below so a
   // cleared field is still sent explicitly, rather than silently dropped).
   email: nullableEmail(),
+  // Whether the PRIMARY email/phone above may actually be used to contact
+  // this customer — independent of whether a value is even set. Default
+  // `true` for both (matches `Customer.email_contact_enabled`/
+  // `phone_contact_enabled`'s own model default): a staff member switches
+  // one off deliberately, e.g. the customer asked not to be emailed, or a
+  // number is disconnected, without blanking out the identifying value
+  // itself. `whatsapp_enabled` defaults `false` — WhatsApp has always been
+  // opt-in in this project; this is the shortcut for "the phone number
+  // above is ALSO my WhatsApp number" without a second, duplicate contact
+  // entry under Contact channels.
+  email_contact_enabled: z.boolean().default(true),
   phone: optionalString(40),
+  phone_contact_enabled: z.boolean().default(true),
+  whatsapp_enabled: z.boolean().default(false),
   company: optionalString(200),
   branch: z.string(),
 })
@@ -44,7 +58,10 @@ type FormValues = z.output<typeof schema>
 const EMPTY_DEFAULTS: FormValues = {
   name: '',
   email: '',
+  email_contact_enabled: true,
   phone: '',
+  phone_contact_enabled: true,
+  whatsapp_enabled: false,
   company: '',
   branch: BRANCH_NONE,
 }
@@ -53,7 +70,10 @@ function toDefaults(customer: Customer): FormValues {
   return {
     name: customer.name,
     email: customer.email ?? '',
+    email_contact_enabled: customer.email_contact_enabled,
     phone: customer.phone,
+    phone_contact_enabled: customer.phone_contact_enabled,
+    whatsapp_enabled: customer.whatsapp_enabled,
     company: customer.company,
     branch: customer.branch === null ? BRANCH_NONE : String(customer.branch),
   }
@@ -68,7 +88,10 @@ function toCustomerInput(values: FormValues): CustomerInput {
   return {
     name: values.name,
     email: values.email,
+    email_contact_enabled: values.email_contact_enabled,
     phone: values.phone ?? '',
+    phone_contact_enabled: values.phone_contact_enabled,
+    whatsapp_enabled: values.whatsapp_enabled,
     company: values.company ?? '',
     branch: values.branch === BRANCH_NONE ? null : Number(values.branch),
   }
@@ -153,7 +176,22 @@ function CustomerForm({
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <TextField control={form.control} name="name" label={t('fields.name')} />
           <TextField control={form.control} name="email" label={t('fields.email')} type="email" />
+          <CheckboxField
+            control={form.control}
+            name="email_contact_enabled"
+            label={t('fields.emailContactEnabled')}
+          />
           <TextField control={form.control} name="phone" label={t('fields.phone')} />
+          <CheckboxField
+            control={form.control}
+            name="phone_contact_enabled"
+            label={t('fields.phoneContactEnabled')}
+          />
+          <CheckboxField
+            control={form.control}
+            name="whatsapp_enabled"
+            label={t('fields.whatsappEnabled')}
+          />
           <TextField control={form.control} name="company" label={t('fields.company')} />
           <SelectField
             control={form.control}

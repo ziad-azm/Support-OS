@@ -90,10 +90,22 @@ class SMSAdapter(ChannelAdapter):
         if not config.is_configured():
             raise ValueError("SMS sending is not configured (set it at /settings/channels).")
 
-        contact = ContactDetail.objects.filter(
-            customer=message.ticket.customer, channel=ContactDetail.Channel.PHONE
-        ).first()
-        if contact is None:
+        customer = message.ticket.customer
+        # `message.target_address` (an agent's explicit choice, validated by
+        # `MessageSerializer.validate`) wins when set. Otherwise, a
+        # dedicated `ContactDetail(channel="phone")` row wins — it was
+        # deliberately added as a phone contact, so it stays the more
+        # specific candidate — falling back to `Customer.phone` itself only
+        # if `phone_contact_enabled` (a staff member can switch this off
+        # without blanking the number — e.g. it's disconnected).
+        to_number = (
+            message.target_address
+            or ContactDetail.objects.filter(customer=customer, channel=ContactDetail.Channel.PHONE)
+            .values_list("value", flat=True)
+            .first()
+            or (customer.phone if customer.phone_contact_enabled else None)
+        )
+        if not to_number:
             raise ValueError(
                 f"Cannot send SMS for ticket #{message.ticket_id}: "
                 "its customer has no phone contact on file."
@@ -101,7 +113,7 @@ class SMSAdapter(ChannelAdapter):
 
         url = f"{config.api_base_url}/Accounts/{config.account_sid}/Messages.json"
         body = urllib.parse.urlencode(
-            {"To": contact.value, "From": config.from_number, "Body": message.body}
+            {"To": to_number, "From": config.from_number, "Body": message.body}
         ).encode()
         credentials = base64.b64encode(
             f"{config.account_sid}:{config.auth_token}".encode()

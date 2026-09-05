@@ -127,7 +127,11 @@
     },
     "fields": {
       "channel": "Channel",
+      "targetAddress": "Send to",
       "body": "Message"
+    },
+    "targetAddress": {
+      "primaryOption": "{{value}} (primary)"
     },
     "quickReply": {
       "label": "Quick reply",

@@ -108,10 +108,24 @@ class WhatsAppAdapter(ChannelAdapter):
         if not config.is_configured():
             raise ValueError("WhatsApp sending is not configured (set it at /settings/channels).")
 
-        contact = ContactDetail.objects.filter(
-            customer=message.ticket.customer, channel=ContactDetail.Channel.WHATSAPP
-        ).first()
-        if contact is None:
+        customer = message.ticket.customer
+        # `message.target_address` (an agent's explicit choice, validated by
+        # `MessageSerializer.validate`) wins when set. Otherwise, a
+        # dedicated `ContactDetail(channel="whatsapp")` row wins — it was
+        # deliberately added as this customer's WhatsApp identity, so it
+        # stays the more specific candidate — falling back to
+        # `Customer.phone` itself only if `whatsapp_enabled` (the shortcut
+        # for "the primary phone is ALSO my WhatsApp number").
+        to_number = (
+            message.target_address
+            or ContactDetail.objects.filter(
+                customer=customer, channel=ContactDetail.Channel.WHATSAPP
+            )
+            .values_list("value", flat=True)
+            .first()
+            or (customer.phone if customer.whatsapp_enabled else None)
+        )
+        if not to_number:
             raise ValueError(
                 f"Cannot send WhatsApp message for ticket #{message.ticket_id}: "
                 "its customer has no WhatsApp contact on file."
@@ -121,7 +135,7 @@ class WhatsAppAdapter(ChannelAdapter):
         body = json.dumps(
             {
                 "messaging_product": "whatsapp",
-                "to": contact.value,
+                "to": to_number,
                 "type": "text",
                 "text": {"body": message.body},
             }

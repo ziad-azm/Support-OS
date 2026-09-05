@@ -98,6 +98,16 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           {
+            // Wraps the WHOLE staff route tree below — every route a
+            // signed-in account can reach under `/` — not just `/home`.
+            // A narrower version of this wrapped only `/home`, leaving
+            // `tasks`, `preferences`, and the `*` catch-all (all
+            // deliberately ungated — see their own comments below)
+            // reachable by a portal/customer account that typed or
+            // bookmarked one of those URLs directly, since none of them
+            // fail a `RequirePermission` check first to bounce through
+            // `/home` on the way to `/portal`. See `RedirectPortalOnly`'s
+            // own docstring for the incident this fixed.
             element: <RedirectPortalOnly />,
             children: [
               {
@@ -107,585 +117,585 @@ export const router = createBrowserRouter([
                   return { element: <HomePage /> }
                 },
               },
+              {
+                element: <RequirePermission permission="customers.view" />,
+                children: [
+                  {
+                    path: 'customers',
+                    lazy: async () => {
+                      const { CustomerListPage } =
+                        await import('@/features/customers/components/CustomerListPage')
+                      return { element: <CustomerListPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `customers/:id`, or `:id` matches the
+                    // literal "new" and the profile page fires `/customers/new/`.
+                    path: 'customers/new',
+                    lazy: async () => {
+                      const { CustomerFormPage } =
+                        await import('@/features/customers/components/CustomerFormPage')
+                      return { element: <CustomerFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'customers/:id',
+                    lazy: async () => {
+                      const { CustomerProfilePage } =
+                        await import('@/features/customers/components/CustomerProfilePage')
+                      return { element: <CustomerProfilePage /> }
+                    },
+                  },
+                  {
+                    path: 'customers/:id/edit',
+                    lazy: async () => {
+                      const { CustomerFormPage } =
+                        await import('@/features/customers/components/CustomerFormPage')
+                      return { element: <CustomerFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="tickets.view" />,
+                children: [
+                  {
+                    path: 'tickets',
+                    lazy: async () => {
+                      const { TicketListPage } =
+                        await import('@/features/tickets/components/TicketListPage')
+                      return { element: <TicketListPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `tickets/:id`, same reason as `customers/new`.
+                    path: 'tickets/new',
+                    lazy: async () => {
+                      const { TicketFormPage } =
+                        await import('@/features/tickets/components/TicketFormPage')
+                      return { element: <TicketFormPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `tickets/:id`, same reason as `tickets/new`.
+                    path: 'tickets/my-tickets',
+                    lazy: async () => {
+                      const { MyTicketsPage } =
+                        await import('@/features/tickets/components/MyTicketsPage')
+                      return { element: <MyTicketsPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `tickets/:id`, same reason as
+                    // `tickets/my-tickets`.
+                    path: 'tickets/department',
+                    lazy: async () => {
+                      const { DepartmentQueuePage } =
+                        await import('@/features/tickets/components/DepartmentQueuePage')
+                      return { element: <DepartmentQueuePage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `tickets/:id`, same reason as
+                    // `tickets/department`.
+                    path: 'tickets/branch',
+                    lazy: async () => {
+                      const { BranchQueuePage } =
+                        await import('@/features/tickets/components/BranchQueuePage')
+                      return { element: <BranchQueuePage /> }
+                    },
+                  },
+                  {
+                    path: 'tickets/:id',
+                    lazy: async () => {
+                      const { TicketDetailPage } =
+                        await import('@/features/tickets/components/TicketDetailPage')
+                      return { element: <TicketDetailPage /> }
+                    },
+                  },
+                  {
+                    path: 'tickets/:id/edit',
+                    lazy: async () => {
+                      const { TicketFormPage } =
+                        await import('@/features/tickets/components/TicketFormPage')
+                      return { element: <TicketFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="knowledge_base.manage" />,
+                children: [
+                  {
+                    path: 'knowledge-base/manage',
+                    lazy: async () => {
+                      const { FaqListPage } =
+                        await import('@/features/knowledge-base/components/FaqListPage')
+                      return { element: <FaqListPage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/manage/new',
+                    lazy: async () => {
+                      const { FaqFormPage } =
+                        await import('@/features/knowledge-base/components/FaqFormPage')
+                      return { element: <FaqFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/manage/:id/edit',
+                    lazy: async () => {
+                      const { FaqFormPage } =
+                        await import('@/features/knowledge-base/components/FaqFormPage')
+                      return { element: <FaqFormPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `knowledge-base/articles/:id` (in the
+                    // sibling knowledge_base.view block below) — a literal
+                    // "manage" would otherwise be read as the `:id` param.
+                    path: 'knowledge-base/articles/manage',
+                    lazy: async () => {
+                      const { ArticleListPage } =
+                        await import('@/features/knowledge-base/components/ArticleListPage')
+                      return { element: <ArticleListPage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/articles/manage/new',
+                    lazy: async () => {
+                      const { ArticleFormPage } =
+                        await import('@/features/knowledge-base/components/ArticleFormPage')
+                      return { element: <ArticleFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/articles/manage/:id/edit',
+                    lazy: async () => {
+                      const { ArticleFormPage } =
+                        await import('@/features/knowledge-base/components/ArticleFormPage')
+                      return { element: <ArticleFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/categories',
+                    lazy: async () => {
+                      const { CategoryListPage } =
+                        await import('@/features/knowledge-base/components/CategoryListPage')
+                      return { element: <CategoryListPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `knowledge-base/categories/:id`, same
+                    // reason as `roles/new`.
+                    path: 'knowledge-base/categories/new',
+                    lazy: async () => {
+                      const { CategoryFormPage } =
+                        await import('@/features/knowledge-base/components/CategoryFormPage')
+                      return { element: <CategoryFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/categories/:id/edit',
+                    lazy: async () => {
+                      const { CategoryFormPage } =
+                        await import('@/features/knowledge-base/components/CategoryFormPage')
+                      return { element: <CategoryFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="knowledge_base.view" />,
+                children: [
+                  {
+                    path: 'knowledge-base',
+                    lazy: async () => {
+                      const { FaqBrowsePage } =
+                        await import('@/features/knowledge-base/components/FaqBrowsePage')
+                      return { element: <FaqBrowsePage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/articles',
+                    lazy: async () => {
+                      const { ArticleBrowsePage } =
+                        await import('@/features/knowledge-base/components/ArticleBrowsePage')
+                      return { element: <ArticleBrowsePage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/articles/:id',
+                    lazy: async () => {
+                      const { ArticleReaderPage } =
+                        await import('@/features/knowledge-base/components/ArticleReaderPage')
+                      return { element: <ArticleReaderPage /> }
+                    },
+                  },
+                  {
+                    path: 'knowledge-base/search',
+                    lazy: async () => {
+                      const { SearchPage } =
+                        await import('@/features/knowledge-base/components/SearchPage')
+                      return { element: <SearchPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="users.view" />,
+                children: [
+                  {
+                    path: 'users',
+                    lazy: async () => {
+                      const { UserListPage } =
+                        await import('@/features/accounts/components/UserListPage')
+                      return { element: <UserListPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                // Split from the `users.view`-gated list route above: create/edit
+                // are writes (`POST`/`PATCH /api/users/`), gated server-side by
+                // `users.manage`, not `users.view` — a `users.view`-only holder
+                // (e.g. the seeded `manager` role) could previously navigate to
+                // and fill out these forms only to have every submit 403 as a
+                // guaranteed dead end. Matches `roles`'s own single-permission
+                // gate below, just split across two permissions instead of one.
+                element: <RequirePermission permission="users.manage" />,
+                children: [
+                  {
+                    // Must stay before `users/:id`, same reason as `customers/new`.
+                    path: 'users/new',
+                    lazy: async () => {
+                      const { UserFormPage } =
+                        await import('@/features/accounts/components/UserFormPage')
+                      return { element: <UserFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'users/:id/edit',
+                    lazy: async () => {
+                      const { UserFormPage } =
+                        await import('@/features/accounts/components/UserFormPage')
+                      return { element: <UserFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="roles.manage" />,
+                children: [
+                  {
+                    path: 'roles',
+                    lazy: async () => {
+                      const { RoleListPage } =
+                        await import('@/features/accounts/components/RoleListPage')
+                      return { element: <RoleListPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `roles/:id`, same reason as `users/new`.
+                    path: 'roles/new',
+                    lazy: async () => {
+                      const { RoleFormPage } =
+                        await import('@/features/accounts/components/RoleFormPage')
+                      return { element: <RoleFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'roles/:id/edit',
+                    lazy: async () => {
+                      const { RoleFormPage } =
+                        await import('@/features/accounts/components/RoleFormPage')
+                      return { element: <RoleFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="tickets.manage" />,
+                children: [
+                  {
+                    path: 'categories',
+                    lazy: async () => {
+                      const { CategoryListPage } =
+                        await import('@/features/tickets/components/CategoryListPage')
+                      return { element: <CategoryListPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `categories/:id`, same reason as `roles/new`.
+                    path: 'categories/new',
+                    lazy: async () => {
+                      const { CategoryFormPage } =
+                        await import('@/features/tickets/components/CategoryFormPage')
+                      return { element: <CategoryFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'categories/:id/edit',
+                    lazy: async () => {
+                      const { CategoryFormPage } =
+                        await import('@/features/tickets/components/CategoryFormPage')
+                      return { element: <CategoryFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="reports.view" />,
+                children: [
+                  {
+                    path: 'reports/tickets',
+                    lazy: async () => {
+                      const { TicketReportsPage } =
+                        await import('@/features/reports/components/TicketReportsPage')
+                      return { element: <TicketReportsPage /> }
+                    },
+                  },
+                  {
+                    path: 'reports/sla',
+                    lazy: async () => {
+                      const { SlaReportsPage } =
+                        await import('@/features/reports/components/SlaReportsPage')
+                      return { element: <SlaReportsPage /> }
+                    },
+                  },
+                  {
+                    path: 'reports/agents',
+                    lazy: async () => {
+                      const { AgentReportsPage } =
+                        await import('@/features/reports/components/AgentReportsPage')
+                      return { element: <AgentReportsPage /> }
+                    },
+                  },
+                  {
+                    path: 'reports/csat',
+                    lazy: async () => {
+                      const { CsatReportsPage } =
+                        await import('@/features/reports/components/CsatReportsPage')
+                      return { element: <CsatReportsPage /> }
+                    },
+                  },
+                  {
+                    path: 'reports/dashboard',
+                    lazy: async () => {
+                      const { ManagementDashboardPage } =
+                        await import('@/features/reports/components/ManagementDashboardPage')
+                      return { element: <ManagementDashboardPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="audit_log.view" />,
+                children: [
+                  {
+                    path: 'audit-log',
+                    lazy: async () => {
+                      const { AuditLogListPage } =
+                        await import('@/features/audit-log/components/AuditLogListPage')
+                      return { element: <AuditLogListPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="settings.manage" />,
+                children: [
+                  {
+                    path: 'settings',
+                    lazy: async () => {
+                      const { SettingsPage } =
+                        await import('@/features/organization/components/SettingsPage')
+                      return { element: <SettingsPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="integrations.manage" />,
+                children: [
+                  {
+                    path: 'settings/erp',
+                    lazy: async () => {
+                      const { ErpSettingsPage } =
+                        await import('@/features/integrations/components/ErpSettingsPage')
+                      return { element: <ErpSettingsPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="communications.manage" />,
+                children: [
+                  {
+                    path: 'settings/channels',
+                    lazy: async () => {
+                      const { ChannelSettingsPage } =
+                        await import('@/features/communications/components/ChannelSettingsPage')
+                      return { element: <ChannelSettingsPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="webhooks.manage" />,
+                children: [
+                  {
+                    path: 'settings/webhooks',
+                    lazy: async () => {
+                      const { WebhookSubscriptionListPage } =
+                        await import('@/features/webhooks/components/WebhookSubscriptionListPage')
+                      return { element: <WebhookSubscriptionListPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `settings/webhooks/:id/edit`, same reason
+                    // `roles/new` is declared before `roles/:id/edit` above.
+                    path: 'settings/webhooks/new',
+                    lazy: async () => {
+                      const { WebhookSubscriptionFormPage } =
+                        await import('@/features/webhooks/components/WebhookSubscriptionFormPage')
+                      return { element: <WebhookSubscriptionFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'settings/webhooks/:id/edit',
+                    lazy: async () => {
+                      const { WebhookSubscriptionFormPage } =
+                        await import('@/features/webhooks/components/WebhookSubscriptionFormPage')
+                      return { element: <WebhookSubscriptionFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="departments.view" />,
+                children: [
+                  {
+                    path: 'settings/departments',
+                    lazy: async () => {
+                      const { DepartmentListPage } =
+                        await import('@/features/organization/components/DepartmentListPage')
+                      return { element: <DepartmentListPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                // Split from the `departments.view` list route above for the
+                // same reason `users/new` is split from `users`: create/edit
+                // are writes the server gates on `departments.manage`, so a
+                // view-only holder must not be routed to a guaranteed dead end.
+                element: <RequirePermission permission="departments.manage" />,
+                children: [
+                  {
+                    // Must stay before `settings/departments/:id/edit`, the
+                    // same declaration order `roles/new` uses.
+                    path: 'settings/departments/new',
+                    lazy: async () => {
+                      const { DepartmentFormPage } =
+                        await import('@/features/organization/components/DepartmentFormPage')
+                      return { element: <DepartmentFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'settings/departments/:id/edit',
+                    lazy: async () => {
+                      const { DepartmentFormPage } =
+                        await import('@/features/organization/components/DepartmentFormPage')
+                      return { element: <DepartmentFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                element: <RequirePermission permission="branches.view" />,
+                children: [
+                  {
+                    path: 'settings/branches',
+                    lazy: async () => {
+                      const { BranchListPage } =
+                        await import('@/features/organization/components/BranchListPage')
+                      return { element: <BranchListPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                // Split from the `branches.view` list route above for the same
+                // reason the `departments.manage` group is split from its own
+                // list route: create/edit are writes the server gates on
+                // `branches.manage`, so a view-only holder must not be routed
+                // to a guaranteed dead end.
+                element: <RequirePermission permission="branches.manage" />,
+                children: [
+                  {
+                    // Must stay before `settings/branches/:id/edit`, the same
+                    // declaration order `departments/new` uses.
+                    path: 'settings/branches/new',
+                    lazy: async () => {
+                      const { BranchFormPage } =
+                        await import('@/features/organization/components/BranchFormPage')
+                      return { element: <BranchFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'settings/branches/:id/edit',
+                    lazy: async () => {
+                      const { BranchFormPage } =
+                        await import('@/features/organization/components/BranchFormPage')
+                      return { element: <BranchFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                path: 'tasks',
+                lazy: async () => {
+                  const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')
+                  return { element: <TaskListPage /> }
+                },
+              },
+              {
+                // Must stay before `tasks/:id/edit`, same reason
+                // `tickets/new` is declared before `tickets/:id`.
+                path: 'tasks/new',
+                lazy: async () => {
+                  const { TaskFormPage } = await import('@/features/tasks/components/TaskFormPage')
+                  return { element: <TaskFormPage /> }
+                },
+              },
+              {
+                path: 'tasks/:id/edit',
+                lazy: async () => {
+                  const { TaskFormPage } = await import('@/features/tasks/components/TaskFormPage')
+                  return { element: <TaskFormPage /> }
+                },
+              },
+              {
+                path: 'preferences',
+                lazy: async () => {
+                  const { PreferencesPage } = await import('./PreferencesPage')
+                  return { element: <PreferencesPage /> }
+                },
+              },
+              {
+                // Inside `RequireAuth`, not a sibling of it: an unmatched path
+                // must redirect a signed-out visitor to `/login` first, the same
+                // as any real route above. A sibling catch-all would render
+                // `NotFoundPage` (inside `RootLayout`'s staff Sidebar) for an
+                // anonymous visitor instead of ever asking them to log in.
+                path: '*',
+                lazy: async () => {
+                  const { NotFoundPage } = await import('./NotFoundPage')
+                  return { element: <NotFoundPage /> }
+                },
+              },
             ],
-          },
-          {
-            element: <RequirePermission permission="customers.view" />,
-            children: [
-              {
-                path: 'customers',
-                lazy: async () => {
-                  const { CustomerListPage } =
-                    await import('@/features/customers/components/CustomerListPage')
-                  return { element: <CustomerListPage /> }
-                },
-              },
-              {
-                // Must stay before `customers/:id`, or `:id` matches the
-                // literal "new" and the profile page fires `/customers/new/`.
-                path: 'customers/new',
-                lazy: async () => {
-                  const { CustomerFormPage } =
-                    await import('@/features/customers/components/CustomerFormPage')
-                  return { element: <CustomerFormPage /> }
-                },
-              },
-              {
-                path: 'customers/:id',
-                lazy: async () => {
-                  const { CustomerProfilePage } =
-                    await import('@/features/customers/components/CustomerProfilePage')
-                  return { element: <CustomerProfilePage /> }
-                },
-              },
-              {
-                path: 'customers/:id/edit',
-                lazy: async () => {
-                  const { CustomerFormPage } =
-                    await import('@/features/customers/components/CustomerFormPage')
-                  return { element: <CustomerFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="tickets.view" />,
-            children: [
-              {
-                path: 'tickets',
-                lazy: async () => {
-                  const { TicketListPage } =
-                    await import('@/features/tickets/components/TicketListPage')
-                  return { element: <TicketListPage /> }
-                },
-              },
-              {
-                // Must stay before `tickets/:id`, same reason as `customers/new`.
-                path: 'tickets/new',
-                lazy: async () => {
-                  const { TicketFormPage } =
-                    await import('@/features/tickets/components/TicketFormPage')
-                  return { element: <TicketFormPage /> }
-                },
-              },
-              {
-                // Must stay before `tickets/:id`, same reason as `tickets/new`.
-                path: 'tickets/my-tickets',
-                lazy: async () => {
-                  const { MyTicketsPage } =
-                    await import('@/features/tickets/components/MyTicketsPage')
-                  return { element: <MyTicketsPage /> }
-                },
-              },
-              {
-                // Must stay before `tickets/:id`, same reason as
-                // `tickets/my-tickets`.
-                path: 'tickets/department',
-                lazy: async () => {
-                  const { DepartmentQueuePage } =
-                    await import('@/features/tickets/components/DepartmentQueuePage')
-                  return { element: <DepartmentQueuePage /> }
-                },
-              },
-              {
-                // Must stay before `tickets/:id`, same reason as
-                // `tickets/department`.
-                path: 'tickets/branch',
-                lazy: async () => {
-                  const { BranchQueuePage } =
-                    await import('@/features/tickets/components/BranchQueuePage')
-                  return { element: <BranchQueuePage /> }
-                },
-              },
-              {
-                path: 'tickets/:id',
-                lazy: async () => {
-                  const { TicketDetailPage } =
-                    await import('@/features/tickets/components/TicketDetailPage')
-                  return { element: <TicketDetailPage /> }
-                },
-              },
-              {
-                path: 'tickets/:id/edit',
-                lazy: async () => {
-                  const { TicketFormPage } =
-                    await import('@/features/tickets/components/TicketFormPage')
-                  return { element: <TicketFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="knowledge_base.manage" />,
-            children: [
-              {
-                path: 'knowledge-base/manage',
-                lazy: async () => {
-                  const { FaqListPage } =
-                    await import('@/features/knowledge-base/components/FaqListPage')
-                  return { element: <FaqListPage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/manage/new',
-                lazy: async () => {
-                  const { FaqFormPage } =
-                    await import('@/features/knowledge-base/components/FaqFormPage')
-                  return { element: <FaqFormPage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/manage/:id/edit',
-                lazy: async () => {
-                  const { FaqFormPage } =
-                    await import('@/features/knowledge-base/components/FaqFormPage')
-                  return { element: <FaqFormPage /> }
-                },
-              },
-              {
-                // Must stay before `knowledge-base/articles/:id` (in the
-                // sibling knowledge_base.view block below) — a literal
-                // "manage" would otherwise be read as the `:id` param.
-                path: 'knowledge-base/articles/manage',
-                lazy: async () => {
-                  const { ArticleListPage } =
-                    await import('@/features/knowledge-base/components/ArticleListPage')
-                  return { element: <ArticleListPage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/articles/manage/new',
-                lazy: async () => {
-                  const { ArticleFormPage } =
-                    await import('@/features/knowledge-base/components/ArticleFormPage')
-                  return { element: <ArticleFormPage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/articles/manage/:id/edit',
-                lazy: async () => {
-                  const { ArticleFormPage } =
-                    await import('@/features/knowledge-base/components/ArticleFormPage')
-                  return { element: <ArticleFormPage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/categories',
-                lazy: async () => {
-                  const { CategoryListPage } =
-                    await import('@/features/knowledge-base/components/CategoryListPage')
-                  return { element: <CategoryListPage /> }
-                },
-              },
-              {
-                // Must stay before `knowledge-base/categories/:id`, same
-                // reason as `roles/new`.
-                path: 'knowledge-base/categories/new',
-                lazy: async () => {
-                  const { CategoryFormPage } =
-                    await import('@/features/knowledge-base/components/CategoryFormPage')
-                  return { element: <CategoryFormPage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/categories/:id/edit',
-                lazy: async () => {
-                  const { CategoryFormPage } =
-                    await import('@/features/knowledge-base/components/CategoryFormPage')
-                  return { element: <CategoryFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="knowledge_base.view" />,
-            children: [
-              {
-                path: 'knowledge-base',
-                lazy: async () => {
-                  const { FaqBrowsePage } =
-                    await import('@/features/knowledge-base/components/FaqBrowsePage')
-                  return { element: <FaqBrowsePage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/articles',
-                lazy: async () => {
-                  const { ArticleBrowsePage } =
-                    await import('@/features/knowledge-base/components/ArticleBrowsePage')
-                  return { element: <ArticleBrowsePage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/articles/:id',
-                lazy: async () => {
-                  const { ArticleReaderPage } =
-                    await import('@/features/knowledge-base/components/ArticleReaderPage')
-                  return { element: <ArticleReaderPage /> }
-                },
-              },
-              {
-                path: 'knowledge-base/search',
-                lazy: async () => {
-                  const { SearchPage } =
-                    await import('@/features/knowledge-base/components/SearchPage')
-                  return { element: <SearchPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="users.view" />,
-            children: [
-              {
-                path: 'users',
-                lazy: async () => {
-                  const { UserListPage } =
-                    await import('@/features/accounts/components/UserListPage')
-                  return { element: <UserListPage /> }
-                },
-              },
-            ],
-          },
-          {
-            // Split from the `users.view`-gated list route above: create/edit
-            // are writes (`POST`/`PATCH /api/users/`), gated server-side by
-            // `users.manage`, not `users.view` — a `users.view`-only holder
-            // (e.g. the seeded `manager` role) could previously navigate to
-            // and fill out these forms only to have every submit 403 as a
-            // guaranteed dead end. Matches `roles`'s own single-permission
-            // gate below, just split across two permissions instead of one.
-            element: <RequirePermission permission="users.manage" />,
-            children: [
-              {
-                // Must stay before `users/:id`, same reason as `customers/new`.
-                path: 'users/new',
-                lazy: async () => {
-                  const { UserFormPage } =
-                    await import('@/features/accounts/components/UserFormPage')
-                  return { element: <UserFormPage /> }
-                },
-              },
-              {
-                path: 'users/:id/edit',
-                lazy: async () => {
-                  const { UserFormPage } =
-                    await import('@/features/accounts/components/UserFormPage')
-                  return { element: <UserFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="roles.manage" />,
-            children: [
-              {
-                path: 'roles',
-                lazy: async () => {
-                  const { RoleListPage } =
-                    await import('@/features/accounts/components/RoleListPage')
-                  return { element: <RoleListPage /> }
-                },
-              },
-              {
-                // Must stay before `roles/:id`, same reason as `users/new`.
-                path: 'roles/new',
-                lazy: async () => {
-                  const { RoleFormPage } =
-                    await import('@/features/accounts/components/RoleFormPage')
-                  return { element: <RoleFormPage /> }
-                },
-              },
-              {
-                path: 'roles/:id/edit',
-                lazy: async () => {
-                  const { RoleFormPage } =
-                    await import('@/features/accounts/components/RoleFormPage')
-                  return { element: <RoleFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="tickets.manage" />,
-            children: [
-              {
-                path: 'categories',
-                lazy: async () => {
-                  const { CategoryListPage } =
-                    await import('@/features/tickets/components/CategoryListPage')
-                  return { element: <CategoryListPage /> }
-                },
-              },
-              {
-                // Must stay before `categories/:id`, same reason as `roles/new`.
-                path: 'categories/new',
-                lazy: async () => {
-                  const { CategoryFormPage } =
-                    await import('@/features/tickets/components/CategoryFormPage')
-                  return { element: <CategoryFormPage /> }
-                },
-              },
-              {
-                path: 'categories/:id/edit',
-                lazy: async () => {
-                  const { CategoryFormPage } =
-                    await import('@/features/tickets/components/CategoryFormPage')
-                  return { element: <CategoryFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="reports.view" />,
-            children: [
-              {
-                path: 'reports/tickets',
-                lazy: async () => {
-                  const { TicketReportsPage } =
-                    await import('@/features/reports/components/TicketReportsPage')
-                  return { element: <TicketReportsPage /> }
-                },
-              },
-              {
-                path: 'reports/sla',
-                lazy: async () => {
-                  const { SlaReportsPage } =
-                    await import('@/features/reports/components/SlaReportsPage')
-                  return { element: <SlaReportsPage /> }
-                },
-              },
-              {
-                path: 'reports/agents',
-                lazy: async () => {
-                  const { AgentReportsPage } =
-                    await import('@/features/reports/components/AgentReportsPage')
-                  return { element: <AgentReportsPage /> }
-                },
-              },
-              {
-                path: 'reports/csat',
-                lazy: async () => {
-                  const { CsatReportsPage } =
-                    await import('@/features/reports/components/CsatReportsPage')
-                  return { element: <CsatReportsPage /> }
-                },
-              },
-              {
-                path: 'reports/dashboard',
-                lazy: async () => {
-                  const { ManagementDashboardPage } =
-                    await import('@/features/reports/components/ManagementDashboardPage')
-                  return { element: <ManagementDashboardPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="audit_log.view" />,
-            children: [
-              {
-                path: 'audit-log',
-                lazy: async () => {
-                  const { AuditLogListPage } =
-                    await import('@/features/audit-log/components/AuditLogListPage')
-                  return { element: <AuditLogListPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="settings.manage" />,
-            children: [
-              {
-                path: 'settings',
-                lazy: async () => {
-                  const { SettingsPage } =
-                    await import('@/features/organization/components/SettingsPage')
-                  return { element: <SettingsPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="integrations.manage" />,
-            children: [
-              {
-                path: 'settings/erp',
-                lazy: async () => {
-                  const { ErpSettingsPage } =
-                    await import('@/features/integrations/components/ErpSettingsPage')
-                  return { element: <ErpSettingsPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="communications.manage" />,
-            children: [
-              {
-                path: 'settings/channels',
-                lazy: async () => {
-                  const { ChannelSettingsPage } =
-                    await import('@/features/communications/components/ChannelSettingsPage')
-                  return { element: <ChannelSettingsPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="webhooks.manage" />,
-            children: [
-              {
-                path: 'settings/webhooks',
-                lazy: async () => {
-                  const { WebhookSubscriptionListPage } =
-                    await import('@/features/webhooks/components/WebhookSubscriptionListPage')
-                  return { element: <WebhookSubscriptionListPage /> }
-                },
-              },
-              {
-                // Must stay before `settings/webhooks/:id/edit`, same reason
-                // `roles/new` is declared before `roles/:id/edit` above.
-                path: 'settings/webhooks/new',
-                lazy: async () => {
-                  const { WebhookSubscriptionFormPage } =
-                    await import('@/features/webhooks/components/WebhookSubscriptionFormPage')
-                  return { element: <WebhookSubscriptionFormPage /> }
-                },
-              },
-              {
-                path: 'settings/webhooks/:id/edit',
-                lazy: async () => {
-                  const { WebhookSubscriptionFormPage } =
-                    await import('@/features/webhooks/components/WebhookSubscriptionFormPage')
-                  return { element: <WebhookSubscriptionFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="departments.view" />,
-            children: [
-              {
-                path: 'settings/departments',
-                lazy: async () => {
-                  const { DepartmentListPage } =
-                    await import('@/features/organization/components/DepartmentListPage')
-                  return { element: <DepartmentListPage /> }
-                },
-              },
-            ],
-          },
-          {
-            // Split from the `departments.view` list route above for the
-            // same reason `users/new` is split from `users`: create/edit
-            // are writes the server gates on `departments.manage`, so a
-            // view-only holder must not be routed to a guaranteed dead end.
-            element: <RequirePermission permission="departments.manage" />,
-            children: [
-              {
-                // Must stay before `settings/departments/:id/edit`, the
-                // same declaration order `roles/new` uses.
-                path: 'settings/departments/new',
-                lazy: async () => {
-                  const { DepartmentFormPage } =
-                    await import('@/features/organization/components/DepartmentFormPage')
-                  return { element: <DepartmentFormPage /> }
-                },
-              },
-              {
-                path: 'settings/departments/:id/edit',
-                lazy: async () => {
-                  const { DepartmentFormPage } =
-                    await import('@/features/organization/components/DepartmentFormPage')
-                  return { element: <DepartmentFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            element: <RequirePermission permission="branches.view" />,
-            children: [
-              {
-                path: 'settings/branches',
-                lazy: async () => {
-                  const { BranchListPage } =
-                    await import('@/features/organization/components/BranchListPage')
-                  return { element: <BranchListPage /> }
-                },
-              },
-            ],
-          },
-          {
-            // Split from the `branches.view` list route above for the same
-            // reason the `departments.manage` group is split from its own
-            // list route: create/edit are writes the server gates on
-            // `branches.manage`, so a view-only holder must not be routed
-            // to a guaranteed dead end.
-            element: <RequirePermission permission="branches.manage" />,
-            children: [
-              {
-                // Must stay before `settings/branches/:id/edit`, the same
-                // declaration order `departments/new` uses.
-                path: 'settings/branches/new',
-                lazy: async () => {
-                  const { BranchFormPage } =
-                    await import('@/features/organization/components/BranchFormPage')
-                  return { element: <BranchFormPage /> }
-                },
-              },
-              {
-                path: 'settings/branches/:id/edit',
-                lazy: async () => {
-                  const { BranchFormPage } =
-                    await import('@/features/organization/components/BranchFormPage')
-                  return { element: <BranchFormPage /> }
-                },
-              },
-            ],
-          },
-          {
-            path: 'tasks',
-            lazy: async () => {
-              const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')
-              return { element: <TaskListPage /> }
-            },
-          },
-          {
-            // Must stay before `tasks/:id/edit`, same reason
-            // `tickets/new` is declared before `tickets/:id`.
-            path: 'tasks/new',
-            lazy: async () => {
-              const { TaskFormPage } = await import('@/features/tasks/components/TaskFormPage')
-              return { element: <TaskFormPage /> }
-            },
-          },
-          {
-            path: 'tasks/:id/edit',
-            lazy: async () => {
-              const { TaskFormPage } = await import('@/features/tasks/components/TaskFormPage')
-              return { element: <TaskFormPage /> }
-            },
-          },
-          {
-            path: 'preferences',
-            lazy: async () => {
-              const { PreferencesPage } = await import('./PreferencesPage')
-              return { element: <PreferencesPage /> }
-            },
-          },
-          {
-            // Inside `RequireAuth`, not a sibling of it: an unmatched path
-            // must redirect a signed-out visitor to `/login` first, the same
-            // as any real route above. A sibling catch-all would render
-            // `NotFoundPage` (inside `RootLayout`'s staff Sidebar) for an
-            // anonymous visitor instead of ever asking them to log in.
-            path: '*',
-            lazy: async () => {
-              const { NotFoundPage } = await import('./NotFoundPage')
-              return { element: <NotFoundPage /> }
-            },
           },
         ],
       },

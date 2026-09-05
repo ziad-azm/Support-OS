@@ -11,6 +11,7 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
 import {
+  CheckboxField,
   FormErrorSummary,
   SelectField,
   SubmitButton,
@@ -40,6 +41,8 @@ import type { ContactDetail } from '../types/contactDetail'
 // `invalid_format.email` exactly as `email()`'s own callers do. See
 // CONVENTIONS.md §20's "custom issue keeps its own message" rule — this is
 // the sibling case, an issue with a STANDARD code re-pathed, not a literal.
+// Used by `ContactDetailEditForm` — editing an existing contact has no
+// "also create a second one" action; see `addContactSchema` below for that.
 const contactSchema = z
   .object({
     channel: choice(CONTACT_CHANNELS),
@@ -58,8 +61,56 @@ const contactSchema = z
 
 type ContactFormValues = z.output<typeof contactSchema>
 
+// Same shape as `contactSchema` plus one extra checkbox — ADD-only (see
+// `ContactDetailAddForm`). Duplicates the `superRefine` body rather than
+// `.extend()`ing `contactSchema` — a `ZodEffects` (what `.superRefine`
+// returns) has no `.extend()`; re-deriving from a plain object is simpler
+// than un-wrapping it.
+const addContactSchema = z
+  .object({
+    channel: choice(CONTACT_CHANNELS),
+    value: requiredString(254),
+    // Only meaningful (and only shown) when `channel === 'phone'`. Creates
+    // a second `ContactDetail` row (`channel: 'whatsapp'`, same value)
+    // right after the create itself succeeds, so a number that serves as
+    // both never has to be typed twice.
+    also_whatsapp: z.boolean().default(false),
+  })
+  .superRefine((data, ctx) => {
+    if (data.channel === 'email') {
+      const result = email().safeParse(data.value)
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue({ ...issue, path: ['value'] })
+        }
+      }
+    }
+  })
+
+type AddContactFormValues = z.output<typeof addContactSchema>
+
+const EMPTY_ADD_CONTACT: AddContactFormValues = {
+  channel: 'email',
+  value: '',
+  also_whatsapp: false,
+}
+
 function channelOptions(t: TFunction<'customers'>) {
   return CONTACT_CHANNELS.map((value) => ({ value, label: t(`contacts.channels.${value}`) }))
+}
+
+/** Whether this customer already has a `whatsapp`-channel contact with this
+ * exact value — checked BEFORE attempting to create the "also_whatsapp"
+ * duplicate, so an already-satisfied case (e.g. someone else already added
+ * it, or it's left over from a prior save) is a silent no-op instead of a
+ * raw "must make a unique set" database-constraint error reaching the
+ * agent. Message-matching that error instead would be fragile — the
+ * backend localises it through `Accept-Language`, so its exact English
+ * text is not guaranteed. */
+function hasWhatsappContact(contacts: ContactDetail[] | undefined, value: string): boolean {
+  return (contacts ?? []).some(
+    (contact) => contact.channel === 'whatsapp' && contact.value === value,
+  )
 }
 
 export function ContactDetailsSection({ customerId }: { customerId: number }) {
@@ -153,23 +204,44 @@ function ContactDetailAddForm({ customerId }: { customerId: number }) {
   const { t } = useTranslation('customers')
   const { toast } = useToast()
   const [formErrors, setFormErrors] = useState<string[]>([])
-  const form = useAppForm({ schema: contactSchema, defaultValues: { channel: 'email', value: '' } })
+  const form = useAppForm({ schema: addContactSchema, defaultValues: EMPTY_ADD_CONTACT })
   const mutation = useCreateContactDetail(customerId)
+  const channel = form.watch('channel')
+  // Same query `ContactDetailsSection` already fetches for this customer —
+  // an extra call here is a cache read, not a network request, since
+  // React Query dedupes by this identical key.
+  const contactsQuery = useContactDetails(customerId)
 
-  function onSubmit(values: ContactFormValues) {
+  function handleSuccess() {
+    toast({ tone: 'success', message: t('contacts.created') })
+    form.reset(EMPTY_ADD_CONTACT)
+    setFormErrors([])
+  }
+
+  function handleError(error: unknown) {
+    if (isValidationError(error)) setFormErrors(applyServerErrors(form, error))
+    // A non-validation failure is already toasted by the shared mutation
+    // error handler — CONVENTIONS.md §21.
+  }
+
+  function onSubmit(values: AddContactFormValues) {
     mutation.mutate(
-      { customer: customerId, ...values },
+      { customer: customerId, channel: values.channel, value: values.value },
       {
         onSuccess: () => {
-          toast({ tone: 'success', message: t('contacts.created') })
-          form.reset({ channel: 'email', value: '' })
-          setFormErrors([])
+          const needsWhatsapp = values.channel === 'phone' && values.also_whatsapp
+          if (!needsWhatsapp || hasWhatsappContact(contactsQuery.data?.items, values.value)) {
+            handleSuccess()
+            return
+          }
+          // One typed number, two `ContactDetail` rows — see
+          // `also_whatsapp`'s own docstring on `addContactSchema`.
+          mutation.mutate(
+            { customer: customerId, channel: 'whatsapp', value: values.value },
+            { onSuccess: handleSuccess, onError: handleError },
+          )
         },
-        onError: (error) => {
-          if (isValidationError(error)) setFormErrors(applyServerErrors(form, error))
-          // A non-validation failure is already toasted by the shared
-          // mutation error handler — CONVENTIONS.md §21.
-        },
+        onError: handleError,
       },
     )
   }
@@ -186,6 +258,13 @@ function ContactDetailAddForm({ customerId }: { customerId: number }) {
           />
           <TextField control={form.control} name="value" label={t('contacts.fields.value')} />
         </div>
+        {channel === 'phone' ? (
+          <CheckboxField
+            control={form.control}
+            name="also_whatsapp"
+            label={t('contacts.fields.alsoWhatsapp')}
+          />
+        ) : null}
         <FormErrorSummary errors={formErrors} />
         <SubmitButton pending={mutation.isPending} className="self-start">
           {t('contacts.actions.add')}
@@ -207,6 +286,11 @@ function ContactDetailEditForm({
   const { t } = useTranslation('customers')
   const { toast } = useToast()
   const [formErrors, setFormErrors] = useState<string[]>([])
+  // Plain `channel`/`value` only — no "also_whatsapp" shortcut here. That
+  // checkbox is a CREATE-time convenience (`ContactDetailAddForm`) for a
+  // number that doesn't have a WhatsApp row yet; once a contact already
+  // exists, adding WhatsApp for it means adding a new entry with that
+  // channel directly, not re-editing an unrelated existing row.
   const form = useAppForm({
     schema: contactSchema,
     defaultValues: { channel: contact.channel, value: contact.value },

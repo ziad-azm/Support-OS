@@ -29,6 +29,23 @@ class Customer(TimeStampedModel):
     # identifiers make anything stricter actively wrong. Per-channel validation
     # belongs to CUST-2.
     phone = models.CharField(_("phone"), max_length=40, blank=True)
+    # Per-channel opt-out for the two PRIMARY fields above — independent of
+    # whether `email`/`phone` themselves are set. Default `True` for both:
+    # every customer record that existed before these flags were added
+    # keeps working exactly as it already did (the primary always counted
+    # as a valid send target); a staff member switches one off only when a
+    # customer explicitly should not be contacted through it anymore
+    # (support said "don't email me", a disconnected number, etc.) without
+    # having to blank out or delete the identifying value itself.
+    email_contact_enabled = models.BooleanField(_("email enabled for contact"), default=True)
+    phone_contact_enabled = models.BooleanField(_("phone enabled for contact (SMS)"), default=True)
+    # Default `False`, unlike the two above — WhatsApp has always been
+    # opt-in in this project (a dedicated `ContactDetail(channel="whatsapp")`
+    # row is the other, independent way a number becomes WhatsApp-eligible;
+    # see `apps.communications.serializers.MessageSerializer.validate`).
+    # This flag is the shortcut for "the PRIMARY phone above is ALSO my
+    # WhatsApp number" without adding a second, duplicate contact entry.
+    whatsapp_enabled = models.BooleanField(_("phone enabled for WhatsApp"), default=False)
     company = models.CharField(_("company"), max_length=200, blank=True)
     # The ERP's own id for this customer — INT-2's correlation key, and the
     # only thing that makes an import an upsert rather than a duplicate

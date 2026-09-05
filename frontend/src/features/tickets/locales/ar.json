@@ -127,7 +127,11 @@
     },
     "fields": {
       "channel": "القناة",
+      "targetAddress": "الإرسال إلى",
       "body": "الرسالة"
+    },
+    "targetAddress": {
+      "primaryOption": "{{value}} (أساسي)"
     },
     "quickReply": {
       "label": "رد سريع",

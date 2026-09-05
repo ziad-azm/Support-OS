@@ -10,7 +10,10 @@
   "fields": {
     "name": "الاسم",
     "email": "البريد الإلكتروني",
+    "emailContactEnabled": "استخدم هذا البريد للتواصل",
     "phone": "الهاتف",
+    "phoneContactEnabled": "استخدم هذا الرقم للتواصل (SMS)",
+    "whatsappEnabled": "استخدم هذا الرقم في واتساب أيضًا",
     "company": "الشركة",
     "branch": "الفرع",
     "noBranch": "بدون فرع",
@@ -52,7 +55,8 @@
     "empty": "لا توجد قنوات تواصل بعد.",
     "fields": {
       "channel": "القناة",
-      "value": "القيمة"
+      "value": "القيمة",
+      "alsoWhatsapp": "استخدم هذا الرقم في واتساب أيضًا"
     },
     "channels": {
       "email": "البريد الإلكتروني",
