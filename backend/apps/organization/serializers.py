@@ -266,6 +266,7 @@ class PublicLandingContentSerializer(serializers.ModelSerializer):
             "hero_headline_ar",
             "hero_value_proposition_en",
             "hero_value_proposition_ar",
+            "hero_image_url",
             "hero_primary_cta_label_en",
             "hero_primary_cta_label_ar",
             "hero_primary_cta_target",

@@ -80,7 +80,7 @@
       "heroArabic": "Hero and highlights — Arabic",
       "ctaEnglish": "Closing section and footer — English",
       "ctaArabic": "Closing section and footer — Arabic",
-      "targets": "Button destinations",
+      "targets": "Media & button destinations",
       "english": "English",
       "arabic": "Arabic"
     },
@@ -97,7 +97,8 @@
       "primaryCtaTarget": "Primary button goes to",
       "secondaryCtaTarget": "Secondary button goes to",
       "ctaTarget": "Closing button goes to",
-      "defaultTarget": "Default destination"
+      "defaultTarget": "Default destination",
+      "heroImageUrl": "Hero image URL"
     },
     "targets": {
       "login": "Log in page",
@@ -115,7 +116,8 @@
     "actions": {
       "save": "Save"
     },
-    "manageSocial": "Manage social links"
+    "manageSocial": "Manage social links",
+    "heroImageHint": "Full image URL, starting with https://. Leave blank for a text-only hero."
   },
   "landingHighlights": {
     "title": "Landing Highlights",

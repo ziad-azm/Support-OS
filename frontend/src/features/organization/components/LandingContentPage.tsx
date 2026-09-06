@@ -55,29 +55,45 @@ const ctaTarget = z.union([z.literal(''), choice(LANDING_CTA_TARGETS)])
 // `t()` key below typecheck against the strict i18next resource map.
 const PREVIEW_LANGUAGES = ['en', 'ar'] as const
 
-const schema = z.object({
-  hero_headline_en: shortText(200),
-  hero_headline_ar: shortText(200),
-  hero_value_proposition_en: longText,
-  hero_value_proposition_ar: longText,
-  hero_primary_cta_label_en: shortText(60),
-  hero_primary_cta_label_ar: shortText(60),
-  hero_primary_cta_target: ctaTarget,
-  hero_secondary_cta_label_en: shortText(60),
-  hero_secondary_cta_label_ar: shortText(60),
-  hero_secondary_cta_target: ctaTarget,
-  features_title_en: shortText(200),
-  features_title_ar: shortText(200),
-  cta_title_en: shortText(200),
-  cta_title_ar: shortText(200),
-  cta_subtitle_en: longText,
-  cta_subtitle_ar: longText,
-  cta_label_en: shortText(60),
-  cta_label_ar: shortText(60),
-  cta_target: ctaTarget,
-  footer_text_en: shortText(200),
-  footer_text_ar: shortText(200),
-})
+const schema = z
+  .object({
+    hero_headline_en: shortText(200),
+    hero_headline_ar: shortText(200),
+    hero_value_proposition_en: longText,
+    hero_value_proposition_ar: longText,
+    hero_image_url: shortText(500),
+    hero_primary_cta_label_en: shortText(60),
+    hero_primary_cta_label_ar: shortText(60),
+    hero_primary_cta_target: ctaTarget,
+    hero_secondary_cta_label_en: shortText(60),
+    hero_secondary_cta_label_ar: shortText(60),
+    hero_secondary_cta_target: ctaTarget,
+    features_title_en: shortText(200),
+    features_title_ar: shortText(200),
+    cta_title_en: shortText(200),
+    cta_title_ar: shortText(200),
+    cta_subtitle_en: longText,
+    cta_subtitle_ar: longText,
+    cta_label_en: shortText(60),
+    cta_label_ar: shortText(60),
+    cta_target: ctaTarget,
+    footer_text_en: shortText(200),
+    footer_text_ar: shortText(200),
+  })
+  // `hero_image_url` gets the same non-empty-only format check
+  // `SettingsPage.tsx`'s `logo_url` uses: `z.url()`'s own translated error
+  // reused rather than a new message, only when the field is non-empty —
+  // it stays optional (Story 96).
+  .superRefine((data, ctx) => {
+    if (data.hero_image_url !== '') {
+      const result = z.url().safeParse(data.hero_image_url)
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue({ ...issue, path: ['hero_image_url'] })
+        }
+      }
+    }
+  })
 
 type FormValues = z.output<typeof schema>
 
@@ -332,6 +348,12 @@ function LandingContentForm({ content }: { content: LandingContentAdmin }) {
                 <CardTitle className="text-base">{t('landing.sections.targets')}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
+                <TextField
+                  control={form.control}
+                  name="hero_image_url"
+                  label={t('landing.fields.heroImageUrl')}
+                  description={t('landing.heroImageHint')}
+                />
                 <SelectField
                   control={form.control}
                   name="hero_primary_cta_target"

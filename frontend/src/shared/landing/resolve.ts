@@ -60,6 +60,10 @@ export function resolveLanding(
     heroValueProposition:
       pick(content?.hero_value_proposition_en, content?.hero_value_proposition_ar) ||
       t('hero.valueProposition'),
+    // No `pick()` and no bundle fallback: a URL is not bilingual, and there
+    // is no shipped default hero image to fall back TO. Blank means "render
+    // the single-column hero", which is what every existing deployment gets.
+    heroImageUrl: (content?.hero_image_url ?? '').trim(),
     primaryCta: {
       label:
         pick(content?.hero_primary_cta_label_en, content?.hero_primary_cta_label_ar) ||

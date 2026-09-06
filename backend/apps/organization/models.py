@@ -239,6 +239,21 @@ class LandingContent(TimeStampedModel):
     hero_value_proposition_en = models.TextField(_("value proposition (English)"), blank=True)
     hero_value_proposition_ar = models.TextField(_("value proposition (Arabic)"), blank=True)
 
+    # An absolute http(s) URL, NOT an upload — Story 96's own scope decision,
+    # recorded in that plan's `## The hero image decision`. Short version:
+    # an uploaded file could not be served to an anonymous visitor without
+    # reversing the "No MEDIA_URL ... never through Django's own unguarded
+    # static/media serving" stance `config/settings/base.py:170-174` records
+    # for CUST-4, and the landing page has no session by definition.
+    #
+    # Not bilingual, unlike every string field around it: an image is not
+    # translated copy. Blank means "render the text-only hero", which is what
+    # every deployment gets until an admin sets one.
+    #
+    # `URLField` for the same reason `OrganizationSettings.logo_url` is one
+    # (models.py:109-112). 500 matches that field's own max_length.
+    hero_image_url = models.URLField(_("hero image URL"), max_length=500, blank=True)
+
     hero_primary_cta_label_en = models.CharField(
         _("primary CTA label (English)"), max_length=60, blank=True
     )

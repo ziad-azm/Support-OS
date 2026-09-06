@@ -1698,12 +1698,20 @@ every already-built screen:
   **not** covered — noted as a follow-up, `TicketAssigneeControl.tsx` being
   the one with real unbounded text (agent names).
 
-**Also confirmed already compliant, no change needed:** alt text (no `<img>`
-anywhere), icon-only buttons (all 5 already have `aria-label`), no bare
-`div`/`span onClick` anywhere, RTL (`check-rtl.mjs`, CI-wired, zero
-violations), sortable table headers (`DataTable.tsx`, already a model
-implementation), field `aria-describedby`/`aria-invalid` wiring, and
-touch target size (`icon-xs` = 24px, meets WCAG 2.2's minimum exactly).
+**Also confirmed already compliant, no change needed:** icon-only buttons
+(all 5 already have `aria-label`), no bare `div`/`span onClick` anywhere,
+RTL (`check-rtl.mjs`, CI-wired, zero violations), sortable table headers
+(`DataTable.tsx`, already a model implementation), field
+`aria-describedby`/`aria-invalid` wiring, and touch target size
+(`icon-xs` = 24px, meets WCAG 2.2's minimum exactly).
+
+**Correction (Story 96, `LAND-4`):** the "no `<img>` anywhere" finding
+above is no longer true and is removed rather than left to mislead the
+next reader. Two `<img>` elements exist today, both rendering an
+admin-set external URL with real `alt` text and an `onError` fallback —
+`shared/branding/BrandMark.tsx` (ORG-3, the org logo) and
+`shared/landing/HeroImage.tsx` (LAND-4, the landing hero image). Any
+third `<img>` this codebase adds must carry the same two defences.
 
 ### Chart-type guidance (for `RPT-0`)
 
@@ -1800,6 +1808,38 @@ existing button/input/select height-alignment invariant (`h-9` shared
 across all three) is verified compliant with MASTER's radius target already
 and takes precedence over MASTER's literal padding numbers, which would
 have broken that alignment.
+
+### Landing page visual language (`LAND-4`, Story 96)
+
+The public landing page (`frontend/src/shared/landing/sections/
+LandingSections.tsx`) alternates surface per section — hero `bg-primary/5`,
+features `bg-card`, CTA band `bg-muted`, footer the page's plain
+`bg-background` — so four consecutive sections stay visually
+distinguishable instead of reading as one flat scroll. `bg-primary/5` is
+token-driven rather than a hex, which is why it follows ORG-3's admin-set
+brand colour automatically.
+
+Landing `Card`s carry `shadow-md hover:shadow-lg hover:-translate-y-0.5
+transition-all duration-200`, applied **via `className` at each call site**
+— `shared/ui/primitives/card.tsx` itself is never edited for this, so the
+staff app's other `Card` usages keep their default flat `shadow-sm`.
+
+`design-system/supportos/MASTER.md`'s `--shadow-*` and `--space-*` tables
+are spent as the Tailwind utilities this codebase already uses
+(`shadow-md`/`shadow-lg`, `py-16`/`py-24`/`gap-6`, etc.) and were
+deliberately **not** introduced as a parallel set of CSS custom
+properties — `index.css` has no `--shadow-*` token today, and adding one
+would give the same concept two names.
+
+MASTER.md's single generated page pattern ("FAQ/Documentation Landing":
+hero-with-search-bar → popular categories → FAQ accordion → contact CTA)
+is **rejected** for this page — `design-system/supportos/pages/` is empty,
+so that pattern is all the design-system layer has, and it describes a
+help centre rather than a signed-out product front door. A search bar
+would have nothing to search for a first-time visitor, and a FAQ accordion
+would duplicate `KB-1`'s portal FAQ browse outside the authenticated
+surface it belongs behind. The landing page keeps its existing hero →
+highlights → CTA → footer order.
 
 ---
 

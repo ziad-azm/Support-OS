@@ -14,6 +14,7 @@ export { isSocialPlatform, socialHref, SOCIAL_PLATFORMS } from './social'
 export type { SocialPlatform } from './social'
 export { LandingIcon } from './LandingIcon'
 export { LandingSocialIcon } from './LandingSocialIcon'
+export { HeroImage } from './HeroImage'
 export { Reveal } from './Reveal'
 export {
   LandingCtaBand,

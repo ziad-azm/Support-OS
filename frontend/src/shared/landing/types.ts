@@ -10,6 +10,11 @@ export type LandingContent = {
   hero_headline_ar: string
   hero_value_proposition_en: string
   hero_value_proposition_ar: string
+  /** An absolute http(s) URL, or `''`. NOT an upload — see Story 96
+   * `## The hero image decision`: an uploaded file could not be served to an
+   * anonymous visitor without reversing the "no MEDIA_URL" stance
+   * `config/settings/base.py:170-174` records. */
+  hero_image_url: string
   hero_primary_cta_label_en: string
   hero_primary_cta_label_ar: string
   hero_primary_cta_target: string
@@ -81,6 +86,7 @@ export type ResolvedSocialLink = {
 export type ResolvedLanding = {
   heroHeadline: string
   heroValueProposition: string
+  heroImageUrl: string
   primaryCta: { label: string; to: string }
   secondaryCta: { label: string; to: string }
   featuresTitle: string

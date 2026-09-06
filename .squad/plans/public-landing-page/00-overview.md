@@ -9,6 +9,7 @@ Entry point for the **public-landing-page** feature. Stories execute in order by
 | 86 | [86-story-animated-public-landing-page-SUPPORTOS-120.md](86-story-animated-public-landing-page-SUPPORTOS-120.md) | Animated Public Landing Page (LAND-1) | SUPPORTOS-120 | Stories 05, 06 (`I18N`/`UI`, complete), Story 42 (`/portal` tree, complete), Story 84 (`RedirectPortalOnly`, complete) |
 | 94 | [94-story-editable-landing-content-SUPPORTOS-124.md](94-story-editable-landing-content-SUPPORTOS-124.md) | Editable Landing Content, Admin CMS (LAND-2) | SUPPORTOS-124 | Story 86 (this feature, landed), Story 90 (`BrandingView` public-read path, landed), Stories 87/89 (ordered-row admin pattern, landed), Story 40 (`Article` bilingual columns, landed), Story 07 (`FORM`) |
 | 95 | [95-story-social-contact-presence-SUPPORTOS-125.md](95-story-social-contact-presence-SUPPORTOS-125.md) | Social Media & Contact Presence (LAND-3) | SUPPORTOS-125 | Story 94 (this feature, **implemented** — extends its model set, public serializer and `shared/landing/` module), Story 19 (`/contact` web form, landed), Story 11 (`ContactDetail` channel+value shape, landed) |
+| 96 | [96-story-landing-visual-redesign-SUPPORTOS-126.md](96-story-landing-visual-redesign-SUPPORTOS-126.md) | Landing Page Visual Redesign (LAND-4) | SUPPORTOS-126 | Stories 94/95 (this feature, **implemented** — restyles their section components), Stories 36/50/51 (`DSN` token layer, landed), Story 64 (`DSN-9` breakpoints, landed). **NOT blocked on `MOTION-0`** — see below |
 
 ## Dependency notes
 
@@ -23,7 +24,11 @@ admin editor, and the live preview — are all covered by that one plan. It is
 
 `LAND-3` (`SUPPORTOS-125`) is **Story 95** — an admin-managed social/contact link
 list riding Story 94's existing public payload, rendered in the landing footer and
-on `/contact`. Planned, not yet implemented.
+on `/contact`. It is **implemented**.
+
+`LAND-4` (`SUPPORTOS-126`) is **Story 96** — the visual redesign of the page the
+three stories above built. Planned, not yet implemented. **`EPIC 15` is fully
+planned once it lands, with the exception of `MOTION-0`, which has no plan yet.**
 
 **Story 86 is frontend-only.** No backend module, model, endpoint, or setting is
 read or written. The landing copy lives in a new `landing` i18n namespace
@@ -171,3 +176,60 @@ Deliberately left out and named as such: a second bilingual label column (platfo
 names are proper nouns), any change to `customers.ContactDetail`, LAND-4's eventual
 placement of the block (the row ships as a standalone component so it can be moved
 without a rewrite), click analytics, link-health checks, and uploaded brand logos.
+
+---
+
+## Story 96 (`LAND-4`) — the four decisions it makes, and why
+
+**The hero image is a URL, not an upload — decided, because the intake demanded a
+decision.** `config/settings/base.py:170-174` records that this project has **no
+`MEDIA_URL`**: uploads exist (`customers.Attachment.file` is a real `FileField`)
+but every byte leaves through `AttachmentViewSet.download`, permission-gated, "never
+through Django's own unguarded static/media serving". A landing hero must be
+readable with **no session at all**, so shipping it as an upload means either
+reversing that stance or writing a second deliberately-public download view for one
+image — both bigger decisions than this story owns. Meanwhile `logo_url` already
+proves the URL path works end to end, and `BrandMark.tsx:27-42` already proves the
+render pattern (external URL + `object-contain` + size cap + `onError` fallback,
+each with its reason in a comment). So: one `blank=True` `URLField` on
+`LandingContent`, zero new endpoints.
+
+**`MOTION-0` is listed as a dependency but does not block this story.** It has no
+plan, and `SupportOs backlog.MD:951` still describes it as unstarted. Two facts make
+proceeding safe: its second task ("move `Reveal.tsx` into the shared layer") was
+**already half-done by Story 94**, which moved it to `shared/landing/Reveal.tsx` with
+no feature-local copy left behind; and Story 96 **adds no animation at all** — every
+change is static type, spacing, surface and border, plus one 200ms card-hover state
+transition that `DSN-8` already owns the category for. `Reveal` and the hero's
+`animate-in` come out of this story byte-identical.
+
+**MASTER.md's page pattern is rejected; its style guidance is adopted.**
+`design-system/supportos/pages/` is **empty**, so MASTER.md's single generated
+"FAQ/Documentation Landing" pattern — section order "Hero with search bar > Popular
+categories > FAQ accordion > Contact/support CTA" — is the only page-level direction
+the `DSN` layer has, and it describes a help centre, not a product front door. A
+search bar as the hero CTA is wrong for a signed-out visitor with nothing to search;
+a FAQ accordion would duplicate `KB-1`'s portal browse outside the session. Story 86
+already made this call and Story 96 holds it. What **is** adopted is everything
+above that section: Swiss-minimalist style, the 200-250ms hover window, the Cards
+spec (`shadow-md` → `shadow-lg` + a 2px lift), the spacing values, the Anti-Patterns
+list, and the Pre-Delivery Checklist's own four responsive checkpoints
+(375/768/1024/1440), which is the concrete answer to "the breakpoints `DSN-9`
+established".
+
+**MASTER.md's `--shadow-*` and `--space-*` tables are spent as Tailwind utilities,
+not introduced as CSS variables.** `index.css` has no `--shadow-*` today (verified —
+only `--radius` and its derivations), and `card.tsx`/`button.tsx` already spend
+Tailwind's `shadow-*` scale. Adding a parallel token scale would give one concept two
+names. The card treatment is applied **per-usage via `className`**, never by editing
+`card.tsx`, so the staff app's ~40 other `Card` usages keep their flat `shadow-sm`.
+
+One stale record gets corrected on the way through: `CONVENTIONS.md:1701` still
+claims there is "no `<img>` anywhere", which ORG-3 falsified when it shipped
+`BrandMark.tsx:29`. Story 96 rewrites that clause rather than leaving the next reader
+to trust it.
+
+Deliberately left out and named as such: a social-proof section (no model exists for
+customer logos or testimonials, and inventing placeholders would ship fake content on
+the front door), any new shadcn component or dependency, any copy or i18n change
+beyond the two new admin-form keys, and the staff app.

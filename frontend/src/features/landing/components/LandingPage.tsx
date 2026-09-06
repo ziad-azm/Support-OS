@@ -38,7 +38,14 @@ export function LandingPage() {
 
   return (
     <div className="flex flex-col">
-      <header className="border-b">
+      {/* Sticky against `PublicLayout`'s outer div, which is the scroll
+          container — `index.css`'s base layer makes `html, body`
+          `overflow-hidden`, so the document itself never scrolls and
+          `sticky top-0` resolves against that div. `bg-background/80` +
+          `backdrop-blur` keeps the hero's tinted band legible under it.
+          `z-10` clears the section content; nothing on this page is
+          layered above it. */}
+      <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
         <div className="container mx-auto flex flex-wrap items-center gap-4 px-4 py-3">
           <BrandMark />
           <div className="ms-auto flex items-center gap-2">
