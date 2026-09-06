@@ -5,12 +5,15 @@ from rest_framework.views import APIView
 from apps.core.permissions import HasPermission, Permissions
 from apps.core.views import BaseModelViewSet
 
-from .models import Branch, Department, OrganizationSettings
+from .models import Branch, Department, LandingContent, LandingHighlight, OrganizationSettings
 from .serializers import (
     BranchSerializer,
     BrandingSerializer,
     DepartmentSerializer,
+    LandingContentAdminSerializer,
+    LandingHighlightSerializer,
     OrganizationSettingsSerializer,
+    PublicLandingContentSerializer,
 )
 
 
@@ -127,3 +130,90 @@ class SettingsView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class LandingContentView(APIView):
+    """Public landing content — LAND-2. The SECOND endpoint in this app
+    reachable without a session, and a deliberate SIBLING of `BrandingView`
+    above rather than an extension of it.
+
+    Why not just add the fields to `BrandingSerializer`: that payload is
+    fetched once per session by `<BrandingSync>` on EVERY route — login,
+    portal, every staff screen — because it drives the brand colour and the
+    document title. Landing marketing copy is needed on exactly one route.
+    Merging them would ship ~20 unused strings to every signed-in agent's
+    first page load and break that serializer's "THREE FIELDS,
+    DELIBERATELY" contract.
+
+    Same explicit-open pair as `BrandingView`: `authentication_classes = []`
+    AND `permission_classes = [AllowAny]`. Both are needed — `AllowAny`
+    alone still runs authentication, so a stale `Authorization` header
+    would 401 the product's front door.
+
+    NO `throttle_classes`: it inherits the `anon` 300/hour baseline from
+    `DEFAULT_THROTTLE_CLASSES` (config/settings/base.py). Declaring its own
+    would REPLACE that baseline rather than stack with it (CONVENTIONS.md
+    § 36).
+
+    GET only, so any other verb 405s through Django's own
+    `http_method_not_allowed` — the same reasoning `BrandingView` records.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(PublicLandingContentSerializer(LandingContent.load()).data)
+
+
+class LandingContentAdminView(APIView):
+    """The admin read/write side of the one `LandingContent` row —
+    `SettingsView` above, for landing copy. Same singleton `APIView` shape,
+    same lowercased-method `permission_map`, same `settings.manage`: org
+    marketing copy is admin-only by intent (LAND-2's own constraint), so
+    this reuses the existing permission rather than minting a new one.
+    """
+
+    permission_classes = [IsAuthenticated, HasPermission]
+    permission_map = {"get": Permissions.SETTINGS_MANAGE, "patch": Permissions.SETTINGS_MANAGE}
+
+    def get(self, request):
+        return Response(LandingContentAdminSerializer(LandingContent.load()).data)
+
+    def patch(self, request):
+        content = LandingContent.load()
+        serializer = LandingContentAdminSerializer(content, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class LandingHighlightViewSet(BaseModelViewSet):
+    """Highlight-card CRUD — LAND-2. `DepartmentViewSet` above, for the
+    ordered list behind the public landing page.
+
+    ONE permission, not two, unlike `DEPARTMENTS_VIEW`/`DEPARTMENTS_MANAGE`:
+    nothing in the staff app renders a highlight picker or filter, so there
+    is no read-only consumer to widen for. The one caller that needs to
+    READ highlights without `settings.manage` is the anonymous landing page,
+    and it reads them through `LandingContentView` above.
+
+    NOT a `ScopedQuerysetMixin` consumer — there is one landing page, not
+    one per branch.
+    """
+
+    queryset = LandingHighlight.objects.all()
+    serializer_class = LandingHighlightSerializer
+
+    permission_map = {
+        "list": Permissions.SETTINGS_MANAGE,
+        "retrieve": Permissions.SETTINGS_MANAGE,
+        "create": Permissions.SETTINGS_MANAGE,
+        "update": Permissions.SETTINGS_MANAGE,
+        "partial_update": Permissions.SETTINGS_MANAGE,
+        "destroy": Permissions.SETTINGS_MANAGE,
+    }
+
+    # Each name must match a `ColumnDef.id` on `LandingHighlightListPage` (§23).
+    ordering_fields = ("order", "title_en", "created_at")
+    search_fields = ("title_en", "title_ar")

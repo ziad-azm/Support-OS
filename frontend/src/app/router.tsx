@@ -513,6 +513,44 @@ export const router = createBrowserRouter([
                       return { element: <SettingsPage /> }
                     },
                   },
+                  {
+                    // LAND-2. No `view`/`manage` split like `departments`
+                    // below: reads and writes are both `settings.manage`
+                    // here, so one guard covers all four routes.
+                    path: 'settings/landing',
+                    lazy: async () => {
+                      const { LandingContentPage } =
+                        await import('@/features/organization/components/LandingContentPage')
+                      return { element: <LandingContentPage /> }
+                    },
+                  },
+                  {
+                    path: 'settings/landing/highlights',
+                    lazy: async () => {
+                      const { LandingHighlightListPage } =
+                        await import('@/features/organization/components/LandingHighlightListPage')
+                      return { element: <LandingHighlightListPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `settings/landing/highlights/:id/edit`,
+                    // the same declaration order `settings/departments/new`
+                    // uses.
+                    path: 'settings/landing/highlights/new',
+                    lazy: async () => {
+                      const { LandingHighlightFormPage } =
+                        await import('@/features/organization/components/LandingHighlightFormPage')
+                      return { element: <LandingHighlightFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'settings/landing/highlights/:id/edit',
+                    lazy: async () => {
+                      const { LandingHighlightFormPage } =
+                        await import('@/features/organization/components/LandingHighlightFormPage')
+                      return { element: <LandingHighlightFormPage /> }
+                    },
+                  },
                 ],
               },
               {

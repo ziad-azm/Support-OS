@@ -13,14 +13,28 @@ import { cn } from '@/shared/lib/cn'
  * it skips the `opacity-0` starting state entirely, so a reduced-motion
  * visitor never depends on an IntersectionObserver callback to see content.
  *
+ * `disabled` is the same escape hatch for the admin editor's live preview
+ * (Story 94). The observer has no `root`, so it keys on the VIEWPORT — inside
+ * a bounded, scaled preview panel a section can sit at `opacity-0`
+ * indefinitely. A blank preview is worse than an unanimated one, so the
+ * editor passes `disabled` and every section paints immediately.
+ *
  * `slide-in-from-bottom-*` is vertical and therefore direction-neutral —
  * `slide-in-from-left/right` would need an `rtl:` counterpart and is not used
  * anywhere on this page.
  */
-export function Reveal({ children, delayMs = 0 }: { children: ReactNode; delayMs?: number }) {
+export function Reveal({
+  children,
+  delayMs = 0,
+  disabled = false,
+}: {
+  children: ReactNode
+  delayMs?: number
+  disabled?: boolean
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const [revealed, setRevealed] = useState(
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () => disabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
 
   useEffect(() => {

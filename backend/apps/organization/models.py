@@ -193,3 +193,174 @@ class OrganizationSettings(TimeStampedModel):
     def load(cls) -> "OrganizationSettings":
         obj, _created = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class LandingContent(TimeStampedModel):
+    """The one editable-landing-copy record — LAND-2. A singleton on the
+    exact `OrganizationSettings` mechanism above: `load()` is the only
+    supported way in, `save()` forces `pk=1`, `delete()` is a no-op.
+
+    A SECOND singleton rather than fourteen more columns on
+    `OrganizationSettings`, deliberately. That model's own docstring says
+    it "now holds only scalars — branding and the two org-wide SLA
+    defaults", and `OrganizationSettingsSerializer` publishes all of them
+    to `settings.manage` holders. Landing copy is public marketing text
+    with a different audience, a different write cadence, and its own
+    public read path; mixing it in would double that serializer's field
+    list and put marketing strings behind the SLA-defaults form.
+
+    EVERY STRING FIELD IS `blank=True`, AND BLANK IS MEANINGFUL: it means
+    "render the string shipped in `frontend/src/features/landing/locales/`",
+    never "render empty". The fallback itself lives on the frontend
+    (`src/shared/landing/resolve.ts`) because the defaults are i18n
+    resources — copying them into Python would create a second source of
+    truth for the same sentence.
+
+    Both locales are stored per string, mirroring
+    `knowledge_base.Article.title_en/title_ar/body_en/body_ar`. An admin
+    who fills in only English gets an English override and the shipped
+    Arabic; the Arabic half never silently freezes.
+    """
+
+    class CtaTarget(models.TextChoices):
+        """Where a landing CTA may point. A FIXED SET, not a URL field:
+        every value here is a route that exists in `app/router.tsx`'s
+        public tree, so an admin cannot aim the product's front door at a
+        404, an authenticated route, or an off-site link. Same reasoning
+        `LandingHighlight.Icon` below applies to icons.
+        """
+
+        LOGIN = "login", _("Log in")
+        CONTACT = "contact", _("Contact form")
+        CHAT = "chat", _("Live chat")
+
+    hero_headline_en = models.CharField(_("hero headline (English)"), max_length=200, blank=True)
+    hero_headline_ar = models.CharField(_("hero headline (Arabic)"), max_length=200, blank=True)
+    hero_value_proposition_en = models.TextField(_("value proposition (English)"), blank=True)
+    hero_value_proposition_ar = models.TextField(_("value proposition (Arabic)"), blank=True)
+
+    hero_primary_cta_label_en = models.CharField(
+        _("primary CTA label (English)"), max_length=60, blank=True
+    )
+    hero_primary_cta_label_ar = models.CharField(
+        _("primary CTA label (Arabic)"), max_length=60, blank=True
+    )
+    hero_primary_cta_target = models.CharField(
+        _("primary CTA target"), max_length=20, choices=CtaTarget.choices, blank=True
+    )
+    hero_secondary_cta_label_en = models.CharField(
+        _("secondary CTA label (English)"), max_length=60, blank=True
+    )
+    hero_secondary_cta_label_ar = models.CharField(
+        _("secondary CTA label (Arabic)"), max_length=60, blank=True
+    )
+    hero_secondary_cta_target = models.CharField(
+        _("secondary CTA target"), max_length=20, choices=CtaTarget.choices, blank=True
+    )
+
+    features_title_en = models.CharField(
+        _("highlights section title (English)"), max_length=200, blank=True
+    )
+    features_title_ar = models.CharField(
+        _("highlights section title (Arabic)"), max_length=200, blank=True
+    )
+
+    cta_title_en = models.CharField(_("CTA band title (English)"), max_length=200, blank=True)
+    cta_title_ar = models.CharField(_("CTA band title (Arabic)"), max_length=200, blank=True)
+    cta_subtitle_en = models.TextField(_("CTA band subtitle (English)"), blank=True)
+    cta_subtitle_ar = models.TextField(_("CTA band subtitle (Arabic)"), blank=True)
+    cta_label_en = models.CharField(_("CTA band button (English)"), max_length=60, blank=True)
+    cta_label_ar = models.CharField(_("CTA band button (Arabic)"), max_length=60, blank=True)
+    cta_target = models.CharField(
+        _("CTA band target"), max_length=20, choices=CtaTarget.choices, blank=True
+    )
+
+    # `{{year}}` is substituted client-side by i18next's interpolation, the
+    # same as the shipped `footer.copyright` default. An admin value with no
+    # placeholder simply renders literally.
+    footer_text_en = models.CharField(_("footer text (English)"), max_length=200, blank=True)
+    footer_text_ar = models.CharField(_("footer text (Arabic)"), max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = _("landing content")
+        verbose_name_plural = _("landing content")
+
+    def __str__(self) -> str:
+        return str(_("Landing content"))
+
+    def save(self, *args, **kwargs) -> None:
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs) -> None:
+        # Same no-op as `OrganizationSettings.delete` — "delete the landing
+        # copy" has no sensible meaning; blanking the fields is what reverts
+        # to the shipped defaults.
+        pass
+
+    @classmethod
+    def load(cls) -> "LandingContent":
+        obj, _created = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class LandingHighlight(TimeStampedModel):
+    """One feature-highlight card on the public landing page — LAND-2.
+
+    A MODEL, NOT A `JSONField` LIST. CONVENTIONS.md § 33 records that ORG-1
+    and ORG-2 promoted this codebase's last two JSON string-list columns to
+    real models and that "a future story wanting a list of things on that
+    model should create a model, not a column: that is now the established
+    answer, twice over". This is that future story.
+
+    Ordered exactly like `knowledge_base.FAQ`: a `PositiveIntegerField`
+    edited as a plain number in the form, ties broken by `id` so the order
+    is total and stable. No drag-and-drop.
+
+    ZERO ROWS IS A REAL STATE and means "render the four cards shipped in
+    `frontend/src/features/landing/locales/`" — the same blank-means-default
+    rule `LandingContent` uses for its strings. A non-empty table replaces
+    the shipped set entirely rather than appending to it; a half-merged list
+    would make "delete this card" impossible to express.
+    """
+
+    class Icon(models.TextChoices):
+        """The curated `lucide-react` set — DSN-4 standardized on that
+        library (CONVENTIONS.md § 25) and this is the subset an admin may
+        pick from. Each value is a `lucide-react` export name in kebab
+        case, mapped to the actual component by
+        `src/shared/landing/config.ts`'s `LANDING_ICONS`. A free-text name
+        would let one typo blank a card on the product's front door.
+
+        ADDING A VALUE IS A TWO-FILE CHANGE: this enum and `LANDING_ICONS`.
+        The frontend map falls back to `inbox` for an unknown key so a
+        backend-first deploy degrades instead of crashing.
+        """
+
+        INBOX = "inbox", _("Inbox")
+        TIMER = "timer", _("Timer")
+        SPARKLES = "sparkles", _("Sparkles")
+        BAR_CHART = "bar-chart-3", _("Bar chart")
+        MESSAGE_SQUARE = "message-square", _("Message")
+        USERS = "users", _("People")
+        SHIELD_CHECK = "shield-check", _("Shield")
+        ZAP = "zap", _("Lightning")
+        GLOBE = "globe", _("Globe")
+        CLOCK = "clock", _("Clock")
+        FILE_TEXT = "file-text", _("Document")
+        BELL = "bell", _("Bell")
+
+    title_en = models.CharField(_("title (English)"), max_length=120)
+    title_ar = models.CharField(_("title (Arabic)"), max_length=120)
+    description_en = models.TextField(_("description (English)"))
+    description_ar = models.TextField(_("description (Arabic)"))
+    icon = models.CharField(_("icon"), max_length=32, choices=Icon.choices, default=Icon.SPARKLES)
+    order = models.PositiveIntegerField(_("order"), default=0)
+
+    class Meta:
+        verbose_name = _("landing highlight")
+        verbose_name_plural = _("landing highlights")
+        ordering = ("order", "id")
+
+    def __str__(self) -> str:
+        return self.title_en

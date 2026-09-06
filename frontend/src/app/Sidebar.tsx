@@ -13,6 +13,7 @@ import {
   HistoryIcon,
   InboxIcon,
   LayoutDashboardIcon,
+  LayoutTemplateIcon,
   ListTodoIcon,
   LogOutIcon,
   MapPinIcon,
@@ -362,6 +363,16 @@ export function Sidebar() {
                 to="/settings"
                 icon={SettingsIcon}
                 label={t('organization:settings.title')}
+                collapsed={collapsed}
+              />
+            </Can>
+            {/* LAND-2. Reuses `settings.manage`, so `showAdministration`
+                above already covers it — no new disjunct needed. */}
+            <Can permission="settings.manage">
+              <SidebarLink
+                to="/settings/landing"
+                icon={LayoutTemplateIcon}
+                label={t('organization:landing.navLabel')}
                 collapsed={collapsed}
               />
             </Can>

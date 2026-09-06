@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from .models import Branch, Department, OrganizationSettings
+from .models import Branch, Department, LandingContent, LandingHighlight, OrganizationSettings
 
 
 @admin.register(Department)
@@ -53,3 +53,36 @@ class OrganizationSettingsAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         obj = OrganizationSettings.load()
         return redirect(reverse("admin:organization_organizationsettings_change", args=[obj.pk]))
+
+
+@admin.register(LandingHighlight)
+class LandingHighlightAdmin(admin.ModelAdmin):
+    """`DepartmentAdmin` above, for `LandingHighlight` — an ordinary
+    `ModelAdmin`, a manual fallback rather than the primary path
+    (`/settings/landing/highlights` is that).
+    """
+
+    list_display = ("title_en", "icon", "order")
+    search_fields = ("title_en", "title_ar")
+    ordering = ("order", "id")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(LandingContent)
+class LandingContentAdmin(admin.ModelAdmin):
+    """A singleton admin, copied from `OrganizationSettingsAdmin` above —
+    `has_add_permission` refuses a second row and `changelist_view` skips
+    to the one row's change form via `LandingContent.load()`.
+    """
+
+    readonly_fields = ("created_at", "updated_at")
+
+    def has_add_permission(self, request) -> bool:
+        return not LandingContent.objects.exists()
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        obj = LandingContent.load()
+        return redirect(reverse("admin:organization_landingcontent_change", args=[obj.pk]))

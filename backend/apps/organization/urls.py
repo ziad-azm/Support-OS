@@ -1,7 +1,15 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import BranchViewSet, BrandingView, DepartmentViewSet, SettingsView
+from .views import (
+    BranchViewSet,
+    BrandingView,
+    DepartmentViewSet,
+    LandingContentAdminView,
+    LandingContentView,
+    LandingHighlightViewSet,
+    SettingsView,
+)
 
 app_name = "organization"
 
@@ -12,6 +20,7 @@ app_name = "organization"
 router = SimpleRouter()
 router.register("departments", DepartmentViewSet, basename="department")
 router.register("branches", BranchViewSet, basename="branch")
+router.register("landing-highlights", LandingHighlightViewSet, basename="landing-highlight")
 
 urlpatterns = router.urls + [
     # Public (see BrandingView). Deliberately a sibling of `settings/`
@@ -19,5 +28,9 @@ urlpatterns = router.urls + [
     # whose siblings are all admin-gated is how one gets opened by
     # accident later.
     path("branding/", BrandingView.as_view(), name="branding"),
+    # Public (see LandingContentView). A sibling of `settings/` for the same
+    # reason `branding/` is.
+    path("landing/", LandingContentView.as_view(), name="landing"),
     path("settings/", SettingsView.as_view(), name="settings"),
+    path("settings/landing/", LandingContentAdminView.as_view(), name="landing-settings"),
 ]

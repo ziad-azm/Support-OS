@@ -12,7 +12,9 @@
     "colorHint": "Enter a colour as #RRGGBB. Leave blank to use the default brand colour.",
     "invalidColor": "Enter a colour as #RRGGBB.",
     "colorPreview": "Brand colour preview",
-    "actions": { "save": "Save" }
+    "actions": {
+      "save": "Save"
+    }
   },
   "departments": {
     "title": "Departments",
@@ -64,6 +66,99 @@
     "delete": {
       "title": "Delete branch?",
       "description": "Users, customers, and tickets in this branch keep their records; they simply become unassigned."
+    }
+  },
+  "landing": {
+    "title": "Landing Page Content",
+    "navLabel": "Landing Page",
+    "saved": "Landing content saved.",
+    "manageHighlights": "Manage highlights",
+    "blankHint": "Leave any field blank to keep the text SupportOS ships with.",
+    "yearHint": "Use {{year}} where the current year should appear.",
+    "sections": {
+      "heroEnglish": "Hero and highlights — English",
+      "heroArabic": "Hero and highlights — Arabic",
+      "ctaEnglish": "Closing section and footer — English",
+      "ctaArabic": "Closing section and footer — Arabic",
+      "targets": "Button destinations",
+      "english": "English",
+      "arabic": "Arabic"
+    },
+    "fields": {
+      "headline": "Headline",
+      "valueProposition": "Value proposition",
+      "primaryCtaLabel": "Primary button label",
+      "secondaryCtaLabel": "Secondary button label",
+      "featuresTitle": "Highlights section title",
+      "ctaTitle": "Closing section title",
+      "ctaSubtitle": "Closing section subtitle",
+      "ctaLabel": "Closing section button label",
+      "footerText": "Footer text",
+      "primaryCtaTarget": "Primary button goes to",
+      "secondaryCtaTarget": "Secondary button goes to",
+      "ctaTarget": "Closing button goes to",
+      "defaultTarget": "Default destination"
+    },
+    "targets": {
+      "login": "Log in page",
+      "contact": "Contact form",
+      "chat": "Live chat"
+    },
+    "preview": {
+      "title": "Live preview",
+      "language": "Preview language",
+      "languages": {
+        "en": "English",
+        "ar": "Arabic"
+      }
+    },
+    "actions": {
+      "save": "Save"
+    }
+  },
+  "landingHighlights": {
+    "title": "Landing Highlights",
+    "new": "New highlight",
+    "edit": "Edit highlight",
+    "search": "Search highlights",
+    "searchPlaceholder": "Search by title",
+    "empty": "No highlights yet",
+    "emptyDescription": "The landing page is showing the four highlights SupportOS ships with. Add one here to replace them all.",
+    "noSearchResults": "No highlights match your search",
+    "created": "Highlight created.",
+    "updated": "Highlight updated.",
+    "iconPreview": "Icon preview",
+    "orderHint": "Lower numbers appear first. Cards with the same number keep the order they were created in.",
+    "fields": {
+      "title": "Title",
+      "titleEn": "Title (English)",
+      "titleAr": "Title (Arabic)",
+      "description": "Description",
+      "icon": "Icon",
+      "order": "Order",
+      "actions": "Actions"
+    },
+    "actions": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete highlight?",
+      "description": "It disappears from the landing page immediately. Deleting the last one brings back the four highlights SupportOS ships with."
+    },
+    "icons": {
+      "inbox": "Inbox",
+      "timer": "Timer",
+      "sparkles": "Sparkles",
+      "bar-chart-3": "Bar chart",
+      "message-square": "Message",
+      "users": "People",
+      "shield-check": "Shield",
+      "zap": "Lightning",
+      "globe": "Globe",
+      "clock": "Clock",
+      "file-text": "Document",
+      "bell": "Bell"
     }
   }
 }
