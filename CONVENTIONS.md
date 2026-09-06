@@ -1669,9 +1669,12 @@ every already-built screen:
 - **Focus states visible for keyboard navigation**, `prefers-reduced-motion`
   respected, no emoji used as icons (SVG icon set only) — focus states
   already shadcn-default-compliant across all primitives (unaudited change);
-  **fixed**: reduced-motion now respected for dialog/alert-dialog/select
-  entrance-exit animations (`index.css`); loading spinners/skeletons
-  deliberately keep animating (`ux-guidelines.csv` "Continuous Animation").
+  **fixed**: reduced-motion now respected app-wide (`index.css`, one rule —
+  dialog/alert-dialog/select/dropdown entrance-exit, the toast entrance,
+  `Reveal`, the route-change fade, and every CSS transition; widened from
+  dialog/alert-dialog/select-only by MOTION-0, Story 97 — see "Motion
+  vocabulary" below); loading spinners/skeletons deliberately keep
+  animating (`ux-guidelines.csv` "Continuous Animation").
 - **Wide tables get a horizontal-scroll wrapper or card layout on mobile** —
   **confirmed already compliant**, `shared/ui/primitives/table.tsx:10`.
 - **Bulk row actions** (checkbox column + action bar) — **not implemented**,
@@ -1840,6 +1843,50 @@ would have nothing to search for a first-time visitor, and a FAQ accordion
 would duplicate `KB-1`'s portal FAQ browse outside the authenticated
 surface it belongs behind. The landing page keeps its existing hero →
 highlights → CTA → footer order.
+
+### Motion vocabulary (`MOTION-0`, Story 97)
+
+**Tokens.** `--motion-fast`/`--motion-base`/`--motion-slow` (150/200/300ms)
+are `:root` custom properties, sourced from MASTER.md's own "transitions
+(150-300ms)" Anti-Pattern and its repeated `200ms ease` component CSS —
+consumed via the variable shorthand (`duration-(--motion-base)`) because
+**Tailwind v4 has no `--duration-*` theme namespace**. `--motion-reveal`
+(700ms) is the one value outside that band, kept for `Reveal`'s
+scroll-triggered entrance, which is not an interaction response. Three
+role-named easings — `ease-entrance`/`ease-exit`/`ease-state` — live in
+`@theme inline` instead, because `--ease-*` **is** a real v4 namespace and
+generates matching utilities; they alias the standard `ease-out`/`ease-in`/
+`ease-in-out` curves by role rather than by curve, since MASTER.md
+specifies no easing beyond the plain `ease` keyword.
+
+**Reduced-motion policy.** One rule in `index.css`, never per component. It
+collapses every decorative motion — `tw-animate-css` enter/exit
+(dialog/alert-dialog/select/dropdown, the toast entrance, `Reveal`), the
+route-change fade, and now CSS transitions generally. `animate-spin`
+(`Loading`) and `animate-pulse` (`Skeleton`) are exempt, deliberately: they
+are the only signal that work is in progress, and freezing them turns a
+loading state into an indistinguishable broken one — worse for exactly the
+users the preference protects (DSN-2, Story 37, `ux-guidelines.csv`
+"Continuous Animation").
+
+**No animation dependency was added, and none is needed.** `tw-animate-css`
+(a devDependency — correctly, since Tailwind inlines its CSS at build time
+and nothing imports it at runtime) already supplies the whole enter/exit
+keyframe engine; Tailwind v4's `--ease-*`/`--animate-*` theme namespaces
+supply everything else this story needed.
+
+**Deliberately unanimated.** `sheet`/`popover` do not exist as primitives in
+this codebase, so neither is animated. Toast *exit* is out of scope — the
+toast is removed from state synchronously on dismiss, and an exit animation
+would need a leaving-state machine, not a class. Route transitions use a
+class re-trigger on `<main>` rather than the View Transitions API (driving
+it needs a per-`<Link>` prop, which the shared-component-only constraint
+forbids) or a `key={pathname}` remount (React Router deliberately keeps a
+component mounted across a param change; a pathname key would break that).
+
+`Reveal` moved from `frontend/src/shared/landing/` to
+`frontend/src/shared/ui/Reveal.tsx` as part of this story — a scroll
+reveal is a generic primitive, not a landing-page concern.
 
 ---
 

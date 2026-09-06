@@ -69,6 +69,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className={cn(
               'flex items-start gap-2 rounded-lg border bg-card p-4 text-sm text-card-foreground shadow-lg',
               'data-[tone=error]:border-destructive data-[tone=error]:text-destructive',
+              // Entrance only (MOTION-0, Story 97) — `dismiss` removes the
+              // toast from state synchronously, so an exit animation would
+              // need a leaving-state machine, out of this story's scope.
+              // Bottom-axis slide, not from the `end` side: the container
+              // is anchored `bottom-4 end-4`, and a vertical slide is
+              // direction-neutral, so it needs no `rtl:` counterpart.
+              'animate-in fade-in slide-in-from-bottom-2 duration-(--motion-base) ease-entrance',
             )}
           >
             <span className="flex-1">{toastItem.message}</span>

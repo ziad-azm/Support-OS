@@ -70,6 +70,22 @@
 | `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
 | `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
 
+### Motion
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--motion-fast` | `150ms` | Menus, popovers, row hover — anything under the pointer |
+| `--motion-base` | `200ms` | Default state change: buttons, inputs, cards, dialogs, toasts |
+| `--motion-slow` | `300ms` | Large surfaces; the band's ceiling |
+| `--motion-reveal` | `700ms` | Scroll-triggered reveal only — not an interaction response |
+| `ease-entrance` | `cubic-bezier(0, 0, 0.2, 1)` | Arriving |
+| `ease-exit` | `cubic-bezier(0.4, 0, 1, 1)` | Leaving |
+| `ease-state` | `cubic-bezier(0.4, 0, 0.2, 1)` | Changing in place |
+
+These derive from this file's own "150-300ms" Anti-Pattern and the repeated
+`200ms ease` component CSS above. `prefers-reduced-motion` is honoured once,
+globally, in `index.css` — loading feedback (spinners, skeletons) is exempt.
+
 ---
 
 ## Component Specs

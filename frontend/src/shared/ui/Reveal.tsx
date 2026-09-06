@@ -22,6 +22,14 @@ import { cn } from '@/shared/lib/cn'
  * `slide-in-from-bottom-*` is vertical and therefore direction-neutral —
  * `slide-in-from-left/right` would need an `rtl:` counterpart and is not used
  * anywhere on this page.
+ *
+ * Promoted from `shared/landing/` to `shared/ui/` by MOTION-0 (Story 97) —
+ * a scroll reveal is a generic primitive, not a landing-page concern, and
+ * `shared/ui/` is where generic primitives live (the same placement rule
+ * `shared/branding/BrandMark.tsx` records in reverse for domain
+ * components). Behaviour is unchanged from LAND-1: same observer, same
+ * `rootMargin`, same `disabled` escape hatch, same reduced-motion
+ * short-circuit. Only the 700ms literal became `--motion-reveal`.
  */
 export function Reveal({
   children,
@@ -60,7 +68,7 @@ export function Reveal({
       style={revealed && delayMs > 0 ? { animationDelay: `${String(delayMs)}ms` } : undefined}
       className={cn(
         revealed
-          ? 'animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards duration-700'
+          ? 'animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards duration-(--motion-reveal)'
           : 'opacity-0',
       )}
     >

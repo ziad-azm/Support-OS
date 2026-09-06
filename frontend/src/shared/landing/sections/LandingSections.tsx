@@ -4,10 +4,10 @@ import { Link } from 'react-router'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
+import { Reveal } from '@/shared/ui/Reveal'
 
 import { HeroImage } from '../HeroImage'
 import { LandingIcon } from '../LandingIcon'
-import { Reveal } from '../Reveal'
 import type { ResolvedLanding } from '../types'
 
 import { LandingSocialRow } from './LandingSocialRow'
@@ -30,9 +30,10 @@ import { LandingSocialRow } from './LandingSocialRow'
  * into paths. They never see `_en`/`_ar`, an empty string, or a query state.
  *
  * `animate` is false in the preview — see `Reveal`'s `disabled` prop.
- * Story 96 adds NO new motion — every hover here is a 200ms state
- * transition (`DSN-8`'s category), not a `Reveal`/`animate-in` addition. See
- * that story's `## The MOTION-0 dependency`.
+ * `Reveal` now lives at `shared/ui/Reveal.tsx` — MOTION-0 (Story 97)
+ * promoted it out of this feature and re-expressed its duration on
+ * `--motion-reveal`; Story 96 correctly predicted this move and added no
+ * motion of its own, only 200ms state transitions (`DSN-8`'s category).
  *
  * The four sections deliberately alternate surface (`bg-primary/5` →
  * `bg-card` → `bg-muted` → default) so consecutive sections stay visually
@@ -54,7 +55,11 @@ export function LandingHero({ content, animate }: SectionProps) {
       <div
         className={cn(
           'container mx-auto px-4 py-16 sm:py-24',
-          animate && 'animate-in fade-in slide-in-from-bottom-4 duration-700',
+          // MOTION-0 (Story 97): this literal was a second, untracked
+          // 700ms usage alongside `Reveal`'s own — tokenized to
+          // `--motion-reveal` so the app has exactly one place that names
+          // its one long duration, not two.
+          animate && 'animate-in fade-in slide-in-from-bottom-4 duration-(--motion-reveal)',
         )}
       >
         <div

@@ -19,6 +19,6 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | reports-analytics | [reports-analytics/00-overview.md](reports-analytics/00-overview.md) | 55–60 (EPIC 11 fully planned, RPT-0/RPT-1/RPT-2/RPT-3/RPT-4 implemented, RPT-5 planned) |
 | ai-features | [ai-features/00-overview.md](ai-features/00-overview.md) | 74–79 (EPIC 13 fully planned, AI-0 through AI-5; AI-0–AI-4 implemented, AI-5 outstanding) |
 | integrations | [integrations/00-overview.md](integrations/00-overview.md) | 80–83 (EPIC 14 fully planned; INT-1/INT-2/INT-3 implemented, INT-4 planned) |
-| public-landing-page | [public-landing-page/00-overview.md](public-landing-page/00-overview.md) | 86, 94, 95, 96 (EPIC 15; LAND-1/LAND-2/LAND-3 (Stories 86, 94, 95) implemented, LAND-4 (Story 96) planned; `MOTION-0` not yet planned) |
+| public-landing-page | [public-landing-page/00-overview.md](public-landing-page/00-overview.md) | 86, 94, 95, 96, 97 (EPIC 15 **fully planned**; LAND-1/LAND-2/LAND-3/LAND-4 (Stories 86, 94, 95, 96) implemented, MOTION-0 (Story 97) planned) |
 | multi-department-multi-branch-branding | [multi-department-multi-branch-branding/00-overview.md](multi-department-multi-branch-branding/00-overview.md) | 87, 89–90 (EPIC 16 fully planned; ORG-1 and ORG-2 implemented, ORG-3 (Story 90) planned, not yet implemented) |
 | production-readiness | [production-readiness/00-overview.md](production-readiness/00-overview.md) | 88, 91, 92, 93 (EPIC 17 **fully planned**; PROD-1/PROD-2/PROD-3 implemented, PROD-4 planned) |

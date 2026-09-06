@@ -10,6 +10,7 @@ Entry point for the **public-landing-page** feature. Stories execute in order by
 | 94 | [94-story-editable-landing-content-SUPPORTOS-124.md](94-story-editable-landing-content-SUPPORTOS-124.md) | Editable Landing Content, Admin CMS (LAND-2) | SUPPORTOS-124 | Story 86 (this feature, landed), Story 90 (`BrandingView` public-read path, landed), Stories 87/89 (ordered-row admin pattern, landed), Story 40 (`Article` bilingual columns, landed), Story 07 (`FORM`) |
 | 95 | [95-story-social-contact-presence-SUPPORTOS-125.md](95-story-social-contact-presence-SUPPORTOS-125.md) | Social Media & Contact Presence (LAND-3) | SUPPORTOS-125 | Story 94 (this feature, **implemented** — extends its model set, public serializer and `shared/landing/` module), Story 19 (`/contact` web form, landed), Story 11 (`ContactDetail` channel+value shape, landed) |
 | 96 | [96-story-landing-visual-redesign-SUPPORTOS-126.md](96-story-landing-visual-redesign-SUPPORTOS-126.md) | Landing Page Visual Redesign (LAND-4) | SUPPORTOS-126 | Stories 94/95 (this feature, **implemented** — restyles their section components), Stories 36/50/51 (`DSN` token layer, landed), Story 64 (`DSN-9` breakpoints, landed). **NOT blocked on `MOTION-0`** — see below |
+| 97 | [97-story-shared-motion-foundation-SUPPORTOS-128.md](97-story-shared-motion-foundation-SUPPORTOS-128.md) | Shared Motion Foundation (MOTION-0) | SUPPORTOS-128 | Story 86 (`LAND-1`, the motion it extracts), Story 94 (already moved `Reveal` out of `features/`), Story 37 (`DSN-2` reduced-motion policy), Story 51/63 (`DSN-5`/`DSN-8`, button feedback already done) |
 
 ## Dependency notes
 
@@ -27,8 +28,11 @@ list riding Story 94's existing public payload, rendered in the landing footer a
 on `/contact`. It is **implemented**.
 
 `LAND-4` (`SUPPORTOS-126`) is **Story 96** — the visual redesign of the page the
-three stories above built. Planned, not yet implemented. **`EPIC 15` is fully
-planned once it lands, with the exception of `MOTION-0`, which has no plan yet.**
+three stories above built. It is **implemented**.
+
+`MOTION-0` (`SUPPORTOS-128`) is **Story 97** — the shared motion vocabulary the
+whole app consumes, extracted from the motion `LAND-1` improvised. Planned, not yet
+implemented. **With it, `EPIC 15` is fully planned.**
 
 **Story 86 is frontend-only.** No backend module, model, endpoint, or setting is
 read or written. The landing copy lives in a new `landing` i18n namespace
@@ -233,3 +237,58 @@ Deliberately left out and named as such: a social-proof section (no model exists
 customer logos or testimonials, and inventing placeholders would ship fake content on
 the front door), any new shadcn component or dependency, any copy or i18n change
 beyond the two new admin-form keys, and the staff app.
+
+---
+
+## Story 97 (`MOTION-0`) — the five things discovery settled
+
+**Task 2 was already half-done, and the plan says so instead of failing on it.** The
+intake asks to "move `features/landing/components/Reveal.tsx` into the shared UI
+layer". That file has not existed since **Story 94**, which moved it to
+`shared/landing/Reveal.tsx` with no feature-local copy left behind — exactly what
+Story 96's plan predicted when it declined to block on `MOTION-0`. What actually
+remains is the shorter move from `shared/landing/` (a domain folder) to `shared/ui/`
+(where generic primitives live), plus re-expressing the one `duration-700` literal as
+a token. Two lines and a delete.
+
+**Two of the intake's named targets do not exist.** Task 3 lists "dialog and sheet
+enter/exit" and "dropdown and popover motion". `frontend/src/shared/ui/primitives/`
+holds 18 files and **neither `sheet.tsx` nor `popover.tsx` is among them**. The plan
+does not create components in order to animate them; it names the omission.
+
+**Button press feedback is already shipped, twice over.** `button.tsx:8` carries
+`transition-all duration-200 cursor-pointer` with `hover:-translate-y-px
+active:translate-y-0` on the filled variants (Story 51, `DSN-5`), and Story 63
+(`DSN-8`) then recorded in its own Prerequisites that "no task in this plan re-touches
+`button.tsx`/`input.tsx`/`select.tsx`". Story 97 re-touches none of them either, and a
+verification step checks their diff is empty.
+
+**The intake's "nothing moves under `prefers-reduced-motion`" contradicts a
+documented DSN-2 decision — and DSN-2 is right.** `CONVENTIONS.md:1672-1674` records
+that "loading spinners/skeletons **deliberately keep animating**". Freezing
+`animate-spin`/`animate-pulse` turns a loading state into an indistinguishable broken
+one, which is worse for exactly the users the preference protects. The plan holds the
+carve-out, restates it as policy — *no **decorative** motion; loading feedback
+exempt* — and finally writes the reasoning into the CSS rather than leaving it in a
+plan file. A verification step checks both halves.
+
+**Route transitions get the boring mechanism, deliberately.** Two obvious approaches
+were checked and rejected: the **View Transitions API** (`react-router@8.3.0` does
+export `useViewTransitionState`, but driving it needs a `viewTransition` prop at every
+`<Link>` — precisely the per-screen change the intake's own "shared-component level
+only" constraint forbids), and **keying the `<Outlet/>` wrapper on `pathname`** (three
+characters shorter and wrong: changing a `key` remounts the routed subtree, and React
+Router deliberately keeps a component mounted across a param change like
+`/tickets/1` → `/tickets/2`). What ships is a class re-trigger on `<main>` — no
+remount, no added latency, and it reuses `.animate-in` so the existing reduced-motion
+rule already covers it.
+
+Also settled by inspection: `tw-animate-css@1.4.0` already provides the entire
+enter/exit engine (`--animate-in`/`--animate-out` plus the `--tw-enter-*`/`--tw-exit-*`
+custom properties), Tailwind v4 provides the `--ease-*` and `--animate-*` theme
+namespaces — so **no animation dependency is added, and none is needed**. Tailwind v4
+has **no `--duration-*` namespace**, which is why the duration scale ships as `:root`
+variables consumed via `duration-(--motion-base)` while the easings ship as `@theme`
+entries that generate real utilities. And `tw-animate-css` being a devDependency
+despite `index.css` importing it is **correct** — Tailwind inlines it at build time —
+so the plan says not to "fix" it.

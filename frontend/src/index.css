@@ -15,6 +15,28 @@
      bright light widget floating inside an otherwise dark field. */
   color-scheme: light;
   --radius: 0.625rem;
+  /* --- Motion scale (MOTION-0, Story 97) --------------------------------
+     Sourced from MASTER.md, not invented: its Anti-Patterns require
+     "transitions (150-300ms)" (line 196) and its Key Effects call for
+     "subtle hover (200-250ms)" (line 173), while its own component CSS
+     repeats `transition: all 200ms ease` four times (lines 87/104/117/135).
+     So: 150 / 200 / 300 are the band's floor, its repeated value, and its
+     ceiling — three tokens, no more.
+
+     NOT `@theme` entries: Tailwind v4 has no `--duration-*` namespace, so
+     these cannot generate `duration-*` utilities. Consume them with the
+     CSS-variable shorthand — `duration-(--motion-fast)`. Tailwind's numeric
+     utilities stay valid where the number matches (`duration-200` ===
+     `duration-(--motion-base)`); prefer the token in new code.
+
+     `--motion-reveal` is deliberately outside the 150-300ms band: a
+     scroll-triggered reveal is not an interaction response, and 700ms is
+     the value `Reveal` has shipped with since LAND-1. Kept as a token so
+     the one long duration in the app is named rather than magic. */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-slow: 300ms;
+  --motion-reveal: 700ms;
   --background: oklch(0.984 0.003 247.858); /* #F8FAFC — MASTER.md Background, Story 51 */
   --foreground: oklch(0.279 0.037 260.031); /* #1E293B — MASTER.md Foreground, Story 51 */
   --card: oklch(
@@ -166,6 +188,16 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
+  /* MASTER.md specifies no easing beyond the CSS `ease` keyword, so these
+     are named aliases for the standard curves rather than invented
+     cubic-beziers: `ease-entrance` for things arriving (decelerate in),
+     `ease-exit` for things leaving (accelerate out), `ease-state` for a
+     property changing in place. Generates `ease-entrance` / `ease-exit` /
+     `ease-state` utilities (MOTION-0, Story 97). */
+  --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-state: cubic-bezier(0.4, 0, 0.2, 1);
+
   --font-sans: var(--font-sans);
   --font-arabic: var(--font-arabic);
 }
@@ -195,16 +227,42 @@
     font-family: var(--font-arabic);
   }
 
-  /* Dialog/AlertDialog/Select/DropdownMenu entrance-exit animations
-     (tw-animate-css's animate-in / animate-out / fade-in / fade-out /
-     zoom-in / zoom-out classes) are the only non-essential motion in this
-     app — collapse them for users who ask for reduced motion.
-     animate-spin/animate-pulse (loading feedback) are deliberately NOT
-     touched. See CONVENTIONS.md §25, Story 37. */
+  /* --- Reduced-motion policy (MOTION-0, Story 97) ------------------------
+     ONE rule for the whole app, applied here rather than per component —
+     that is the entire point of this block, and no component should ship
+     its own `prefers-reduced-motion` media query.
+
+     DECORATIVE MOTION IS COLLAPSED. Everything whose only job is to look
+     pleasant: every `tw-animate-css` enter/exit (dialogs, alert-dialogs,
+     dropdowns, selects, the toast entrance, `shared/ui/Reveal`), and the
+     route-change fade on `<main>`. Collapsed to 0.01ms rather than removed,
+     so `animationend` listeners still fire.
+
+     LOADING FEEDBACK IS EXEMPT, DELIBERATELY. `animate-spin` (`Loading`)
+     and `animate-pulse` (`Skeleton`) are the only signal that work is in
+     progress — freezing them turns a loading state into an
+     indistinguishable broken one, which is strictly worse for the very
+     users this preference protects. Recorded by DSN-2 (Story 37,
+     CONVENTIONS.md § 25, `ux-guidelines.csv` "Continuous Animation") and
+     held here. Do NOT widen this rule to `*` or to those two classes.
+
+     CSS TRANSITIONS are collapsed too (Story 97's addition): a 200ms
+     colour or transform transition is decorative by the same test. The
+     `!important` is required to beat the utilities' own specificity. */
   @media (prefers-reduced-motion: reduce) {
     .animate-in,
     .animate-out {
       animation-duration: 0.01ms !important;
+    }
+
+    /* Not `*` — that would catch `animate-spin`/`animate-pulse` via
+       `animation-duration` too. Transitions only, and only on elements
+       that actually declare one. */
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
     }
   }
 }

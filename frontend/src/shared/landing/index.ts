@@ -15,7 +15,6 @@ export type { SocialPlatform } from './social'
 export { LandingIcon } from './LandingIcon'
 export { LandingSocialIcon } from './LandingSocialIcon'
 export { HeroImage } from './HeroImage'
-export { Reveal } from './Reveal'
 export {
   LandingCtaBand,
   LandingFeatures,
