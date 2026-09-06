@@ -17,6 +17,18 @@ re-deriving a standard.
 
 ---
 
+## Screenshots
+
+| Home | Customers |
+|---|---|
+| ![Home](docs/screenshots/home.png) | ![Customers](docs/screenshots/customers.png) |
+
+| Tickets | Management dashboard |
+|---|---|
+| ![Tickets](docs/screenshots/tickets.png) | ![Management dashboard](docs/screenshots/management-dashboard.png) |
+
+---
+
 ## Repository layout
 
 ```text
