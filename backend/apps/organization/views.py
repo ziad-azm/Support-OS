@@ -5,13 +5,21 @@ from rest_framework.views import APIView
 from apps.core.permissions import HasPermission, Permissions
 from apps.core.views import BaseModelViewSet
 
-from .models import Branch, Department, LandingContent, LandingHighlight, OrganizationSettings
+from .models import (
+    Branch,
+    Department,
+    LandingContent,
+    LandingHighlight,
+    LandingSocialLink,
+    OrganizationSettings,
+)
 from .serializers import (
     BranchSerializer,
     BrandingSerializer,
     DepartmentSerializer,
     LandingContentAdminSerializer,
     LandingHighlightSerializer,
+    LandingSocialLinkSerializer,
     OrganizationSettingsSerializer,
     PublicLandingContentSerializer,
 )
@@ -217,3 +225,34 @@ class LandingHighlightViewSet(BaseModelViewSet):
     # Each name must match a `ColumnDef.id` on `LandingHighlightListPage` (§23).
     ordering_fields = ("order", "title_en", "created_at")
     search_fields = ("title_en", "title_ar")
+
+
+class LandingSocialLinkViewSet(BaseModelViewSet):
+    """Social/contact link CRUD — LAND-3. `LandingHighlightViewSet` above,
+    for the other ordered list behind the public landing page.
+
+    ONE permission, for the same reason that viewset gives: nothing in the
+    staff app reads these except this screen, and the one caller that needs
+    them without `settings.manage` is the anonymous landing page, which
+    reads them through `LandingContentView`.
+
+    `list` is NOT filtered to `is_enabled=True` — the admin screen must show
+    disabled rows, since toggling them is the whole point. Only the PUBLIC
+    serializer filters.
+    """
+
+    queryset = LandingSocialLink.objects.all()
+    serializer_class = LandingSocialLinkSerializer
+
+    permission_map = {
+        "list": Permissions.SETTINGS_MANAGE,
+        "retrieve": Permissions.SETTINGS_MANAGE,
+        "create": Permissions.SETTINGS_MANAGE,
+        "update": Permissions.SETTINGS_MANAGE,
+        "partial_update": Permissions.SETTINGS_MANAGE,
+        "destroy": Permissions.SETTINGS_MANAGE,
+    }
+
+    # Each name must match a `ColumnDef.id` on `LandingSocialLinkListPage` (§23).
+    ordering_fields = ("order", "platform", "created_at")
+    search_fields = ("value",)

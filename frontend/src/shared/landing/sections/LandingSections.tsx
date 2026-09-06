@@ -8,6 +8,8 @@ import { LandingIcon } from '../LandingIcon'
 import { Reveal } from '../Reveal'
 import type { ResolvedLanding } from '../types'
 
+import { LandingSocialRow } from './LandingSocialRow'
+
 /**
  * The public landing page's presentation, section by section — Story 86's
  * markup, lifted here unchanged by Story 94 (`LAND-2`).
@@ -118,8 +120,9 @@ export function LandingCtaBand({ content, animate }: SectionProps) {
 export function LandingFooter({ content }: { content: ResolvedLanding }) {
   return (
     <footer className="border-t">
-      <div className="container mx-auto px-4 py-6 text-sm text-muted-foreground">
-        {content.footerText}
+      <div className="container mx-auto flex flex-col items-center gap-4 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:justify-between">
+        <span>{content.footerText}</span>
+        <LandingSocialRow links={content.socialLinks} />
       </div>
     </footer>
   )

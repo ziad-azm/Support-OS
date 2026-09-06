@@ -114,7 +114,8 @@
     },
     "actions": {
       "save": "Save"
-    }
+    },
+    "manageSocial": "Manage social links"
   },
   "landingHighlights": {
     "title": "Landing Highlights",
@@ -159,6 +160,55 @@
       "clock": "Clock",
       "file-text": "Document",
       "bell": "Bell"
+    }
+  },
+  "landingSocial": {
+    "title": "Social & Contact Links",
+    "new": "New link",
+    "edit": "Edit link",
+    "search": "Search links",
+    "searchPlaceholder": "Search by value",
+    "empty": "No links yet",
+    "emptyDescription": "With no links configured, the public site shows no social row at all. Add one here to show it.",
+    "noSearchResults": "No links match your search",
+    "created": "Link created.",
+    "updated": "Link updated.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "iconPreview": "Icon preview",
+    "orderHint": "Lower numbers appear first. Links with the same number keep the order they were created in.",
+    "fields": {
+      "platform": "Platform",
+      "value": "Value",
+      "isEnabled": "Enabled",
+      "order": "Order",
+      "actions": "Actions"
+    },
+    "valueHint": {
+      "url": "Full profile URL, starting with https://",
+      "email": "Email address",
+      "phone": "Phone number — digits only, optionally starting with +"
+    },
+    "actions": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete link?",
+      "description": "It disappears from the public site immediately."
+    },
+    "platforms": {
+      "facebook": "Facebook",
+      "x": "X",
+      "instagram": "Instagram",
+      "linkedin": "LinkedIn",
+      "youtube": "YouTube",
+      "tiktok": "TikTok",
+      "github": "GitHub",
+      "website": "Website",
+      "email": "Email",
+      "phone": "Phone",
+      "whatsapp": "WhatsApp"
     }
   }
 }

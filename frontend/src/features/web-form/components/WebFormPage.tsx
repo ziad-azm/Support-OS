@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import * as z from 'zod'
 
+import { LandingSocialRow, resolveLanding, useLandingContent } from '@/shared/landing'
 import { optionalEmail, requiredString } from '@/shared/validation/schemas'
 import {
   Card,
@@ -144,6 +145,41 @@ function WebForm({ onSubmitted }: { onSubmitted: (ticketId: number) => void }) {
           {t('links.chat')}
         </Link>
       </p>
+      <ContactChannels />
     </div>
+  )
+}
+
+/**
+ * The organization's own social/contact channels — LAND-3, Task 3's
+ * reconciliation of `/contact`. Inspection showed this page was already a
+ * complete, working form; the gap was that it never showed the org's own
+ * phone, email, or social presence. `useLandingContent` (`shared/landing`,
+ * not `features/landing/` — `no-restricted-imports` forbids the
+ * cross-feature import, CONVENTIONS.md §15) has `staleTime: Infinity`, so a
+ * visitor arriving from `/` costs this component no extra request.
+ *
+ * Renders nothing while the request is unresolved or the org has configured
+ * no links — same "no loading state" rule the landing hero follows (Story
+ * 94): this must never gate the form, which is the reason this component
+ * sits below the form rather than gating `WebForm` itself.
+ */
+function ContactChannels() {
+  const { t, i18n } = useTranslation(['webForm', 'landing'])
+  const { data } = useLandingContent()
+  const landingT = i18n.getFixedT(i18n.language, 'landing')
+  const links = resolveLanding(data, i18n.language, landingT).socialLinks
+
+  if (links.length === 0) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t('links.contactHeading')}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex justify-center">
+        <LandingSocialRow links={links} />
+      </CardContent>
+    </Card>
   )
 }

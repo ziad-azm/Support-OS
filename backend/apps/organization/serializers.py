@@ -1,9 +1,19 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import URLValidator, validate_email
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
 
-from .models import Branch, Department, LandingContent, LandingHighlight, OrganizationSettings
+from .models import (
+    PHONE_VALIDATOR,
+    Branch,
+    Department,
+    LandingContent,
+    LandingHighlight,
+    LandingSocialLink,
+    OrganizationSettings,
+)
 
 
 class DepartmentSerializer(BaseModelSerializer):
@@ -143,6 +153,79 @@ class PublicLandingHighlightSerializer(serializers.ModelSerializer):
         fields = ("id", "title_en", "title_ar", "description_en", "description_ar", "icon", "order")
 
 
+_PHONE_PLATFORMS = (LandingSocialLink.Platform.PHONE, LandingSocialLink.Platform.WHATSAPP)
+
+# Everything a human types into a phone field and no dialer wants back.
+_PHONE_NOISE = str.maketrans("", "", " -().")
+
+
+def _normalize_phone(value: str) -> str:
+    return value.translate(_PHONE_NOISE)
+
+
+def _run_validator(validator, value) -> None:
+    """Run a Django validator and re-raise as a DRF field error on `value`.
+    The exact `except … from exc` shape `ContactDetailSerializer.validate`
+    already uses (apps/customers/serializers.py:127-131).
+    """
+    try:
+        validator(value)
+    except DjangoValidationError as exc:
+        raise serializers.ValidationError({"value": list(exc.messages)}) from exc
+
+
+class LandingSocialLinkSerializer(BaseModelSerializer):
+    """CRUD over one social/contact link — LAND-3's admin list.
+
+    `validate` is where per-platform format enforcement lives, copied from
+    `customers.ContactDetailSerializer.validate` (apps/customers/
+    serializers.py:116-132) including its PATCH-safe `getattr(self.instance,
+    …)` fallback: a partial update that sends only `value` still validates
+    it against the stored `platform`.
+    """
+
+    class Meta(BaseModelSerializer.Meta):
+        model = LandingSocialLink
+        fields = ("id", "platform", "value", "is_enabled", "order", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        platform = attrs.get("platform", getattr(self.instance, "platform", None))
+        value = attrs.get("value", getattr(self.instance, "value", None))
+        if not value:
+            return attrs
+
+        if platform in _PHONE_PLATFORMS:
+            # Normalize BEFORE validating, so an admin may paste
+            # "+966 55 123 4567" and the stored value is "+966551234567" —
+            # which is what `tel:` and `wa.me/` both need, and neither
+            # frontend nor a second parse has to strip anything.
+            value = _normalize_phone(value)
+            attrs["value"] = value
+            _run_validator(PHONE_VALIDATOR, value)
+        elif platform == LandingSocialLink.Platform.EMAIL:
+            _run_validator(validate_email, value)
+        else:
+            # Every remaining platform is a profile URL.
+            _run_validator(URLValidator(schemes=["http", "https"]), value)
+        return attrs
+
+
+class PublicLandingSocialLinkSerializer(serializers.ModelSerializer):
+    """The public half of a social link. Not `BaseModelSerializer` — the
+    timestamps that base exists for are not part of a public payload, the
+    same call `BrandingSerializer` and `PublicLandingHighlightSerializer`
+    both make.
+
+    NO `is_enabled`: a disabled row never reaches this serializer at all
+    (`get_social_links` filters the queryset), so publishing the flag would
+    describe a state the payload can never be in.
+    """
+
+    class Meta:
+        model = LandingSocialLink
+        fields = ("id", "platform", "value", "order")
+
+
 class PublicLandingContentSerializer(serializers.ModelSerializer):
     """The public face of `LandingContent` — LAND-2, served to anonymous
     callers by `LandingContentView`.
@@ -160,20 +243,24 @@ class PublicLandingContentSerializer(serializers.ModelSerializer):
     `LandingContent`, this class is the thing that keeps it off the
     internet.
 
-    `highlights` is a nested read-only list because the landing page needs
-    one request, not two. It is written through `LandingHighlightViewSet`,
+    `highlights` and `social_links` are nested read-only lists because the
+    landing page needs one request, not two or three. They are written
+    through `LandingHighlightViewSet` and `LandingSocialLinkViewSet`,
     never here.
     """
 
     highlights = serializers.SerializerMethodField()
+    social_links = serializers.SerializerMethodField()
 
     class Meta:
         model = LandingContent
-        # `highlights` MUST stay last: `LandingContentAdminSerializer` below
-        # derives its own field list from this tuple by slicing that entry
-        # off. Deriving one serializer's `Meta.fields` from another is an
-        # established shape here — `PortalTicketSerializer` does the same
-        # with `TicketSerializer` (CONVENTIONS.md §33).
+        # The last TWO entries (`highlights`, `social_links`) are read-only
+        # nested lists written through their own viewsets, and
+        # `LandingContentAdminSerializer` below slices both off with
+        # `[:-2]`. Keep them last, and keep that slice in step — Story 95
+        # widened it from `[:-1]`. Deriving one serializer's `Meta.fields`
+        # from another is an established shape here — `PortalTicketSerializer`
+        # does the same with `TicketSerializer` (CONVENTIONS.md §33).
         fields = (
             "hero_headline_en",
             "hero_headline_ar",
@@ -197,6 +284,7 @@ class PublicLandingContentSerializer(serializers.ModelSerializer):
             "footer_text_en",
             "footer_text_ar",
             "highlights",
+            "social_links",
         )
 
     def get_highlights(self, obj) -> list:
@@ -205,19 +293,27 @@ class PublicLandingContentSerializer(serializers.ModelSerializer):
         # to express "always 1". `Meta.ordering` supplies the sort.
         return PublicLandingHighlightSerializer(LandingHighlight.objects.all(), many=True).data
 
+    def get_social_links(self, obj) -> list:
+        # ENABLED ONLY, and filtered in the QUERYSET rather than hidden on
+        # the frontend: a channel an admin switched off must not appear in
+        # the page source at all. `Meta.ordering` supplies the sort.
+        return PublicLandingSocialLinkSerializer(
+            LandingSocialLink.objects.filter(is_enabled=True), many=True
+        ).data
+
 
 class LandingContentAdminSerializer(BaseModelSerializer):
     """Read/write over the one `LandingContent` row, under
     `settings.manage`. Carries the timestamps `PublicLandingContentSerializer`
-    omits and no nested highlights — the editor loads those from
-    `/api/landing-highlights/`, which is also where it writes them.
+    omits and neither nested list — the editor loads and writes those
+    through `/api/landing-highlights/` and `/api/landing-social-links/`.
     """
 
     class Meta(BaseModelSerializer.Meta):
         model = LandingContent
-        # `[:-1]` strips the trailing `"highlights"` entry, which is
-        # read-only and lives on its own endpoint for this serializer's
-        # callers. Everything else is written here.
+        # `[:-2]` strips the trailing `"highlights"` and `"social_links"`
+        # entries, both read-only and both living on their own endpoints.
+        # Everything else is written here.
         fields = (
-            ("id",) + PublicLandingContentSerializer.Meta.fields[:-1] + ("created_at", "updated_at")
+            ("id",) + PublicLandingContentSerializer.Meta.fields[:-2] + ("created_at", "updated_at")
         )

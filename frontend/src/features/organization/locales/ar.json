@@ -114,7 +114,8 @@
     },
     "actions": {
       "save": "حفظ"
-    }
+    },
+    "manageSocial": "إدارة روابط التواصل الاجتماعي"
   },
   "landingHighlights": {
     "title": "مزايا الصفحة الرئيسية",
@@ -159,6 +160,55 @@
       "clock": "ساعة",
       "file-text": "مستند",
       "bell": "جرس"
+    }
+  },
+  "landingSocial": {
+    "title": "روابط التواصل الاجتماعي والتواصل",
+    "new": "رابط جديد",
+    "edit": "تعديل الرابط",
+    "search": "البحث في الروابط",
+    "searchPlaceholder": "ابحث بالقيمة",
+    "empty": "لا توجد روابط بعد",
+    "emptyDescription": "بدون روابط مُعدّة، لا يظهر أي صف تواصل اجتماعي على الموقع العام إطلاقًا. أضف رابطًا هنا لإظهاره.",
+    "noSearchResults": "لا توجد روابط تطابق بحثك",
+    "created": "تم إنشاء الرابط.",
+    "updated": "تم تحديث الرابط.",
+    "enabled": "مفعّل",
+    "disabled": "معطّل",
+    "iconPreview": "معاينة الأيقونة",
+    "orderHint": "تظهر الأرقام الأصغر أولًا. تحتفظ الروابط ذات الرقم نفسه بترتيب إنشائها.",
+    "fields": {
+      "platform": "المنصة",
+      "value": "القيمة",
+      "isEnabled": "مفعّل",
+      "order": "الترتيب",
+      "actions": "الإجراءات"
+    },
+    "valueHint": {
+      "url": "رابط الملف الشخصي الكامل، يبدأ بـ https://",
+      "email": "عنوان البريد الإلكتروني",
+      "phone": "رقم الهاتف — أرقام فقط، مع إمكانية البدء بـ +"
+    },
+    "actions": {
+      "save": "حفظ",
+      "delete": "حذف"
+    },
+    "delete": {
+      "title": "حذف الرابط؟",
+      "description": "سيختفي من الموقع العام فورًا."
+    },
+    "platforms": {
+      "facebook": "Facebook",
+      "x": "X",
+      "instagram": "Instagram",
+      "linkedin": "LinkedIn",
+      "youtube": "YouTube",
+      "tiktok": "TikTok",
+      "github": "GitHub",
+      "website": "الموقع الإلكتروني",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "whatsapp": "WhatsApp"
     }
   }
 }

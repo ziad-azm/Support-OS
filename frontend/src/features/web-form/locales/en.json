@@ -3,7 +3,8 @@
   "subtitle": "Tell us what's going on and we'll get back to you as soon as possible.",
   "links": {
     "chatPrompt": "Prefer to talk right now?",
-    "chat": "Start a live chat"
+    "chat": "Start a live chat",
+    "contactHeading": "Or reach us directly"
   },
   "fields": {
     "name": "Your name",

@@ -13,7 +13,7 @@ import {
   LandingHero,
   resolveLanding,
 } from '@/shared/landing'
-import type { LandingContent, LandingHighlight } from '@/shared/landing'
+import type { LandingContent, LandingHighlight, LandingSocialLink } from '@/shared/landing'
 import { choice, optionalString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
@@ -33,6 +33,7 @@ import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useLandingContentAdmin } from '../api/useLandingContentAdmin'
 import { useLandingHighlightList } from '../api/useLandingHighlightList'
+import { useLandingSocialLinkList } from '../api/useLandingSocialLinkList'
 import { useUpdateLandingContent } from '../api/useUpdateLandingContent'
 import type { LandingContentAdmin, LandingContentInput } from '../types/landing'
 
@@ -107,8 +108,12 @@ function toLandingContentInput(values: FormValues): LandingContentInput {
  * public payload so the preview can go through the exact same
  * `resolveLanding` the live page uses. Highlights are edited on their own
  * screen, so they are not part of this form's draft. */
-function toPreviewContent(values: FormValues, highlights: LandingHighlight[]): LandingContent {
-  return { ...values, highlights }
+function toPreviewContent(
+  values: FormValues,
+  highlights: LandingHighlight[],
+  socialLinks: LandingSocialLink[],
+): LandingContent {
+  return { ...values, highlights, social_links: socialLinks }
 }
 
 /**
@@ -139,6 +144,10 @@ function LandingContentForm({ content }: { content: LandingContentAdmin }) {
   // page size because the landing page renders every card, not a page of
   // them — this list is a handful of rows by nature.
   const highlightsQuery = useLandingHighlightList({ page: 1, page_size: 100, ordering: 'order' })
+  // The preview also shows enabled+disabled social links exactly as the
+  // highlight preview does — a handful of rows by nature, so one
+  // large page rather than the admin table's server pagination.
+  const socialLinksQuery = useLandingSocialLinkList({ page: 1, page_size: 100, ordering: 'order' })
 
   const form = useAppForm({ schema, defaultValues: toDefaults(content) })
   // Re-renders this component on every keystroke so the preview follows the
@@ -172,9 +181,14 @@ function LandingContentForm({ content }: { content: LandingContentAdmin }) {
       <PageHeader
         title={t('landing.title')}
         action={
-          <Button asChild variant="outline">
-            <Link to="/settings/landing/highlights">{t('landing.manageHighlights')}</Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/settings/landing/highlights">{t('landing.manageHighlights')}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/settings/landing/social">{t('landing.manageSocial')}</Link>
+            </Button>
+          </div>
         }
       />
       <div className="grid gap-4 lg:grid-cols-2">
@@ -347,6 +361,7 @@ function LandingContentForm({ content }: { content: LandingContentAdmin }) {
         <LandingPreview
           draft={draft}
           highlights={highlightsQuery.data?.items ?? []}
+          socialLinks={socialLinksQuery.data?.items ?? []}
           previewLanguage={previewLanguage}
           onPreviewLanguageChange={setPreviewLanguage}
         />
@@ -367,11 +382,13 @@ function LandingContentForm({ content }: { content: LandingContentAdmin }) {
 function LandingPreview({
   draft,
   highlights,
+  socialLinks,
   previewLanguage,
   onPreviewLanguageChange,
 }: {
   draft: FormValues
   highlights: LandingHighlight[]
+  socialLinks: LandingSocialLink[]
   previewLanguage: string
   onPreviewLanguageChange: (language: string) => void
 }) {
@@ -381,7 +398,11 @@ function LandingPreview({
   // rather than the app language — an admin checking the Arabic half must see
   // the Arabic defaults too.
   const landingT = i18n.getFixedT(previewLanguage, 'landing')
-  const content = resolveLanding(toPreviewContent(draft, highlights), previewLanguage, landingT)
+  const content = resolveLanding(
+    toPreviewContent(draft, highlights, socialLinks),
+    previewLanguage,
+    landingT,
+  )
 
   return (
     <Card className="lg:sticky lg:top-4 lg:self-start">

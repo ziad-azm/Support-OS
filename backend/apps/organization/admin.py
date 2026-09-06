@@ -2,7 +2,14 @@ from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from .models import Branch, Department, LandingContent, LandingHighlight, OrganizationSettings
+from .models import (
+    Branch,
+    Department,
+    LandingContent,
+    LandingHighlight,
+    LandingSocialLink,
+    OrganizationSettings,
+)
 
 
 @admin.register(Department)
@@ -86,3 +93,17 @@ class LandingContentAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         obj = LandingContent.load()
         return redirect(reverse("admin:organization_landingcontent_change", args=[obj.pk]))
+
+
+@admin.register(LandingSocialLink)
+class LandingSocialLinkAdmin(admin.ModelAdmin):
+    """`LandingHighlightAdmin` above, for `LandingSocialLink` — an ordinary
+    `ModelAdmin`, a manual fallback rather than the primary path
+    (`/settings/landing/social` is that).
+    """
+
+    list_display = ("platform", "value", "is_enabled", "order")
+    list_filter = ("platform", "is_enabled")
+    search_fields = ("value",)
+    ordering = ("order", "id")
+    readonly_fields = ("created_at", "updated_at")

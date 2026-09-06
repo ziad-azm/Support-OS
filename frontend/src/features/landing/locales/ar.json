@@ -31,5 +31,21 @@
   },
   "footer": {
     "copyright": "© {{year}} SupportOS"
+  },
+  "social": {
+    "visit": "زوروا صفحتنا على {{platform}}",
+    "platforms": {
+      "facebook": "Facebook",
+      "x": "X",
+      "instagram": "Instagram",
+      "linkedin": "LinkedIn",
+      "youtube": "YouTube",
+      "tiktok": "TikTok",
+      "github": "GitHub",
+      "website": "الموقع الإلكتروني",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "whatsapp": "WhatsApp"
+    }
   }
 }

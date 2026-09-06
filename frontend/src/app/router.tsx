@@ -514,9 +514,10 @@ export const router = createBrowserRouter([
                     },
                   },
                   {
-                    // LAND-2. No `view`/`manage` split like `departments`
-                    // below: reads and writes are both `settings.manage`
-                    // here, so one guard covers all four routes.
+                    // LAND-2/LAND-3. No `view`/`manage` split like
+                    // `departments` below: reads and writes are all
+                    // `settings.manage` here, so one guard covers every
+                    // landing-content and social-link route.
                     path: 'settings/landing',
                     lazy: async () => {
                       const { LandingContentPage } =
@@ -549,6 +550,34 @@ export const router = createBrowserRouter([
                       const { LandingHighlightFormPage } =
                         await import('@/features/organization/components/LandingHighlightFormPage')
                       return { element: <LandingHighlightFormPage /> }
+                    },
+                  },
+                  {
+                    // LAND-3.
+                    path: 'settings/landing/social',
+                    lazy: async () => {
+                      const { LandingSocialLinkListPage } =
+                        await import('@/features/organization/components/LandingSocialLinkListPage')
+                      return { element: <LandingSocialLinkListPage /> }
+                    },
+                  },
+                  {
+                    // Must stay before `settings/landing/social/:id/edit`,
+                    // the same declaration order `settings/landing/highlights/new`
+                    // uses above.
+                    path: 'settings/landing/social/new',
+                    lazy: async () => {
+                      const { LandingSocialLinkFormPage } =
+                        await import('@/features/organization/components/LandingSocialLinkFormPage')
+                      return { element: <LandingSocialLinkFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'settings/landing/social/:id/edit',
+                    lazy: async () => {
+                      const { LandingSocialLinkFormPage } =
+                        await import('@/features/organization/components/LandingSocialLinkFormPage')
+                      return { element: <LandingSocialLinkFormPage /> }
                     },
                   },
                 ],

@@ -45,6 +45,12 @@
       "rules": {
         "react/only-export-components": "off"
       }
+    },
+    {
+      "files": ["**/shared/landing/socialIcons.tsx"],
+      "rules": {
+        "react/only-export-components": "off"
+      }
     }
   ]
 }

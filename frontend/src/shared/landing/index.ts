@@ -10,7 +10,10 @@ export {
   LANDING_ICON_KEYS,
 } from './config'
 export type { LandingCtaTarget, LandingIconKey } from './config'
+export { isSocialPlatform, socialHref, SOCIAL_PLATFORMS } from './social'
+export type { SocialPlatform } from './social'
 export { LandingIcon } from './LandingIcon'
+export { LandingSocialIcon } from './LandingSocialIcon'
 export { Reveal } from './Reveal'
 export {
   LandingCtaBand,
@@ -18,6 +21,14 @@ export {
   LandingFooter,
   LandingHero,
 } from './sections/LandingSections'
-export type { LandingContent, LandingHighlight, ResolvedHighlight, ResolvedLanding } from './types'
+export { LandingSocialRow } from './sections/LandingSocialRow'
+export type {
+  LandingContent,
+  LandingHighlight,
+  LandingSocialLink,
+  ResolvedHighlight,
+  ResolvedLanding,
+  ResolvedSocialLink,
+} from './types'
 // `fetchLandingContent` is deliberately NOT re-exported — nothing outside
 // this module calls it, the same restraint `shared/branding/index.ts` shows.

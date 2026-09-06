@@ -364,3 +364,96 @@ class LandingHighlight(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.title_en
+
+
+# A dialable number: an optional leading `+`, then 7-20 digits. Spaces,
+# dashes, parentheses and dots are stripped by the serializer BEFORE this
+# runs, so the stored value is canonical and `tel:`/`wa.me` hrefs can be
+# built from it without re-parsing on the frontend. Deliberately not a full
+# E.164 validator — no phone-number library is installed and adding one for
+# a footer link is not warranted (CONVENTIONS.md § 17).
+PHONE_VALIDATOR = RegexValidator(
+    regex=r"^\+?\d{7,20}$",
+    message=_("Enter a phone number as digits, optionally starting with +."),
+)
+
+
+class LandingSocialLink(TimeStampedModel):
+    """One social or contact link in the public site's footer — LAND-3.
+
+    A MODEL, NOT A `JSONField` LIST, and not more columns on
+    `LandingContent`: the same call CONVENTIONS.md § 33 records twice over
+    (ORG-1 and ORG-2 promoting this codebase's last two JSON string lists),
+    and the same call `LandingHighlight` above already makes for the other
+    ordered list on this page.
+
+    SHAPED AFTER `customers.ContactDetail`, not invented: a `Platform`
+    choice set plus ONE generic `value` column, because a profile URL, an
+    email address and a phone number are all "a string with a length cap"
+    at the model layer. Per-platform format validation is the SERIALIZER's
+    job for the same reason that model records — DRF does not call model
+    `clean()` — so this model deliberately has none either.
+
+    NOT related to `customers.ContactDetail` by FK or inheritance. That
+    model is per-customer CRM data; this is the organization's own public
+    presence. Identical shape, different table, different audience.
+
+    `is_enabled` is a real column rather than "delete the row to hide it":
+    an admin taking a channel down for a week should not have to retype the
+    URL to bring it back. Disabled rows never reach the public serializer —
+    see `PublicLandingContentSerializer.get_social_links`.
+    """
+
+    class Platform(models.TextChoices):
+        """The fixed set an admin may pick from — LAND-3's own constraint,
+        and the reason there is no free-text icon or label column.
+
+        `lucide-react` HAS NO BRAND ICONS (verified against 1.34.0: all
+        6098 exports, no Facebook/X/Instagram/LinkedIn/YouTube/GitHub), so
+        the first eight of these render inline SVG brand paths from
+        `src/shared/landing/socialIcons.tsx` while the last four use real
+        lucide marks. See Story 95 `## The icon decision`.
+
+        ADDING A VALUE IS A TWO-FILE CHANGE: this enum and
+        `SOCIAL_PLATFORMS` in `src/shared/landing/social.ts`. The frontend
+        skips a platform it does not know rather than rendering a nameless
+        link, so a backend-first deploy degrades quietly.
+        """
+
+        FACEBOOK = "facebook", _("Facebook")
+        X = "x", _("X")
+        INSTAGRAM = "instagram", _("Instagram")
+        LINKEDIN = "linkedin", _("LinkedIn")
+        YOUTUBE = "youtube", _("YouTube")
+        TIKTOK = "tiktok", _("TikTok")
+        GITHUB = "github", _("GitHub")
+        WEBSITE = "website", _("Website")
+        EMAIL = "email", _("Email")
+        PHONE = "phone", _("Phone")
+        WHATSAPP = "whatsapp", _("WhatsApp")
+
+    platform = models.CharField(_("platform"), max_length=20, choices=Platform.choices)
+    # One column for every platform's value — see the class docstring. 254
+    # matches `customers.ContactDetail.value` (the RFC-5321 email ceiling),
+    # which is comfortably above any real profile URL.
+    value = models.CharField(_("value"), max_length=254)
+    is_enabled = models.BooleanField(_("enabled"), default=True)
+    order = models.PositiveIntegerField(_("order"), default=0)
+
+    class Meta:
+        verbose_name = _("landing social link")
+        verbose_name_plural = _("landing social links")
+        # `LandingHighlight`'s ordering exactly: a manual number, ties
+        # broken by `id` so the order is total and stable.
+        ordering = ("order", "id")
+        constraints = [
+            # One row per platform. Two "Facebook" links in a footer is a
+            # mistake every time, and the admin form surfaces this as a
+            # field error rather than a 500 — DRF derives a
+            # `UniqueTogetherValidator` from this automatically, the same
+            # way `ContactDetail`'s own constraint does (see Story 11).
+            models.UniqueConstraint(fields=["platform"], name="unique_landing_social_platform"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_platform_display()}: {self.value}"

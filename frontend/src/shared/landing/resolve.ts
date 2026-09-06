@@ -3,7 +3,13 @@ import type { TFunction } from 'i18next'
 import { isRtl } from '@/shared/i18n/config'
 
 import { DEFAULT_CTA_PATHS, ctaPath } from './config'
-import type { LandingContent, ResolvedHighlight, ResolvedLanding } from './types'
+import { isSocialPlatform, opensInNewTab, socialHref } from './social'
+import type {
+  LandingContent,
+  ResolvedHighlight,
+  ResolvedLanding,
+  ResolvedSocialLink,
+} from './types'
 
 /** The four cards shipped in `features/landing/locales/{en,ar}.json` — keys
  * into that namespace, plus the icon each one had in `LandingPage.tsx`'s
@@ -81,6 +87,7 @@ export function resolveLanding(
     footerText: adminFooter
       ? adminFooter.split(YEAR_PLACEHOLDER).join(year)
       : t('footer.copyright', { year }),
+    socialLinks: resolveSocialLinks(content, t),
   }
 }
 
@@ -113,4 +120,35 @@ function resolveHighlights(
     description: t(`features.${key}.description`),
     icon,
   }))
+}
+
+function resolveSocialLinks(
+  content: LandingContent | undefined,
+  t: TFunction<'landing'>,
+): ResolvedSocialLink[] {
+  // NO BUNDLE FALLBACK, unlike every other field here: there is no shipped
+  // default social presence to fall back TO. An org that has configured
+  // nothing gets an empty array, and `LandingSocialRow` renders nothing at
+  // all rather than an empty shell (LAND-3's own constraint).
+  const rows = content?.social_links ?? []
+
+  const resolved: ResolvedSocialLink[] = []
+  for (const link of rows) {
+    // A platform this bundle does not know (a backend-first deploy) has no
+    // mark and no translated name — drop it rather than render a nameless
+    // link. A blank value is server-unreachable but defends against a row
+    // written straight through Django admin.
+    if (!isSocialPlatform(link.platform)) continue
+    const value = link.value.trim()
+    if (value === '') continue
+
+    resolved.push({
+      key: String(link.id),
+      platform: link.platform,
+      label: t(`social.platforms.${link.platform}`),
+      href: socialHref(link.platform, value),
+      external: opensInNewTab(link.platform),
+    })
+  }
+  return resolved
 }

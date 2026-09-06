@@ -8,6 +8,7 @@ Entry point for the **public-landing-page** feature. Stories execute in order by
 |----|------|-------|------------|------------|
 | 86 | [86-story-animated-public-landing-page-SUPPORTOS-120.md](86-story-animated-public-landing-page-SUPPORTOS-120.md) | Animated Public Landing Page (LAND-1) | SUPPORTOS-120 | Stories 05, 06 (`I18N`/`UI`, complete), Story 42 (`/portal` tree, complete), Story 84 (`RedirectPortalOnly`, complete) |
 | 94 | [94-story-editable-landing-content-SUPPORTOS-124.md](94-story-editable-landing-content-SUPPORTOS-124.md) | Editable Landing Content, Admin CMS (LAND-2) | SUPPORTOS-124 | Story 86 (this feature, landed), Story 90 (`BrandingView` public-read path, landed), Stories 87/89 (ordered-row admin pattern, landed), Story 40 (`Article` bilingual columns, landed), Story 07 (`FORM`) |
+| 95 | [95-story-social-contact-presence-SUPPORTOS-125.md](95-story-social-contact-presence-SUPPORTOS-125.md) | Social Media & Contact Presence (LAND-3) | SUPPORTOS-125 | Story 94 (this feature, **implemented** — extends its model set, public serializer and `shared/landing/` module), Story 19 (`/contact` web form, landed), Story 11 (`ContactDetail` channel+value shape, landed) |
 
 ## Dependency notes
 
@@ -18,7 +19,11 @@ layout, entrance motion & micro-interactions, and routing reconciliation with
 `LAND-2` (`SUPPORTOS-124`) is **Story 94**, and its five tasks — content model +
 public read endpoint, API-with-bundle-fallback rendering, editable highlights, the
 admin editor, and the live preview — are all covered by that one plan. It is
-planned, not yet implemented.
+**implemented**.
+
+`LAND-3` (`SUPPORTOS-125`) is **Story 95** — an admin-managed social/contact link
+list riding Story 94's existing public payload, rendered in the landing footer and
+on `/contact`. Planned, not yet implemented.
 
 **Story 86 is frontend-only.** No backend module, model, endpoint, or setting is
 read or written. The landing copy lives in a new `landing` i18n namespace
@@ -117,3 +122,52 @@ Deliberately left out of Story 94 and named as such: a rich-text or Markdown edi
 for marketing copy, uploaded images (still no `<img>` in this codebase), free-text
 icon names, per-branch landing content, drag-and-drop reordering, and any new
 permission string — writes reuse `settings.manage`.
+
+---
+
+## Story 95 (`LAND-3`) — the three findings that shaped it
+
+**`/contact` is finished, so the CTA does not move.** The intake's third task says to
+resolve this *by inspection* rather than assume. Inspected: `router.tsx:61-67` routes
+`/contact` to `WebFormPage` (149 lines) — a working name/email/subject/description/
+category form that creates a ticket and renders a success card with its id. So the
+intake's "either wire the real contact channels into it **or** repoint the CTA"
+resolves to the first branch. The real gap is narrower than "unfinished": the page
+tells a visitor how to open a ticket and start a live chat, but never shows the
+organization's own phone, email, or social channels. Story 95 adds those beneath the
+form and leaves the CTA target alone (it is admin-configurable through Story 94's
+`hero_secondary_cta_target` anyway).
+
+**`lucide-react` has no brand icons, so the intake's icon constraint cannot be met
+literally.** Verified against the installed 1.34.0: all 6098 exports, and no
+Facebook, X, Instagram, LinkedIn, YouTube, GitHub, Twitch or Slack. Lucide removed
+its brand set. The "fixed choice set, no free-text icon names" half of the constraint
+stands and is preserved; the "mapped to curated lucide-react icons" half is met only
+for the generic platforms (`website`→`GlobeIcon`, `email`→`MailIcon`,
+`phone`→`PhoneIcon`, `whatsapp`→`MessageCircleIcon`). Brand marks become **inline
+SVG paths checked into one module** — no new dependency (CONVENTIONS.md § 17), inline
+`<svg>` already has precedent (`shared/ui/chart/GaugeChart.tsx:72`), and § 25's "no
+`<img>` anywhere" still holds because an inline `<svg>` is not an `<img>`. Source is
+Simple Icons (CC0). The alternative — adding `react-icons` for ten glyphs — was
+rejected on size.
+
+**`customers.ContactDetail` already solved this data shape, so Story 95 copies it
+rather than inventing one.** That model (CUST-2) pairs a `Channel` `TextChoices` with
+ONE generic `value` column, and puts per-channel format validation in the
+**serializer** because "DRF does not call model `clean()`". `LandingSocialLink` is
+that model for the organization's own presence: a `Platform` choice set, one `value`,
+plus `is_enabled` and `order`. No FK between them and no shared base — same shape,
+different table, different audience.
+
+**The one edit that can break Story 94.** `PublicLandingContentSerializer.Meta.fields`
+ends in `highlights`, and `LandingContentAdminSerializer` derives its own list by
+slicing that one entry off with `[:-1]`. Adding a second read-only nested field makes
+that slice wrong, and a wrong slice makes the admin serializer try to write a
+`SerializerMethodField` — a 500 on every landing-copy save. Story 95 widens it to
+`[:-2]`, updates both comments, and asserts the result in its verification steps
+rather than trusting the edit.
+
+Deliberately left out and named as such: a second bilingual label column (platform
+names are proper nouns), any change to `customers.ContactDetail`, LAND-4's eventual
+placement of the block (the row ships as a standalone component so it can be moved
+without a rewrite), click analytics, link-health checks, and uploaded brand logos.

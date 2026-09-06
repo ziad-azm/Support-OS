@@ -1,3 +1,5 @@
+import type { SocialPlatform } from './social'
+
 /** Mirrors `apps.organization.serializers.PublicLandingContentSerializer`'s
  * read shape. Lives in `shared/`, not `features/landing/`, because
  * `features/organization/`'s editor preview renders the same sections and
@@ -26,6 +28,7 @@ export type LandingContent = {
   footer_text_en: string
   footer_text_ar: string
   highlights: LandingHighlight[]
+  social_links: LandingSocialLink[]
 }
 
 /** Mirrors `apps.organization.serializers.PublicLandingHighlightSerializer`. */
@@ -39,6 +42,18 @@ export type LandingHighlight = {
   order: number
 }
 
+/** Mirrors `apps.organization.serializers.PublicLandingSocialLinkSerializer`.
+ * `platform` is plain `string`, not `SocialPlatform`: a backend-first
+ * deploy can store a choice this bundle has no mark for, and typing it
+ * narrowly would move that failure to runtime. `resolveLanding` drops such
+ * rows. */
+export type LandingSocialLink = {
+  id: number
+  platform: string
+  value: string
+  order: number
+}
+
 /** One resolved highlight card — already merged and already narrowed to the
  * active locale. `key` is a React key: the row id for an admin-managed card,
  * the bundle key for a shipped one. */
@@ -47,6 +62,17 @@ export type ResolvedHighlight = {
   title: string
   description: string
   icon: string
+}
+
+/** One resolved link — platform already narrowed to a known
+ * `SocialPlatform`, href already built, and `external` already decided.
+ * `LandingSocialRow` needs nothing else to render it. */
+export type ResolvedSocialLink = {
+  key: string
+  platform: SocialPlatform
+  label: string
+  href: string
+  external: boolean
 }
 
 /** What the RESOLVED page renders — every string already merged against the
@@ -64,4 +90,5 @@ export type ResolvedLanding = {
   ctaLabel: string
   ctaTo: string
   footerText: string
+  socialLinks: ResolvedSocialLink[]
 }

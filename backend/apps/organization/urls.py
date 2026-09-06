@@ -8,6 +8,7 @@ from .views import (
     LandingContentAdminView,
     LandingContentView,
     LandingHighlightViewSet,
+    LandingSocialLinkViewSet,
     SettingsView,
 )
 
@@ -21,6 +22,7 @@ router = SimpleRouter()
 router.register("departments", DepartmentViewSet, basename="department")
 router.register("branches", BranchViewSet, basename="branch")
 router.register("landing-highlights", LandingHighlightViewSet, basename="landing-highlight")
+router.register("landing-social-links", LandingSocialLinkViewSet, basename="landing-social-link")
 
 urlpatterns = router.urls + [
     # Public (see BrandingView). Deliberately a sibling of `settings/`
