@@ -25,13 +25,14 @@ export type AuthUser = {
   last_name: string
   is_staff: boolean
   role: AuthRole | null
-  /** The caller's own department, or `null`. Drives `/tickets/department`
-   * and the sidebar link to it. Read-only — changing a user's department
-   * goes through `PATCH /api/users/<id>/` (SEC-1's screen), never here. */
+  /** The caller's own department, or `null`. Drives `TicketListPage`'s
+   * default department filter (ORG-4, Story 98). Read-only — changing a
+   * user's department goes through `PATCH /api/users/<id>/` (SEC-1's
+   * screen), never here. */
   department: AuthDepartment | null
-  /** The caller's own branch, or `null`. Drives `/tickets/branch` and the
-   * sidebar link to it. Read-only — changing a user's branch goes through
-   * `PATCH /api/users/<id>/` (SEC-1's screen), never here. */
+  /** The caller's own branch, or `null`. Drives `TicketListPage`'s default
+   * branch filter (ORG-4, Story 98). Read-only — changing a user's branch
+   * goes through `PATCH /api/users/<id>/` (SEC-1's screen), never here. */
   branch: AuthBranch | null
   /** Flat, already resolved by the backend — includes the superuser bypass.
    * Never derive permissions from `role` on the client. See CONVENTIONS.md §22. */

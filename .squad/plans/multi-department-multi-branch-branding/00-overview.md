@@ -9,16 +9,19 @@ Entry point for the **multi-department-multi-branch-branding** feature. Stories 
 | 87 | [87-story-multi-department-SUPPORTOS-112.md](87-story-multi-department-SUPPORTOS-112.md) | Multi-Department (`ORG-1`) | SUPPORTOS-112 | Story 53 (`SEC-4`, `../security-administration/`), Story 18 (`TKT-2`, `../ticket-management/`), Story 48 (`SEC-1`, `../security-administration/`), Story 56 (`RPT-1`, `../reports-analytics/`) |
 | 89 | [89-story-multi-branch-SUPPORTOS-113.md](89-story-multi-branch-SUPPORTOS-113.md) | Multi-Branch (`ORG-2`) | SUPPORTOS-113 | **Story 87 (`ORG-1`, this feature) — implemented, strict prerequisite**, Story 10 (`CUST-1`, `../customer-management/`), Story 43 (`PORTAL-1`, `../customer-portal/`), Story 56 (`RPT-1`, `../reports-analytics/`) |
 | 90 | [90-story-custom-branding-SUPPORTOS-114.md](90-story-custom-branding-SUPPORTOS-114.md) | Custom Branding (`ORG-3`) | SUPPORTOS-114 | Story 53 (`SEC-4`, `../security-administration/`) — the only *functional* dependency; Stories 35-38/50-51 (`DSN`, `../design-intelligence-ui-ux-system/`), Story 86 (`LAND-1`, `../public-landing-page/`), Story 42 (`PORTAL-0`, `../customer-portal/`), Story 08 (`AUTH-1`, `../authentication-authorization/`). Story 89 is a **file-level** prerequisite only (line numbers). |
+| 98 | [98-story-ticket-list-own-scope-SUPPORTOS-129.md](98-story-ticket-list-own-scope-SUPPORTOS-129.md) | Ticket List Scoped to the Caller's Own Department/Branch (`ORG-4`) | SUPPORTOS-129 | **Stories 87 + 89 (`ORG-1`/`ORG-2`, this feature) — both implemented**; consumes `apps/core/scoping.py`'s AND-composition and changes **no** backend code |
 
 ## Dependency notes
 
 This feature maps to **EPIC 16 — Multi-Department / Multi-Branch / Branding** (`SupportOs backlog.MD` lines 923-946): `ORG-1` Multi-Department, `ORG-2` Multi-Branch, `ORG-3` Custom Branding. The epic's own `Depends on` line reads *"Ticket Management, SEC-4"* — both are complete.
 
+**`ORG-4` (`SUPPORTOS-129`, Story 98) is a later addition to this feature**, not part of the original three-story epic. It is the first story to *consume* Story 87's scoping mechanism as a product default rather than extend it, and it is **frontend-only** — see "What Story 98 (ORG-4) settled" below.
+
 **`ORG-1` → `ORG-2` is a strict sequence**, per `ORG-2`'s own backlog dependency line (*"Dependencies: ORG-1"*). That prerequisite is **satisfied** — Story 87 is implemented in the working tree (`organization/0003`–`0006`, `accounts/0013`, `tickets/0008`, `apps/core/scoping.py`, `shared/departments/`), so Story 89 is executable now. `ORG-3` depends only on `SEC-4` and is independent of both.
 
 - **Story 87 (`ORG-1`, `SUPPORTOS-112`)** — **implemented.** Promotes `OrganizationSettings.departments` (a `JSONField` string list SEC-4 shipped as an explicit placeholder) into the real `organization.Department` model, adds nullable `SET_NULL` FKs from `accounts.User` and `tickets.Ticket`, and ships the 🔑 reusable scoping mechanism `apps/core/scoping.py` that the rest of the epic consumes.
 - **Story 89 (`ORG-2`, `SUPPORTOS-113`)** — **implemented.** Promotes the *other* half of the same JSON pair (`OrganizationSettings.branches`) using Story 87's four-migration sequence as its template, adds `Branch` FKs to users/**customers**/tickets, and reuses `apps/core/scoping.py` by appending one `ScopeFilter(param="branch", field="branch")` per viewset — **no new filter code; `apps/core/scoping.py` is not edited at all**, and the plan makes an empty `git diff` on that file a done-criterion. It also removes the **last** JSON list column from `OrganizationSettings`, so both dead `_validate_string_list` helpers and the frontend's now-consumerless `StringListField` go with it.
-- **Story 90 (`ORG-3`, `SUPPORTOS-114`)** — **planned, not yet implemented.** Adds `OrganizationSettings.primary_color` and finally *renders* `name`/`logo_url`, which SEC-4 shipped as storage that — verified by grep — **nothing has ever consumed**: the only readers today are the settings form and its own types. Touches neither `Department`, nor `Branch`, nor `apps/core/scoping.py`; it is the last story that edits `SettingsPage`, which after Story 89 edits scalars only. Its two structural moves are a **public read endpoint** (`GET /api/branding/`, `AllowAny`) and a `src/shared/branding/` module that writes exactly two CSS custom properties at runtime.
+- **Story 90 (`ORG-3`, `SUPPORTOS-114`)** — **implemented.** Adds `OrganizationSettings.primary_color` and finally *renders* `name`/`logo_url`, which SEC-4 shipped as storage that — verified by grep — **nothing has ever consumed**: the only readers today are the settings form and its own types. Touches neither `Department`, nor `Branch`, nor `apps/core/scoping.py`; it is the last story that edits `SettingsPage`, which after Story 89 edits scalars only. Its two structural moves are a **public read endpoint** (`GET /api/branding/`, `AllowAny`) and a `src/shared/branding/` module that writes exactly two CSS custom properties at runtime.
 
 ## Cross-story contracts established by Story 87
 
@@ -58,6 +61,50 @@ Recorded because the intake reads like one field and the code says otherwise:
 - **Neither `?department=` nor `?branch=` has a filter UI on the users list.** Both are live on `UserViewSet`; `UserListParams` (`getUsers.ts:7`) is `ServerTableParams & { search?: string }` and neither screen offers a picker. Story 89 adds the `branch_name` column only, deliberately, to avoid a screen with one org-unit filter and not the other. Adding both together is a small SEC-1 follow-up.
 - **Auto-assignment is aware of neither org unit.** `AssignmentRule`/`auto_assign_ticket` (SLA-2) are unmodified by both stories. Routing a new ticket to its department's or branch's agents is a change to that rule engine's own matching and round-robin semantics, and belongs in an SLA story.
 - **Nothing validates a department/branch pair.** A ticket, user, or customer may hold any combination of the two, including a department that operates in no such branch. This codebase models no hierarchy between them and neither intake asks for one; if a real containment rule appears, it is a new model relationship plus cross-field validation, not a serializer tweak.
+
+## What Story 98 (ORG-4) settled, and the two places it contradicts its own intake
+
+Recorded because two of this story's conclusions reverse what the intake assumed, and both
+reversals are load-bearing.
+
+1. **The intake's motivating numbers are exactly right — verified against the dev database, not
+trusted.** `agent1@supportos.local` (department 6, branch 6) matches **12** tickets by department
+alone, **17** by branch alone, and **6** by the intersection, out of 36 total. So the two
+single-dimension queue pages really could only ever show that agent a wrong number.
+
+2. **`TicketListPage` already had department *and* branch filter `Select`s** (`useState('all')` at
+`TicketListPage.tsx:61-63`, spread into `useTickets` at 85-86). So "auto-scope the list" is not new
+filtering logic — it is **changing two `useState` initial values**. That is why the story is
+frontend-only and why it lands the intake's option (a) exactly: the params stay unrestricted, only
+the default changes, and the agent can widen the filter through UI that already exists.
+
+3. **`MyTicketsPage` is deliberately NOT scoped — Task 2 and Task 4 of the intake conflict, and
+Task 4 wins.** Task 4 told the planner to *verify, do not guess* whether assignment reasons about
+department/branch. Verified: **it does not, anywhere.** `auto_assign_ticket` →
+`resolve_rule` (category only) → `pick_agent` (`assignable_agents()` ∩ `rule.agents`) →
+`apply_assignment`; `assignable_agents()` filters on `is_active` + `tickets.manage` and nothing
+else; and `AssignmentRule`'s field list is `category`/`strategy`/`agents`/`last_assigned_agent`/
+`enabled` — **no department or branch field exists on it**. So the intake's premise for Task 4
+("assignment logic already reasons about department/branch") is false, which makes the risk *worse*
+than it assumed: an out-of-scope assignment is the ordinary case, not post-hoc drift. Scoping "My
+Tickets" would hide the agent's own assigned work on the one screen whose entire job is to show it.
+Task 4's stated outcome — *"a ticket assigned to an agent is never invisible to them"* — is
+therefore satisfied by what Story 98 **declines** to do.
+
+4. **The scoping-policy question is answered as option (a), uniformly, with no role check.** The
+rule is one sentence: if the caller has a department, that filter starts on it; if a branch, that
+one does; otherwise "all". No `agent`-vs-`manager` branch is needed because a caller with no org
+units set gets "all" from the same rule — and verified in seed, `manager@` and `admin@` have
+neither. Option (b) (a real access boundary) is **rejected**: it needs backend enforcement plus the
+audit of every report, export and queue that § 33 already scopes to its own story, and it would
+make routinely out-of-scope *assigned* tickets un-openable. § 33's existing "A scope filter is not
+an access boundary" paragraph survives this story unedited, and the new subsection explicitly
+reaffirms it.
+
+5. **Deleting the two queue routes is safe — confirmed by grep, as the intake required.** The only
+references anywhere are the two component files, their two route entries, their two sidebar links,
+and two now-false docstrings in `shared/auth/types.ts` (which claim `department`/`branch` "drives
+`/tickets/department`"). No other page, redirect or bookmark target reaches them.
 
 ## Known follow-ups left open by Story 90
 

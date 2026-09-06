@@ -3,7 +3,7 @@ import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
-import { Can } from '@/shared/auth'
+import { Can, useAuth } from '@/shared/auth'
 import { useBranches } from '@/shared/branches'
 import { useDepartments } from '@/shared/departments'
 import { useFormatters } from '@/shared/hooks/useFormatters'
@@ -44,6 +44,7 @@ const SEARCH_DEBOUNCE_MS = 300
 export function TicketListPage() {
   const { t } = useTranslation('tickets')
   const { date } = useFormatters()
+  const { user } = useAuth()
   const { sort, setSort, setPage, params } = useServerTable({
     initialSort: { field: 'created_at', direction: 'desc' },
   })
@@ -54,13 +55,30 @@ export function TicketListPage() {
   // non-empty value, mirroring the form's CATEGORY_NONE sentinel.
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
+  // ORG-4: these two filters START on the caller's own department/branch
+  // instead of 'all', so the default view is the INTERSECTION of both —
+  // `apply_scope_filters` chains a `.filter()` per param, so sending both
+  // ANDs them (CONVENTIONS.md §33). An agent holding department 6 and
+  // branch 6 sees the 6 tickets that are actually theirs, not the 12 in
+  // their department or the 17 in their branch.
+  //
+  // A DEFAULT, NOT A BOUNDARY. The `Select`s below still offer "All
+  // departments"/"All branches", and the backend is untouched — any
+  // caller with `tickets.view` can still list everything, exactly as
+  // §33's "a scope filter is not an access boundary" paragraph says.
+  // Uniform across roles by design: a manager with no department set
+  // gets 'all' from this same rule, with no role check. See §33's
+  // "Default list scope (ORG-4)" subsection for the full decision.
+  //
   // "all" is "no filter"; the literal "none" is a real, distinct filter
   // value — the backend's own `?department=none` sentinel for "no
   // department" (`apps.core.scoping.UNSCOPED`) — so it needs no
   // client-side translation before it reaches `useTickets`.
-  const [departmentFilter, setDepartmentFilter] = useState('all')
+  const [departmentFilter, setDepartmentFilter] = useState(
+    user?.department ? String(user.department.id) : 'all',
+  )
   // Same two-sentinel contract as `departmentFilter` above (ORG-2).
-  const [branchFilter, setBranchFilter] = useState('all')
+  const [branchFilter, setBranchFilter] = useState(user?.branch ? String(user.branch.id) : 'all')
   const [onlyMine, setOnlyMine] = useState(false)
   const categoriesQuery = useCategories()
   const departmentsQuery = useDepartments()

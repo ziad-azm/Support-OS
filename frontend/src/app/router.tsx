@@ -186,26 +186,6 @@ export const router = createBrowserRouter([
                     },
                   },
                   {
-                    // Must stay before `tickets/:id`, same reason as
-                    // `tickets/my-tickets`.
-                    path: 'tickets/department',
-                    lazy: async () => {
-                      const { DepartmentQueuePage } =
-                        await import('@/features/tickets/components/DepartmentQueuePage')
-                      return { element: <DepartmentQueuePage /> }
-                    },
-                  },
-                  {
-                    // Must stay before `tickets/:id`, same reason as
-                    // `tickets/department`.
-                    path: 'tickets/branch',
-                    lazy: async () => {
-                      const { BranchQueuePage } =
-                        await import('@/features/tickets/components/BranchQueuePage')
-                      return { element: <BranchQueuePage /> }
-                    },
-                  },
-                  {
                     path: 'tickets/:id',
                     lazy: async () => {
                       const { TicketDetailPage } =

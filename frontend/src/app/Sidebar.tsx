@@ -251,25 +251,6 @@ export function Sidebar() {
               label={t('tickets:myQueue.title')}
               collapsed={collapsed}
             />
-            {user?.department ? (
-              <SidebarLink
-                to="/tickets/department"
-                icon={Building2Icon}
-                label={t('tickets:departmentQueue.title')}
-                collapsed={collapsed}
-              />
-            ) : null}
-            {/* A distinct icon from the department queue above on purpose:
-                when the sidebar collapses to icons only, two adjacent
-                Building2Icon links would be indistinguishable. */}
-            {user?.branch ? (
-              <SidebarLink
-                to="/tickets/branch"
-                icon={MapPinIcon}
-                label={t('tickets:branchQueue.title')}
-                collapsed={collapsed}
-              />
-            ) : null}
           </Can>
           <Can permission="tickets.manage">
             <SidebarLink

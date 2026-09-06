@@ -33,6 +33,17 @@ import type { Ticket, TicketPriority, TicketStatus } from '../types/ticket'
  * folder: the queue IS ticket data, just filtered, and a separate feature
  * would either duplicate `Ticket`/`TICKET_STATUSES`/`DataTable` or violate
  * `no-restricted-imports` (CONVENTIONS.md §15) reaching back for them.
+ *
+ * DELIBERATELY NOT scoped to the caller's own department/branch (ORG-4,
+ * Story 98). "Assigned to me" is already the tightest scope there is —
+ * the assignee IS the filter — so intersecting it with department/branch
+ * could only ever subtract the agent's own work. And it would: assignment
+ * is entirely department/branch-blind (`apps/sla/assignment_rules.py`
+ * matches on category, then `assignable_agents()` filters on
+ * `tickets.manage` alone — `AssignmentRule` has no department or branch
+ * field at all), so an agent is routinely assigned tickets outside their
+ * own org units. Scoping this list would make that work invisible on the
+ * one screen whose entire job is to show it.
  */
 export function MyTicketsPage() {
   const { t } = useTranslation('tickets')

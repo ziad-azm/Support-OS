@@ -77,20 +77,6 @@
     "empty": "No tickets assigned to you",
     "emptyDescription": "Tickets assigned to you will appear here."
   },
-  "departmentQueue": {
-    "title": "Department queue",
-    "empty": "No tickets in your department",
-    "emptyDescription": "Tickets in your department will appear here.",
-    "noDepartment": "You are not in a department",
-    "noDepartmentDescription": "Ask an admin to assign you to a department to see its ticket queue."
-  },
-  "branchQueue": {
-    "title": "Branch queue",
-    "empty": "No tickets in your branch",
-    "emptyDescription": "Tickets in your branch will appear here.",
-    "noBranch": "You are not in a branch",
-    "noBranchDescription": "Ask an admin to assign you to a branch to see its ticket queue."
-  },
   "status": {
     "updated": "Status updated.",
     "terminalConfirmTitle": "Move to {{status}}?",

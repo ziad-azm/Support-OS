@@ -77,20 +77,6 @@
     "empty": "لا توجد تذاكر معيّنة لك",
     "emptyDescription": "ستظهر هنا التذاكر المعيّنة لك."
   },
-  "departmentQueue": {
-    "title": "قائمة القسم",
-    "empty": "لا توجد تذاكر في قسمك",
-    "emptyDescription": "ستظهر هنا تذاكر قسمك.",
-    "noDepartment": "لست ضمن أي قسم",
-    "noDepartmentDescription": "اطلب من أحد المسؤولين تعيينك إلى قسم لرؤية قائمة تذاكره."
-  },
-  "branchQueue": {
-    "title": "قائمة الفرع",
-    "empty": "لا توجد تذاكر في فرعك",
-    "emptyDescription": "ستظهر تذاكر فرعك هنا.",
-    "noBranch": "أنت غير مُعيَّن إلى فرع",
-    "noBranchDescription": "اطلب من المسؤول تعيينك إلى فرع لعرض قائمة تذاكره."
-  },
   "status": {
     "updated": "تم تحديث الحالة.",
     "terminalConfirmTitle": "هل تريد التغيير إلى {{status}}؟",

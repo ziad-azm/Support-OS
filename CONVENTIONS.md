@@ -2392,6 +2392,43 @@ Restricting *what a staff account may see* to its own org unit is a change to
 the top row of this section's table, not the bottom one — it needs its own
 story and its own audit of every report, export, and queue.
 
+### Default list scope (ORG-4, Story 98)
+
+**The rule.** `TicketListPage` initialises its department and branch
+filters to the caller's own `user.department`/`user.branch` id when that
+field is set, otherwise `'all'` — one uniform rule, with **no role check**.
+A caller with neither field set (verified in seed data: `manager` and
+`super_admin` both have no department/branch) gets `'all'` from that same
+rule, with nothing special-cased for their role.
+
+**This is a default, not a boundary — the preceding paragraph still holds
+in full.** The backend is unchanged, `ScopeFilter` remains opt-in, the
+`Select`s still offer "All departments"/"All branches", and any caller
+holding `tickets.view` can still list every ticket by widening the filter
+or calling the API directly with no params. Nothing here narrows what a
+staff account is *authorized* to see — only what it sees by default.
+
+**Why a real access boundary (rather than a default) was rejected.**
+Enforcing this server-side would need filtering in `TicketViewSet.get_queryset`
+by `request.user`, which this section's own preceding paragraph already
+scopes to its own story — plus an audit of every report, export, and
+`DataTable` consumer that has no such decision today. It would also break
+assignment: assignment is verifiably department/branch-blind (`AssignmentRule`
+has no department/branch field; `assignable_agents()` filters on
+`tickets.manage` alone), so agents are routinely assigned tickets outside
+their own org units, and a hard boundary would make those tickets
+un-openable rather than merely unlisted by default.
+
+**Why `MyTicketsPage` is exempt.** "Assigned to me" is already the
+tightest possible scope — the assignee IS the filter. Intersecting it with
+department/branch could only ever subtract the agent's own work, and given
+assignment's department/branch-blindness above, it routinely would.
+
+**The two single-dimension queue screens this replaced.**
+`DepartmentQueuePage`/`BranchQueuePage` (ORG-1/ORG-2) are retired: each
+could only ever show one dimension of an agent's tickets — never the
+intersection, which is the number that is actually theirs.
+
 ---
 
 ## 34. Observability & logging mechanism (PROD-1)
