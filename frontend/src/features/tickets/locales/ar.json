@@ -23,7 +23,8 @@
     "status": "الحالة",
     "priority": "الأولوية",
     "createdAt": "تاريخ الإنشاء",
-    "escalation": "التصعيد"
+    "escalation": "التصعيد",
+    "slaStatus": "اتفاقية الخدمة"
   },
   "statuses": {
     "open": "مفتوحة",
@@ -214,5 +215,10 @@
     },
     "created": "تم إنشاء الفئة.",
     "updated": "تم تحديث الفئة."
+  },
+  "slaStatuses": {
+    "met": "مُحققة",
+    "pending": "ضمن المدة",
+    "breached": "مخروقة"
   }
 }

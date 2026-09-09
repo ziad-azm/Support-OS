@@ -10,7 +10,7 @@ from apps.core.permissions import Permissions, permissions_for
 from apps.core.scoping import ScopedQuerysetMixin, ScopeFilter
 from apps.core.throttling import AiRateThrottle
 from apps.core.views import BaseModelViewSet
-from apps.sla.policy import compute_sla_status
+from apps.sla.policy import annotate_sla_facts, bulk_target_resolver, compute_sla_status
 from apps.sla.tasks import auto_assign_ticket
 
 from .assignment import apply_assignment, assignable_agents
@@ -88,6 +88,10 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     # `assigned_agent_name` are deliberately absent — see Story 12
     # `## Story Goal` for why `customer_name` is not sortable, the same
     # choice this story makes for `category_name`/`assigned_agent_name`.
+    # `sla_status` is deliberately ABSENT: it is computed per row from
+    # annotations, not a column, so the database cannot order by it. Making
+    # it sortable needs its own design pass (a stored/denormalised column
+    # plus invalidation on every policy edit), not a line here.
     ordering_fields = ("subject", "status", "priority", "created_at")
     search_fields = ("subject", "description", "customer__name")
 
@@ -99,6 +103,19 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         ScopeFilter(param="department", field="department"),
         ScopeFilter(param="branch", field="branch"),
     )
+
+    def get_serializer_context(self):
+        """Adds the bulk SLA target resolver on the list path only.
+
+        Built ONCE per request (two queries) and reused for every row.
+        Building it inside `TicketSerializer.get_sla_status` instead would
+        be two queries PER TICKET — functionally identical, silently
+        N+1, and the single most likely way to regress this story.
+        """
+        context = super().get_serializer_context()
+        if self.action == "list":
+            context["sla_resolve"] = bulk_target_resolver()
+        return context
 
     def perform_create(self, serializer):
         ticket = serializer.save()
@@ -119,6 +136,12 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         queryset = super().get_queryset()
         if self.action != "list":
             return queryset
+
+        # F-9: the two facts `sla_status` needs, as correlated subqueries —
+        # no extra query, and crucially not one per row. `compute_sla_status`
+        # (the detail action) stays per-ticket; this is the bulk path Story
+        # 28 deferred. See `apps.sla.policy.annotate_sla_facts`.
+        queryset = annotate_sla_facts(queryset)
 
         # Optional, unlike MessageViewSet/ContactDetailViewSet's required
         # `ticket`/`customer` params (Story 11/13) — a ticket list must

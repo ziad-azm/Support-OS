@@ -26,6 +26,9 @@ export type Ticket = {
   description: string
   customer: number
   customer_name: string
+  /** See `SLA_STATUSES` below. `null` when no policy applies, and on every
+   * non-list response. */
+  sla_status: SlaStatus | null
   category: number | null
   category_name: string | null
   department: number | null
@@ -62,3 +65,10 @@ export type TicketInput = {
   branch: number | null
   priority: TicketPriority
 }
+
+/** Overall SLA state for a ticket, worst-of-two-dimensions — the backend's
+ * own `dimension_status` vocabulary, not a second scale. `null` when no SLA
+ * policy applies (tracking is opt-in) and on non-list responses, whose
+ * queryset carries no SLA annotations. Full detail: `GET /tickets/<id>/sla/`. */
+export const SLA_STATUSES = ['met', 'pending', 'breached'] as const
+export type SlaStatus = (typeof SLA_STATUSES)[number]

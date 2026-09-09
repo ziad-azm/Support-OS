@@ -10,25 +10,23 @@ extra queries per call (`apps/sla/policy.py:90-108`), an N+1 risk across
 a report's ticket list that Story 28's own `## Prerequisites` (point 13)
 explicitly flagged and deferred: "a future story can add [batching] once
 there is a batching strategy... worth its own design pass." This module
-is that batching strategy: two `Subquery` annotations (the same technique
-`apps/reports/tickets.py::with_origin_channel` uses) plus one bulk
-`SLAPolicy`/`OrganizationSettings` fetch, replacing what would otherwise
-be `2N+1` queries with exactly 3. Classification itself still goes
-through the shared `apps.sla.policy.dimension_status`, so this can never
-silently disagree with the single-ticket `TicketViewSet.sla` action.
+wrote that batching strategy first; it now lives in `apps.sla.policy`
+(`annotate_sla_facts`, `bulk_target_resolver`), because it is SLA domain
+knowledge rather than reporting knowledge and Story 103 gave it a second
+consumer in the ticket list. Two `Subquery` annotations plus one bulk
+`SLAPolicy`/`OrganizationSettings` fetch replace what would otherwise be
+`2N+1` queries with exactly 3. Classification still goes through the
+shared `apps.sla.policy.dimension_status`, so no consumer can silently
+disagree with the single-ticket `TicketViewSet.sla` action.
 """
 
 from datetime import timedelta
 
-from django.db.models import OuterRef, Subquery
 from django.utils import timezone
 
-from apps.communications.models import Message
-from apps.organization.models import OrganizationSettings
 from apps.reports.aggregation import BUCKETS, DATE_FORMAT
-from apps.sla.models import SLAPolicy
-from apps.sla.policy import dimension_status
-from apps.tickets.models import Ticket, TicketActivity
+from apps.sla.policy import annotate_sla_facts, bulk_target_resolver, dimension_status
+from apps.tickets.models import Ticket
 
 # The two fixed dimensions every SLA report has — unlike RPT-1's
 # user-selectable status/priority/category/channel, response and
@@ -38,65 +36,18 @@ RESPONSE = "response"
 RESOLUTION = "resolution"
 
 
-def _bulk_target_resolver(policies_by_key, org_targets):
-    """Returns a function `(priority, category_id) -> (response_minutes,
-    resolution_minutes) | None`, mirroring `apps.sla.policy.resolve_policy`'s
-    exact two-tier lookup (category-specific, then priority-only default,
-    then org default) but against a pre-fetched dict instead of two
-    queries per ticket.
-    """
-
-    def resolve(priority, category_id):
-        policy = policies_by_key.get((priority, category_id))
-        if policy is None:
-            policy = policies_by_key.get((priority, None))
-        if policy is not None:
-            return (policy.response_target_minutes, policy.resolution_target_minutes)
-        return org_targets
-
-    return resolve
-
-
 def _annotated_tickets(start, end):
     """Every ticket created in [start, end), annotated with its earliest
-    outbound message time and earliest resolved/closed activity time —
-    the same two facts `compute_sla_status` reads per-ticket, fetched here
-    in ONE query for the whole range via `Subquery`, not `2N+1`.
+    outbound message time and earliest resolved/closed activity time.
+
+    The annotation itself is `apps.sla.policy.annotate_sla_facts` — shared
+    with the ticket list (Story 103) so the two cannot drift. What remains
+    here is the date filter plus the `.values()` projection this module's
+    row loops read.
     """
-    first_response = (
-        Message.objects.filter(ticket=OuterRef("pk"), direction=Message.Direction.OUTBOUND)
-        .order_by("created_at")
-        .values("created_at")[:1]
-    )
-    resolved_activity = (
-        TicketActivity.objects.filter(
-            ticket=OuterRef("pk"),
-            kind=TicketActivity.Kind.STATUS_CHANGED,
-            to_value__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED],
-        )
-        .order_by("created_at")
-        .values("created_at")[:1]
-    )
-    return (
+    return annotate_sla_facts(
         Ticket.objects.filter(created_at__gte=start, created_at__lt=end)
-        .annotate(
-            first_response_at=Subquery(first_response),
-            resolved_at=Subquery(resolved_activity),
-        )
-        .values("id", "created_at", "priority", "category_id", "first_response_at", "resolved_at")
-    )
-
-
-def _target_resolver():
-    policies_by_key = {(p.priority, p.category_id): p for p in SLAPolicy.objects.all()}
-    org = OrganizationSettings.load()
-    org_targets = None
-    if (
-        org.default_response_target_minutes is not None
-        and org.default_resolution_target_minutes is not None
-    ):
-        org_targets = (org.default_response_target_minutes, org.default_resolution_target_minutes)
-    return _bulk_target_resolver(policies_by_key, org_targets)
+    ).values("id", "created_at", "priority", "category_id", "first_response_at", "resolved_at")
 
 
 def sla_trend(start, end, bucket: str) -> list[dict]:
@@ -116,7 +67,7 @@ def sla_trend(start, end, bucket: str) -> list[dict]:
     has one" outcome `compute_sla_status` already treats as normal
     (`apps/sla/policy.py:80`), not an error.
     """
-    resolve = _target_resolver()
+    resolve = bulk_target_resolver()
     trunc = BUCKETS[bucket]
     tz = timezone.get_current_timezone()
 
@@ -161,7 +112,7 @@ def sla_breach_rate(start, end) -> list[dict]:
     not evidence of either meeting or missing it — and is `None` when
     `met + breached == 0` (nothing to rate yet).
     """
-    resolve = _target_resolver()
+    resolve = bulk_target_resolver()
     now = timezone.now()
     counts = {
         RESPONSE: {"met": 0, "breached": 0, "pending": 0},

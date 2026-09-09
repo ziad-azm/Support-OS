@@ -1,6 +1,8 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
+from apps.sla.policy import status_from_facts
 
 from .models import Category, Ticket
 
@@ -16,6 +18,11 @@ class TicketSerializer(BaseModelSerializer):
     # row would show a bare numeric customer id. Source traverses the FK;
     # the viewset's `select_related("customer")` (task 3) is what keeps this
     # from costing an extra query per row on `list`.
+    # F-9: one overall SLA status for the queue, so an agent can see WHICH
+    # tickets are breaching without opening each one. `met`/`breached`/
+    # `pending` — `dimension_status`'s own vocabulary, deliberately not a
+    # second one that could drift from `GET /tickets/<id>/sla/`.
+    sla_status = serializers.SerializerMethodField()
     customer_name = serializers.CharField(source="customer.name", read_only=True)
     # `category` itself needs no explicit declaration — DRF derives
     # `required=False`/`allow_null=True` from the model field's own
@@ -59,6 +66,7 @@ class TicketSerializer(BaseModelSerializer):
             "description",
             "customer",
             "customer_name",
+            "sla_status",
             "category",
             "category_name",
             "department",
@@ -84,4 +92,31 @@ class TicketSerializer(BaseModelSerializer):
             "status",
             "escalated",
             "escalated_at",
+        )
+
+    def get_sla_status(self, obj) -> str | None:
+        """`met` / `breached` / `pending`, or `None` when no SLA policy
+        applies to this ticket (tracking is opt-in — most tickets in a fresh
+        install have none).
+
+        Reads the `first_response_at`/`resolved_at` annotations
+        (`annotate_sla_facts`) and the per-request resolver
+        (`TicketViewSet.get_serializer_context`). Returns `None` when either
+        is absent — i.e. on the create/update/retrieve paths, whose queryset
+        is not annotated. That fallback is deliberate: calling
+        `compute_sla_status` there instead would reintroduce, through the
+        back door, exactly the per-ticket N+1 this field exists to avoid.
+        The full per-ticket detail remains `GET /tickets/<id>/sla/`.
+        """
+        resolve = self.context.get("sla_resolve")
+        if resolve is None or not hasattr(obj, "first_response_at"):
+            return None
+        return status_from_facts(
+            obj.created_at,
+            obj.priority,
+            obj.category_id,
+            obj.first_response_at,
+            obj.resolved_at,
+            resolve,
+            timezone.now(),
         )

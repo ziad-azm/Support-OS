@@ -1,4 +1,4 @@
-import type { TicketPriority, TicketStatus } from '../types/ticket'
+import type { SlaStatus, TicketPriority, TicketStatus } from '../types/ticket'
 
 /** New→worked→done→archived, the same escalating severity/attention ramp
  * common ticketing tools use: open (needs attention) is info-blue,
@@ -34,6 +34,20 @@ export function ticketPriorityVariant(
     case 'high':
       return 'warning'
     case 'urgent':
+      return 'destructive'
+  }
+}
+
+/** Same escalating-attention logic as the two above, mapped onto the
+ * backend's `met`/`pending`/`breached` vocabulary. Reuses existing variants
+ * — no new badge colour, matching `DSN-4`'s own bar. */
+export function slaStatusVariant(status: SlaStatus): 'success' | 'warning' | 'destructive' {
+  switch (status) {
+    case 'met':
+      return 'success'
+    case 'pending':
+      return 'warning'
+    case 'breached':
       return 'destructive'
   }
 }

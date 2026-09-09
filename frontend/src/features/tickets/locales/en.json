@@ -23,7 +23,8 @@
     "status": "Status",
     "priority": "Priority",
     "createdAt": "Created",
-    "escalation": "Escalation"
+    "escalation": "Escalation",
+    "slaStatus": "SLA"
   },
   "statuses": {
     "open": "Open",
@@ -214,5 +215,10 @@
     },
     "created": "Category created.",
     "updated": "Category updated."
+  },
+  "slaStatuses": {
+    "met": "Met",
+    "pending": "On track",
+    "breached": "Breached"
   }
 }

@@ -28,9 +28,9 @@ import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useCategories } from '../api/useCategories'
 import { useTickets } from '../api/useTickets'
-import { ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
-import { TICKET_PRIORITIES } from '../types/ticket'
-import type { Ticket, TicketPriority } from '../types/ticket'
+import { slaStatusVariant, ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
+import { TICKET_PRIORITIES, TICKET_STATUSES } from '../types/ticket'
+import type { Ticket, TicketPriority, TicketStatus } from '../types/ticket'
 
 const SEARCH_DEBOUNCE_MS = 300
 
@@ -54,6 +54,11 @@ export function TicketListPage() {
   // "all" is the sentinel for "no filter" — Radix's Select.Item requires a
   // non-empty value, mirroring the form's CATEGORY_NONE sentinel.
   const [categoryFilter, setCategoryFilter] = useState('all')
+  // F-8: the backend has validated `?status=` since TKT-4
+  // (`apps/tickets/views.py`), but nothing ever sent it — "show me the
+  // open tickets" was the one filter a support queue could not do.
+  // Same `'all'` sentinel contract as the four filters around it.
+  const [statusFilter, setStatusFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
   // ORG-4: these two filters START on the caller's own department/branch
   // instead of 'all', so the default view is the INTERSECTION of both —
@@ -93,12 +98,22 @@ export function TicketListPage() {
   // reset to page 1, or the user can land on a now-nonexistent page.
   useEffect(() => {
     setPage(1)
-  }, [search, categoryFilter, priorityFilter, departmentFilter, branchFilter, onlyMine, setPage])
+  }, [
+    search,
+    categoryFilter,
+    statusFilter,
+    priorityFilter,
+    departmentFilter,
+    branchFilter,
+    onlyMine,
+    setPage,
+  ])
 
   const query = useTickets({
     ...params,
     ...(search ? { search } : {}),
     ...(categoryFilter !== 'all' ? { category: categoryFilter } : {}),
+    ...(statusFilter !== 'all' ? { status: statusFilter as TicketStatus } : {}),
     ...(priorityFilter !== 'all' ? { priority: priorityFilter as TicketPriority } : {}),
     ...(departmentFilter !== 'all' ? { department: departmentFilter } : {}),
     ...(branchFilter !== 'all' ? { branch: branchFilter } : {}),
@@ -162,6 +177,23 @@ export function TicketListPage() {
       ),
     },
     {
+      // F-9: the queue's whole point is spotting what is breaching. Not
+      // `sortable` — `sla_status` is computed per row from annotations, not
+      // a database column, so `?ordering=sla_status` cannot work; the
+      // backend deliberately omits it from `ordering_fields`.
+      id: 'sla_status',
+      header: t('fields.slaStatus'),
+      priority: 'sm',
+      cell: (row) =>
+        row.sla_status === null ? (
+          <span className="text-muted-foreground">{'—'}</span>
+        ) : (
+          <Badge variant={slaStatusVariant(row.sla_status)}>
+            {t(`slaStatuses.${row.sla_status}`)}
+          </Badge>
+        ),
+    },
+    {
       id: 'priority',
       header: t('fields.priority'),
       sortable: true,
@@ -218,6 +250,19 @@ export function TicketListPage() {
             {(categoriesQuery.data?.items ?? []).map((category) => (
               <SelectItem key={category.id} value={String(category.id)}>
                 {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger aria-label={t('filters.status')} size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allStatuses')}</SelectItem>
+            {TICKET_STATUSES.map((value) => (
+              <SelectItem key={value} value={value}>
+                {t(`statuses.${value}`)}
               </SelectItem>
             ))}
           </SelectContent>
