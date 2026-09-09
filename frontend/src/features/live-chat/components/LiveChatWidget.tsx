@@ -93,7 +93,10 @@ function StartForm({ onStarted }: { onStarted: (session: LiveChatSession) => voi
       </Card>
       <p className="text-center text-sm text-muted-foreground">
         {t('start.contactPrompt')}{' '}
-        <Link to="/contact" className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link
+          to="/contact"
+          className="font-medium text-primary-text underline-offset-4 hover:underline"
+        >
           {t('start.contactLink')}
         </Link>
       </p>

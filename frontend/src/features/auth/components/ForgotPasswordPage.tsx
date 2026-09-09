@@ -38,7 +38,7 @@ export function ForgotPasswordPage() {
             {t('forgotPassword.successDescription')}{' '}
             <Link
               to="/login"
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="font-medium text-primary-text underline-offset-4 hover:underline"
             >
               {t('forgotPassword.backToSignIn')}
             </Link>
@@ -99,7 +99,10 @@ function ForgotPasswordForm({ onDone }: { onDone: () => void }) {
         </CardContent>
       </Card>
       <p className="text-center text-sm text-muted-foreground">
-        <Link to="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link
+          to="/login"
+          className="font-medium text-primary-text underline-offset-4 hover:underline"
+        >
           {t('forgotPassword.backToSignIn')}
         </Link>
       </p>

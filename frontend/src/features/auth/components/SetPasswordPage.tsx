@@ -53,7 +53,7 @@ export function SetPasswordPage() {
             {t('setPassword.successDescription')}{' '}
             <Link
               to="/login"
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="font-medium text-primary-text underline-offset-4 hover:underline"
             >
               {t('setPassword.signIn')}
             </Link>

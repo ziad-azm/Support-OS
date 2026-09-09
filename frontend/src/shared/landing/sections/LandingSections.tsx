@@ -161,13 +161,13 @@ export function LandingCtaBand({ content, animate }: SectionProps) {
             <div className="flex items-center gap-3">
               <Link
                 to="/contact"
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                className="font-medium text-primary-text underline-offset-4 hover:underline"
               >
                 {t('help.contact')}
               </Link>
               <Link
                 to="/chat"
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                className="font-medium text-primary-text underline-offset-4 hover:underline"
               >
                 {t('help.chat')}
               </Link>

@@ -50,6 +50,18 @@
             '--primary-foreground',
             brand.primaryForeground,
           )
+          // The brand colour AS TEXT, one per theme — index.css picks
+          // between them via `--primary-text`. Without these two, a branded
+          // org paints one frame of links in the raw brand hex, which is
+          // exactly the unreadable case Story 101 exists to prevent — the
+          // flash this whole block is here to avoid. Guarded separately
+          // because a cache written before Story 101 has neither.
+          if (brand.brandTextLight) {
+            document.documentElement.style.setProperty('--brand-text-light', brand.brandTextLight)
+          }
+          if (brand.brandTextDark) {
+            document.documentElement.style.setProperty('--brand-text-dark', brand.brandTextDark)
+          }
         }
       } catch (e) {}
     </script>

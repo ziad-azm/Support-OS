@@ -1,5 +1,7 @@
-import { foregroundFor } from './contrast'
+import { brandTextFor, foregroundFor } from './contrast'
 import {
+  BRAND_TEXT_DARK_TOKEN,
+  BRAND_TEXT_LIGHT_TOKEN,
   BRANDING_STORAGE_KEY,
   HEX_COLOR_RE,
   PRIMARY_FOREGROUND_TOKEN,
@@ -20,6 +22,8 @@ type BrandingCache = {
   logo_url: string
   primary: string
   primaryForeground: string
+  brandTextLight: string
+  brandTextDark: string
 }
 
 function isBrandingCache(value: unknown): value is BrandingCache {
@@ -29,7 +33,12 @@ function isBrandingCache(value: unknown): value is BrandingCache {
     typeof record.name === 'string' &&
     typeof record.logo_url === 'string' &&
     typeof record.primary === 'string' &&
-    typeof record.primaryForeground === 'string'
+    typeof record.primaryForeground === 'string' &&
+    // A cache written before Story 101 lacks these two. Rejecting it here
+    // falls back to EMPTY_BRANDING and index.css's defaults for one load,
+    // rather than leaving links at the raw, possibly-unreadable brand hex.
+    typeof record.brandTextLight === 'string' &&
+    typeof record.brandTextDark === 'string'
   )
 }
 
@@ -49,7 +58,7 @@ function read(): Branding {
 
 let current: Branding = read()
 
-/** The only place `--primary`/`--primary-foreground` are written. */
+/** The only place the four branding custom properties are written. */
 function apply(branding: Branding): void {
   const root = document.documentElement
   const colour = HEX_COLOR_RE.test(branding.primary_color) ? branding.primary_color : null
@@ -60,6 +69,8 @@ function apply(branding: Branding): void {
     // DSN default. Blank means default, not blank (see `## Product rules`).
     root.style.removeProperty(PRIMARY_TOKEN)
     root.style.removeProperty(PRIMARY_FOREGROUND_TOKEN)
+    root.style.removeProperty(BRAND_TEXT_LIGHT_TOKEN)
+    root.style.removeProperty(BRAND_TEXT_DARK_TOKEN)
     return
   }
   // Inline style beats both `:root` and `.dark` (a class selector on this
@@ -67,16 +78,27 @@ function apply(branding: Branding): void {
   // index.css:87 already made for --primary.
   root.style.setProperty(PRIMARY_TOKEN, colour)
   root.style.setProperty(PRIMARY_FOREGROUND_TOKEN, foregroundFor(colour))
+  // The text variants are the exception to the comment above: they must
+  // NOT be one value for both themes, which is why two source variables
+  // are written and `index.css` picks per theme. See config.ts.
+  const brandText = brandTextFor(colour)
+  root.style.setProperty(BRAND_TEXT_LIGHT_TOKEN, brandText.light)
+  root.style.setProperty(BRAND_TEXT_DARK_TOKEN, brandText.dark)
 }
 
 function write(branding: Branding): void {
   try {
     const colour = HEX_COLOR_RE.test(branding.primary_color) ? branding.primary_color : ''
+    const brandText = colour ? brandTextFor(colour) : null
     const cache: BrandingCache = {
       name: branding.name,
       logo_url: branding.logo_url,
       primary: colour,
       primaryForeground: colour ? foregroundFor(colour) : '',
+      // Resolved here, not in index.html: the anti-FOUC script must stay
+      // free of colour arithmetic.
+      brandTextLight: brandText ? brandText.light : '',
+      brandTextDark: brandText ? brandText.dark : '',
     }
     window.localStorage.setItem(BRANDING_STORAGE_KEY, JSON.stringify(cache))
   } catch {
