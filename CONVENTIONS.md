@@ -946,6 +946,56 @@ populated per row, rather than introducing the one `GenericForeignKey`/
 snapshot field (mirroring `TicketActivity`'s own from/to snapshot
 rationale) keeps the row meaningful after `SET_NULL` fires on either FK.
 
+### Keeping the mapping honest (Story 100)
+
+Four rules, each written from a defect that actually shipped. `python
+manage.py sync_role_permissions` is the command that enforces them.
+
+**A grant migration must fail loudly when its target role is absent.**
+`accounts/0006` and `0008`-`0011` all ended with:
+
+```python
+role = Role.objects.filter(slug=slug).first()
+if role is None:
+    continue          # BANNED
+```
+
+Every one of those five migrations reported as applied and granted nothing,
+for five releases, because the slug they targeted (`admin`) did not exist in
+the database they ran against — it had been renamed to `super_admin` outside
+the API. **A no-op permission migration is indistinguishable from a
+successful one.** Raise instead; see
+`accounts/0015_repair_admin_role_grants.py`.
+
+**A story that adds a permission string ships its grant migration in the
+same change.** `ORG-1`/`ORG-2` added `departments.*` and `branches.*` to
+`Permissions` and built the viewsets that enforce them, but never granted
+them to any role — so on a freshly-migrated database those four permissions
+were enforced-but-ungrantable, and the screens behind them were unreachable
+by every account. A permission no role can hold is a permission that does
+not work.
+
+**A superuser proves nothing about role correctness.** `permissions_for`
+short-circuits to `ALL_PERMISSIONS` for `is_superuser`, before it ever reads
+`role`. The project owner's own account is a superuser with `role = None`,
+which is exactly why six broken admin areas went unnoticed: the one person
+driving the app could reach all of them. **Verify permission changes with a
+role-bearing, non-superuser account.**
+
+**`sync_role_permissions --check` is the gate.** It exits non-zero when any
+of three invariants fails, and belongs in CI:
+
+| # | Invariant | The defect it catches |
+|---|---|---|
+| 1 | Every role's permissions ⊆ `ALL_PERMISSIONS` | a string left behind after a permission is renamed or removed |
+| 2 | The administrative role == `ALL_PERMISSIONS` | the silent no-op grant migration |
+| 3 | Every permission is held by ≥ 1 role | a permission added and enforced but never granted |
+
+`--fix` repairs invariant 2 only. Invariants 1 and 3 are reported and never
+auto-repaired: an unknown string may be a typo or a rename in flight, and an
+ungranted permission needs a human to decide *which* role should hold it.
+Guessing either is how the mapping drifts in the first place.
+
 ---
 
 ## 23. Feature module conventions
