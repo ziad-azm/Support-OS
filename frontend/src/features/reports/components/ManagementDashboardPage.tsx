@@ -17,6 +17,16 @@ import { useDashboardKpis } from '../api/useDashboardKpis'
 import { DASHBOARD_KPIS } from '../types/dashboard'
 import type { DashboardKpi } from '../types/dashboard'
 
+// F-14's default window. Computed once at module load: these feed
+// `useState` initialisers, so recomputing per render would be wasted work
+// and could straddle midnight mid-session.
+const DEFAULT_TO = new Date().toISOString().slice(0, 10)
+const DEFAULT_FROM = (() => {
+  const d = new Date()
+  d.setDate(d.getDate() - (30 - 1))
+  return d.toISOString().slice(0, 10)
+})()
+
 // `UX-050`: each KPI drills into its own report. `GaugeChart` itself is
 // reused unchanged by other report pages (see its own doc comment), so the
 // drill-down links live here instead of inside the shared chart.
@@ -32,8 +42,14 @@ export function ManagementDashboardPage() {
   const { number } = useFormatters()
   const { toast } = useToast()
 
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
+  // F-14: default to the last 30 days rather than an empty range. An empty
+  // range left the dashboard showing *some* period the user could not
+  // identify from the controls. 30 days matches the backend's own no-params
+  // default (`aggregation.py`), so the first paint and the first explicit
+  // preset click return the same data. `- 1` for the same inclusive-range
+  // reason `DateRangePresets` documents.
+  const [from, setFrom] = useState(DEFAULT_FROM)
+  const [to, setTo] = useState(DEFAULT_TO)
 
   function labelForKpi(key: DashboardKpi): string {
     return t(`dashboard.kpis.${key}`)
@@ -79,6 +95,8 @@ export function ManagementDashboardPage() {
           />
         </div>
         <DateRangePresets
+          from={from}
+          to={to}
           onSelect={({ from: presetFrom, to: presetTo }) => {
             setFrom(presetFrom)
             setTo(presetTo)
@@ -87,7 +105,10 @@ export function ManagementDashboardPage() {
       </div>
 
       <ChartFrame
-        title={t('dashboard.title')}
+        // F-12: was `dashboard.title`, rendering the same string as the
+        // PageHeader directly above it. The card keeps a title rather than
+        // dropping one — it is the card's accessible name.
+        title={t('dashboard.chartTitle')}
         description={t('dashboard.description')}
         query={query}
         isEmpty={(rows) => rows.every((row) => row.value === null)}
@@ -126,7 +147,9 @@ export function ManagementDashboardPage() {
 
       <div className="flex flex-wrap gap-2">
         {DASHBOARD_KPIS.map((kpi) => (
-          <Button key={kpi} asChild variant="ghost" size="sm">
+          // F-13: `ghost` rendered these as unstyled plain text, so four
+          // real drill-down links read as a caption under the chart.
+          <Button key={kpi} asChild variant="outline" size="sm">
             <Link to={KPI_REPORT_ROUTES[kpi]}>{t(`dashboard.kpis.${kpi}`)}</Link>
           </Button>
         ))}

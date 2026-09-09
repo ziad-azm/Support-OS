@@ -1,5 +1,7 @@
 {
-  "app": { "name": "SupportOS" },
+  "app": {
+    "name": "SupportOS"
+  },
   "actions": {
     "retry": "إعادة المحاولة",
     "reload": "إعادة التحميل",
@@ -14,7 +16,9 @@
   },
   "states": {
     "loading": "جارٍ التحميل…",
-    "empty": { "title": "لا يوجد شيء هنا بعد" },
+    "empty": {
+      "title": "لا يوجد شيء هنا بعد"
+    },
     "error": {
       "generic": "حدث خطأ ما.",
       "render": "حدث خطأ ما. يرجى إعادة تحميل الصفحة.",
@@ -22,8 +26,15 @@
     },
     "notFound": "الصفحة غير موجودة."
   },
-  "debug": { "details": "تفاصيل التصحيح", "reference": "المرجع:" },
-  "language": { "label": "اللغة", "en": "English", "ar": "العربية" },
+  "debug": {
+    "details": "تفاصيل التصحيح",
+    "reference": "المرجع:"
+  },
+  "language": {
+    "label": "اللغة",
+    "en": "English",
+    "ar": "العربية"
+  },
   "theme": {
     "label": "المظهر",
     "light": "فاتح",
@@ -90,7 +101,14 @@
     "series": "السلسلة",
     "value": "القيمة",
     "period": "الفترة",
-    "category": "الفئة"
+    "category": "الفئة",
+    "gauge": {
+      "zoneGood": "ضمن الهدف",
+      "zoneOk": "معرّض للخطر",
+      "zoneBad": "خارج الهدف",
+      "target": "الهدف",
+      "measured": "القيمة المقاسة"
+    }
   },
   "unsavedChanges": {
     "title": "هل تريد المغادرة دون حفظ؟",

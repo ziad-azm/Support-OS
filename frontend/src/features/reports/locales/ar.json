@@ -8,6 +8,7 @@
   "sidebarDashboard": "لوحة الإدارة",
   "dashboard": {
     "title": "لوحة الإدارة",
+    "chartTitle": "مؤشرات الأداء للفترة المحددة",
     "description": "مؤشرات الأداء الرئيسية للفترة المحددة، بنظرة سريعة.",
     "kpis": {
       "open_rate": "معدل التذاكر المفتوحة",
@@ -15,7 +16,10 @@
       "csat_risk": "عدم رضا العملاء",
       "agent_load": "معدل التذاكر غير المُعيَّنة"
     },
-    "fields": { "kpi": "المؤشر", "value": "القيمة" },
+    "fields": {
+      "kpi": "المؤشر",
+      "value": "القيمة"
+    },
     "noData": "لا توجد بيانات بعد"
   },
   "csat": {
@@ -32,24 +36,35 @@
       "neutral": "محايد",
       "dissatisfied": "غير راضٍ"
     },
-    "fields": { "rating": "التقييم", "count": "عدد التقييمات" }
+    "fields": {
+      "rating": "التقييم",
+      "count": "عدد التقييمات"
+    }
   },
   "agents": {
     "title": "أداء الوكلاء",
     "description": "أفضل الوكلاء للفترة والمقياس المحددين.",
-    "filters": { "metric": "الترتيب حسب" },
+    "filters": {
+      "metric": "الترتيب حسب"
+    },
     "metrics": {
       "handled": "التذاكر المعالجة",
       "resolution": "متوسط وقت الحل",
       "csat": "معدل الرضا"
     },
-    "fields": { "agent": "الوكيل", "value": "القيمة" }
+    "fields": {
+      "agent": "الوكيل",
+      "value": "القيمة"
+    }
   },
   "trend": {
     "title": "اتجاه الاستجابة/الحل حسب اتفاقية مستوى الخدمة",
     "description": "متوسط وقت الاستجابة الأولى ووقت الحل، بالدقائق.",
     "minutes": "الدقائق",
-    "series": { "response": "الاستجابة", "resolution": "الحل" }
+    "series": {
+      "response": "الاستجابة",
+      "resolution": "الحل"
+    }
   },
   "breachRate": {
     "title": "معدل تجاوز اتفاقية مستوى الخدمة",
@@ -89,7 +104,11 @@
     "noDepartment": "بدون قسم",
     "noBranch": "بدون فرع"
   },
-  "buckets": { "day": "يوم", "week": "أسبوع", "month": "شهر" },
+  "buckets": {
+    "day": "يوم",
+    "week": "أسبوع",
+    "month": "شهر"
+  },
   "dimensions": {
     "status": "الحالة",
     "priority": "الأولوية",
@@ -118,6 +137,14 @@
     "web_form": "نموذج الويب",
     "direct": "أُنشئت مباشرة"
   },
-  "fields": { "period": "الفترة", "series": "السلسلة", "value": "التذاكر", "dimension": "البُعد" },
-  "actions": { "exportCsv": "تصدير CSV", "exportFailed": "تعذر تصدير التقرير." }
+  "fields": {
+    "period": "الفترة",
+    "series": "السلسلة",
+    "value": "التذاكر",
+    "dimension": "البُعد"
+  },
+  "actions": {
+    "exportCsv": "تصدير CSV",
+    "exportFailed": "تعذر تصدير التقرير."
+  }
 }

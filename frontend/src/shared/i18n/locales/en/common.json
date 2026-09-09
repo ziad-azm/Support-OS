@@ -1,5 +1,7 @@
 {
-  "app": { "name": "SupportOS" },
+  "app": {
+    "name": "SupportOS"
+  },
   "actions": {
     "retry": "Retry",
     "reload": "Reload",
@@ -14,7 +16,9 @@
   },
   "states": {
     "loading": "Loading…",
-    "empty": { "title": "Nothing here yet" },
+    "empty": {
+      "title": "Nothing here yet"
+    },
     "error": {
       "generic": "Something went wrong.",
       "render": "Something went wrong. Please reload the page.",
@@ -22,8 +26,15 @@
     },
     "notFound": "Page not found."
   },
-  "debug": { "details": "Debug details", "reference": "Reference:" },
-  "language": { "label": "Language", "en": "English", "ar": "العربية" },
+  "debug": {
+    "details": "Debug details",
+    "reference": "Reference:"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ar": "العربية"
+  },
   "theme": {
     "label": "Theme",
     "light": "Light",
@@ -86,7 +97,14 @@
     "series": "Series",
     "value": "Value",
     "period": "Period",
-    "category": "Category"
+    "category": "Category",
+    "gauge": {
+      "zoneGood": "On target",
+      "zoneOk": "At risk",
+      "zoneBad": "Off target",
+      "target": "Target",
+      "measured": "Measured"
+    }
   },
   "unsavedChanges": {
     "title": "Leave without saving?",

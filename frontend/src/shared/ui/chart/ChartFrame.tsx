@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ApiRequestError } from '@/shared/lib/api/errors'
 import { Button } from '@/shared/ui/primitives/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Skeleton } from '@/shared/ui/primitives/skeleton'
 import { Empty } from '@/shared/ui/Empty'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -24,7 +24,12 @@ type ChartFrameProps<T> = {
    * requires a visible data table or text summary for EVERY chart, so this
    * is REQUIRED, not optional. */
   table: (data: T) => ReactNode
-  /** Rendered next to the title (a range picker, an export button). */
+  /** Rendered next to the title (a range picker, an export button).
+   *
+   * Wrapped in `CardAction` below — `CardHeader` is a grid that only
+   * becomes two columns when it sees `data-slot="card-action"`, so a bare
+   * child lands as a third full-width row and the button stretches across
+   * the whole card (F-11, Story 102). */
   action?: ReactNode
 }
 
@@ -55,7 +60,7 @@ export function ChartFrame<T>({
           <h2>{title}</h2>
         </CardTitle>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
-        {query.isSuccess && !isEmpty?.(query.data) ? action : null}
+        {query.isSuccess && !isEmpty?.(query.data) ? <CardAction>{action}</CardAction> : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {query.isPending ? <Skeleton className="h-64 w-full" /> : null}
