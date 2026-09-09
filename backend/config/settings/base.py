@@ -273,11 +273,9 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.core.exceptions.envelope_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPageNumberPagination",
     "PAGE_SIZE": DRF_PAGE_SIZE,
-    # AUTH-1 fills in authentication (this block). AUTH-2 tightens permissions
-    # to IsAuthenticated and audits every view. Until then request.user
-    # resolves correctly wherever a valid token is presented, but the API
-    # stays open by default — any endpoint that must be protected sets
-    # permission_classes explicitly on its own view. See CONVENTIONS.md §13.
+    # AUTH-1 fills in authentication (this block); the permission default
+    # below is now IsAuthenticated, so an endpoint that must be PUBLIC is the
+    # one that says so explicitly. See CONVENTIONS.md §13.
     # JWTAuthentication stays FIRST. Verified against the installed
     # simplejwt 5.5.1: `get_raw_token` returns None for any Authorization
     # keyword that is not `Bearer`, so an `Api-Key …` header falls through
@@ -288,8 +286,17 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "apps.integrations.authentication.ApiKeyAuthentication",
     ],
+    # Fail CLOSED. A view that declares no `permission_classes` of its own now
+    # requires authentication instead of being public. Verified before the flip
+    # that this changes NO existing view: every domain view sets
+    # `permission_classes` explicitly (14 of them deliberately `AllowAny`),
+    # `SpectacularAPIView` takes its own from
+    # `SPECTACULAR_SETTINGS["SERVE_PERMISSIONS"]` (drf_spectacular/views.py:54),
+    # and simplejwt's `TokenViewBase` sets `permission_classes = ()`
+    # (rest_framework_simplejwt/views.py:15) — so login does NOT deadlock on
+    # this default. See CONVENTIONS.md §13. F-4 (qa-report-1).
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
     # INT-1: drf-spectacular's schema generator. Registered here rather
     # than per-view so `manage.py spectacular` sees every endpoint in the

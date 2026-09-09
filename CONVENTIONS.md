@@ -201,19 +201,39 @@ the permission vocabulary and the one DRF permission class in
 token store, a second `useAuth()`-shaped hook, or a second permission check
 — extend what is there.
 
-**Standing note on the project-wide default, now narrowed.**
-`DEFAULT_PERMISSION_CLASSES` is still `AllowAny`, and that is a decision
-rather than an unfinished task. A viewset subclassing `BaseModelViewSet` is
-**closed by default** (`IsAuthenticated + HasPermission`), so the hazard is
-now limited to a plain `APIView` that sets neither a base nor explicit
-`permission_classes` — such a view is public. **Any `APIView` that must be
-protected still sets `permission_classes` explicitly on itself.**
+**The project-wide default is `IsAuthenticated`. It fails closed.**
+`DEFAULT_PERMISSION_CLASSES` was `AllowAny` until Story 99 (F-4,
+`qa-report-1`), which means the rule has inverted: **an `APIView` that must
+be PUBLIC is now the one that says so explicitly**, with
+`permission_classes = [AllowAny]` on itself. A view that declares nothing at
+all is authenticated-only, not public — so a forgotten `permission_classes`
+is now a 401, not an open endpoint.
 
-Flipping the global default to `IsAuthenticated` is a one-line change and
-would work today (`HealthView` and `ApiNotFoundView` both set `AllowAny`
-explicitly). It is deliberately deferred until there are enough endpoints for
-the default to be load-bearing — right now there is exactly one authenticated
-endpoint, so the change would trade real regression risk for no real safety.
+Fourteen views opt out deliberately and must keep their explicit `AllowAny`:
+`HealthView` and `ApiNotFoundView` (`apps/core`), the four unauthenticated
+account flows (logout, invite confirm, password-reset request/confirm), the
+six inbound/public communications endpoints (email, WhatsApp, SMS webhooks,
+live-chat start, web-form categories and submission), and `BrandingView` +
+`LandingContentView` (`apps/organization`), which additionally set
+`authentication_classes = []`.
+
+Two groups resolve permissions on their own and are unaffected by the
+default in either direction — do not "fix" them by adding `AllowAny`:
+
+- `SchemaView`, Swagger and Redoc inherit
+  `SpectacularAPIView.permission_classes = spectacular_settings.SERVE_PERMISSIONS`,
+  driven by the `API_DOCS_PUBLIC` env flag (`config/settings/base.py`,
+  `default=True` in dev; `prod.py` flips it to `False`).
+- `ThrottledTokenObtainPairView`/`ThrottledTokenRefreshView` declare
+  `throttle_classes` and nothing else, inheriting simplejwt's
+  `TokenViewBase.permission_classes = ()` — an empty tuple that
+  short-circuits the default. **This is load-bearing:** were it not empty,
+  a fail-closed default would mean you need a token to obtain a token, and
+  every user is locked out.
+
+`BaseModelViewSet` remains the authorization half — the global default only
+guarantees a caller is signed in; `HasPermission` plus `permission_map` is
+what makes a domain endpoint closed by *permission*.
 
 ---
 

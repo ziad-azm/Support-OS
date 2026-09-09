@@ -22,9 +22,11 @@ class BaseModelViewSet(viewsets.ModelViewSet):
     unfinished map, and a silent 403 is the harder bug to find. Return plain
     payloads from actions; the renderer adds the envelope.
 
-    `DEFAULT_PERMISSION_CLASSES` stays `AllowAny` project-wide (see
-    CONVENTIONS.md §13) — this base is what makes a domain endpoint closed by
-    default, not the global setting.
+    `DEFAULT_PERMISSION_CLASSES` is `IsAuthenticated` project-wide (see
+    CONVENTIONS.md §13). This base still carries the authorization half —
+    the global default only guarantees a caller is signed in; `HasPermission`
+    plus this viewset's `permission_map` is what makes a domain endpoint
+    closed by *permission*, not merely by authentication.
     """
 
     permission_classes = [IsAuthenticated, HasPermission]
