@@ -17,6 +17,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -49,6 +50,44 @@ EXPORT_PARAM = "export"
 EXPORT_CSV = "csv"
 
 
+# Every subclass returns `list[dict]` from `get_report` with a shape that
+# varies per report (a trend row is not a breakdown row), so the response is
+# documented as a list of objects rather than eight near-identical
+# serializers that would still not be checkable. The two shared query
+# parameters and the CSV variant ARE precisely documentable, and are.
+# Applied to the base because none of the eight subclasses overrides `get`.
+# F-10.
+@extend_schema(
+    request=None,
+    responses={200: OpenApiTypes.OBJECT},
+    parameters=[
+        OpenApiParameter(
+            "from",
+            OpenApiTypes.DATE,
+            description="Start of the range (inclusive). Defaults to the last 30 days.",
+        ),
+        OpenApiParameter(
+            "to",
+            OpenApiTypes.DATE,
+            description="End of the range (inclusive). Defaults to today.",
+        ),
+        OpenApiParameter(
+            "bucket",
+            OpenApiTypes.STR,
+            enum=["day", "week", "month"],
+            description="Time grouping, for the trend-shaped reports only.",
+        ),
+        OpenApiParameter(
+            "export",
+            OpenApiTypes.STR,
+            enum=["csv"],
+            description=(
+                "With `export=csv` the response is a CSV file attachment "
+                "instead of a JSON body, and is not cached."
+            ),
+        ),
+    ],
+)
 class BaseReportView(APIView):
     permission_classes = [IsAuthenticated, HasPermission]
 

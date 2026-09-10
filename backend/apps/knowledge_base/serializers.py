@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
@@ -11,6 +12,7 @@ class FAQSerializer(BaseModelSerializer):
         fields = ("id", "question", "answer", "order", "created_at", "updated_at")
 
 
+@extend_schema_serializer(component_name="ArticleCategory")
 class CategorySerializer(BaseModelSerializer):
     class Meta(BaseModelSerializer.Meta):
         model = Category

@@ -1,4 +1,5 @@
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -91,6 +92,20 @@ class ArticleViewSet(BaseModelViewSet):
         return queryset.filter(status=Article.Status.PUBLISHED)
 
 
+@extend_schema(
+    request=None,
+    responses={200: OpenApiTypes.OBJECT},
+    parameters=[
+        OpenApiParameter("q", OpenApiTypes.STR, description="The search query."),
+        OpenApiParameter(
+            "include_drafts",
+            OpenApiTypes.BOOL,
+            description="Include unpublished articles. Requires knowledge_base.manage.",
+        ),
+    ],
+    summary="Search FAQs and articles",
+    description="Returns ranked matches across both FAQs and help articles.",
+)
 class KnowledgeBaseSearchView(APIView):
     """Ranked full-text search across FAQs and articles — KB-3. The first
     plain `APIView` in this project whose `permission_map` is keyed by HTTP

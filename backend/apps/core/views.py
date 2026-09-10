@@ -1,5 +1,7 @@
 from django.db import connection
 from django.db.utils import OperationalError
+from drf_spectacular.plumbing import build_array_type, build_basic_type
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -64,6 +66,10 @@ class CustomerScopedModelViewSet(BaseModelViewSet):
         return queryset.filter(**{self.customer_field: customer})
 
 
+# Excluded from the schema deliberately, not to silence a warning: this is
+# an infrastructure liveness probe for a load balancer, not part of the API
+# contract a client generator should produce a method for. F-10.
+@extend_schema(exclude=True)
 class HealthView(APIView):
     """Liveness probe. Reports database reachability, not just process health.
 
@@ -96,6 +102,20 @@ class HealthView(APIView):
         return Response(payload, status=code)
 
 
+@extend_schema(
+    request=None,
+    # The view returns `Response(sorted(ALL_PERMISSIONS))` — a JSON ARRAY of
+    # strings, not a bare string. `build_array_type` is drf-spectacular's
+    # own helper for exactly this: there is no serializer to point at for a
+    # plain list, and a wrong `responses={200: OpenApiTypes.STR}` would be
+    # the "annotation that lies" this story's own edge cases warn against.
+    responses={200: build_array_type(build_basic_type(OpenApiTypes.STR))},
+    summary="Every permission string this API can check",
+    description=(
+        "The full vocabulary SEC-2's role editor renders its checklist from. "
+        "Returns a sorted list of strings."
+    ),
+)
 class PermissionCatalogView(APIView):
     """The full permission vocabulary — what SEC-2's role-editing checklist
     renders its options from. Read-only: the mapping itself is written
@@ -120,6 +140,10 @@ class PermissionCatalogView(APIView):
         return Response(sorted(ALL_PERMISSIONS))
 
 
+# Excluded deliberately: this is the `re_path(r"^")` catch-all that turns
+# any unmatched /api/ path into an enveloped 404. It is not an endpoint, and
+# documenting it would put a wildcard path in the schema. F-10.
+@extend_schema(exclude=True)
 class ApiNotFoundView(APIView):
     """Catch-all for unmatched paths under /api/.
 

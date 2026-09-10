@@ -21,6 +21,17 @@ class NotificationViewSet(
 
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
+    # Schema-introspection only — `get_queryset` below is what actually runs
+    # and scopes every action to `request.user`. Without this, drf-spectacular
+    # cannot resolve the model at generation time (there is no request, so
+    # `get_queryset` raises) and types the `id` path parameter as a STRING
+    # (W001). DRF calls `get_queryset()` for every real request, so this
+    # never widens access.
+    #
+    # `.none()`, deliberately not `.all()`: if a future edit ever dropped
+    # `get_queryset`, this fails closed and returns nothing, rather than
+    # exposing every row. Same reasoning as Story 99's permission default.
+    queryset = Notification.objects.none()
 
     def get_queryset(self):
         return Notification.objects.filter(recipient=self.request.user).select_related("ticket")

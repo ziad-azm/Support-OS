@@ -647,6 +647,19 @@ SPECTACULAR_SETTINGS = {
         if API_DOCS_PUBLIC
         else ["rest_framework.permissions.IsAuthenticated"]
     ),
+    # Several models declare a `status` choice set, so spectacular falls back
+    # to a hash-suffixed component name (`Status6f2Enum`) — stable, but
+    # meaningless in a generated client. Name the ticket one explicitly; the
+    # others keep their generated names until they collide too. F-10.
+    "ENUM_NAME_OVERRIDES": {
+        "TicketStatusEnum": "apps.tickets.models.Ticket.Status",
+        # `hero_primary_cta_target`, `hero_secondary_cta_target` and
+        # `cta_target` (apps/organization/models.py) all share
+        # `LandingContent.CtaTarget` as their choices. Documenting all three
+        # fields (F-10) surfaced the collision spectacular was silently
+        # resolving with a per-field name before any of them had a schema.
+        "LandingContentCtaTargetEnum": "apps.organization.models.LandingContent.CtaTarget",
+    },
     # `postprocess_schema_enums` is drf-spectacular's own default and must
     # be kept when adding to this list. The envelope hook runs after it.
     "POSTPROCESSING_HOOKS": [

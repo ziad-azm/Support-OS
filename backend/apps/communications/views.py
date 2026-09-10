@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.utils.crypto import constant_time_compare
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser
@@ -105,6 +105,17 @@ class MessageViewSet(BaseModelViewSet):
             )
 
 
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={201: MessageSerializer},
+    summary="Inbound email webhook",
+    description=(
+        "Called by the provider, not by an API consumer. The request body is "
+        "provider-defined and validated against a shared secret, so it is "
+        "documented as an opaque object rather than a serializer this service "
+        "controls."
+    ),
+)
 class EmailInboundWebhookView(APIView):
     """Receives inbound email as a provider-agnostic JSON payload
     (`from`, `to`, `subject`, `body`, `message_id`) and turns it into a
@@ -148,6 +159,18 @@ class EmailInboundWebhookView(APIView):
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiTypes.STR, 201: MessageSerializer},
+    summary="Inbound WhatsApp webhook",
+    description=(
+        "Called by the provider, not by an API consumer. The request body is "
+        "provider-defined and validated against a shared secret, so it is "
+        "documented as an opaque object rather than a serializer this service "
+        "controls. A GET on this path is the provider's subscription handshake "
+        "and echoes the challenge."
+    ),
+)
 class WhatsAppInboundWebhookView(APIView):
     """Meta's WhatsApp Business (Cloud) API webhook — one URL handles both
     the `GET` verification handshake and `POST` inbound message delivery,
@@ -205,6 +228,17 @@ class WhatsAppInboundWebhookView(APIView):
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={200: None, 201: MessageSerializer},
+    summary="Inbound SMS webhook",
+    description=(
+        "Called by the provider, not by an API consumer. The request body is "
+        "provider-defined and validated against a shared secret, so it is "
+        "documented as an opaque object rather than a serializer this service "
+        "controls."
+    ),
+)
 class SMSInboundWebhookView(APIView):
     """Twilio's Programmable Messaging webhook — POST-only, form-encoded
     (unlike WhatsApp's JSON), no verification-handshake GET (unlike Meta's
@@ -250,6 +284,15 @@ class SMSInboundWebhookView(APIView):
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={201: OpenApiTypes.OBJECT},
+    summary="Start an anonymous live-chat session",
+    description=(
+        "Takes a visitor name and email; returns `ticket_id` and a "
+        "`session_token` the widget then sends with each message."
+    ),
+)
 class LiveChatStartView(APIView):
     """Starts (or resumes) an anonymous live-chat session: creates a
     Customer + Ticket (or continues the customer's most recent non-closed
@@ -297,6 +340,11 @@ class LiveChatStartView(APIView):
         )
 
 
+@extend_schema(
+    request=None,
+    responses=CategorySerializer(many=True),
+    summary="Categories offered by the public web form",
+)
 class WebFormCategoriesView(APIView):
     """Public, read-only category list for the anonymous web form —
     `Category` (TKT-2, Story 18) is otherwise gated behind `tickets.view`
@@ -312,6 +360,12 @@ class WebFormCategoriesView(APIView):
         return Response(CategorySerializer(categories, many=True).data)
 
 
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={201: OpenApiTypes.OBJECT},
+    summary="Submit the public web form",
+    description="Creates a ticket and its first message; returns `ticket_id`.",
+)
 class WebFormSubmissionView(APIView):
     """Creates a Customer (find-or-create by email) + a brand-new Ticket +
     the first inbound Message from a public web-form submission. Public —

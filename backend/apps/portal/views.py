@@ -1,6 +1,7 @@
 import logging
 
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -162,6 +163,15 @@ def _chatbot_state(session: ChatbotSession) -> dict:
     }
 
 
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiTypes.OBJECT},
+    summary="Portal chatbot session",
+    description=(
+        "GET returns the current session state; POST sends a message and "
+        "returns the updated state (messages plus any suggested articles)."
+    ),
+)
 class PortalChatbotView(APIView):
     """The portal assistant — AI-5. `GET` loads (or starts) the customer's
     conversation; `POST` sends a message and returns the state including
@@ -209,6 +219,11 @@ class PortalChatbotView(APIView):
         return Response(_chatbot_state(session))
 
 
+@extend_schema(
+    request=None,
+    responses={200: OpenApiTypes.OBJECT},
+    summary="Hand the chatbot session to a human agent",
+)
 class PortalChatbotHandoffView(APIView):
     """Customer-requested handoff — AI-5. Idempotent (`hand_off` is), so a
     double-click is a no-op rather than a second assignment attempt.

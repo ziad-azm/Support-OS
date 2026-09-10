@@ -1,6 +1,8 @@
 import logging
 
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.plumbing import build_array_type, build_basic_type
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from drf_spectacular.views import SpectacularAPIView
 from rest_framework import status
@@ -275,6 +277,15 @@ class ErpOrderViewSet(BaseModelViewSet):
         return queryset
 
 
+@extend_schema(
+    request=None,
+    # The view returns `Response(sorted(WEBHOOK_EVENTS))` — a JSON ARRAY of
+    # strings, not a bare string. Same fix as
+    # `apps.core.views.PermissionCatalogView`: `build_array_type` is
+    # drf-spectacular's own helper for a plain list with no serializer.
+    responses={200: build_array_type(build_basic_type(OpenApiTypes.STR))},
+    summary="Every event type a webhook subscription can select",
+)
 class WebhookEventCatalogView(APIView):
     """The full webhook-event vocabulary — the same "gated on the same
     permission that gates writing what it describes" shape

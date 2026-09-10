@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -83,6 +84,11 @@ class BranchViewSet(BaseModelViewSet):
     search_fields = ("name", "description")
 
 
+@extend_schema(
+    request=None,
+    responses=BrandingSerializer,
+    summary="Public branding (name, logo, primary colour)",
+)
 class BrandingView(APIView):
     """Public branding — ORG-3. The only endpoint in this app reachable
     without a session.
@@ -116,6 +122,18 @@ class BrandingView(APIView):
         return Response(BrandingSerializer(OrganizationSettings.load()).data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        request=None,
+        responses=OrganizationSettingsSerializer,
+        summary="Read organization settings",
+    ),
+    patch=extend_schema(
+        request=OrganizationSettingsSerializer,
+        responses=OrganizationSettingsSerializer,
+        summary="Update organization settings",
+    ),
+)
 class SettingsView(APIView):
     """The one organization-wide settings record. `GET`/`PATCH` only, no
     id in the path — the same "there is exactly one relevant object" shape
@@ -140,6 +158,11 @@ class SettingsView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    request=None,
+    responses=PublicLandingContentSerializer,
+    summary="Public landing-page content",
+)
 class LandingContentView(APIView):
     """Public landing content — LAND-2. The SECOND endpoint in this app
     reachable without a session, and a deliberate SIBLING of `BrandingView`
@@ -174,6 +197,18 @@ class LandingContentView(APIView):
         return Response(PublicLandingContentSerializer(LandingContent.load()).data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        request=None,
+        responses=LandingContentAdminSerializer,
+        summary="Read landing-page content for editing",
+    ),
+    patch=extend_schema(
+        request=LandingContentAdminSerializer,
+        responses=LandingContentAdminSerializer,
+        summary="Update landing-page content",
+    ),
+)
 class LandingContentAdminView(APIView):
     """The admin read/write side of the one `LandingContent` row —
     `SettingsView` above, for landing copy. Same singleton `APIView` shape,

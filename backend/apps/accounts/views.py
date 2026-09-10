@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -35,6 +36,11 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    request=LogoutSerializer,
+    responses={200: None},
+    summary="Blacklist a refresh token",
+)
 class LogoutView(APIView):
     """Blacklists the given refresh token.
 
@@ -59,6 +65,11 @@ class LogoutView(APIView):
         return Response(None, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=InviteConfirmSerializer,
+    responses={200: None},
+    summary="Set a password from an invite token",
+)
 class InviteConfirmView(APIView):
     """Completes SEC-5's invite flow: exchanges the token mailed by
     `send_invite_email` (apps/accounts/tasks.py) for a real password,
@@ -82,6 +93,15 @@ class InviteConfirmView(APIView):
         return Response(None, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=PasswordResetRequestSerializer,
+    responses={200: None},
+    summary="Request a password-reset email",
+    description=(
+        "Always returns 200, whether or not the address exists — revealing "
+        "which addresses are registered would be an enumeration oracle."
+    ),
+)
 class PasswordResetRequestView(APIView):
     """SEC-7's "forgot password" first step. Never reveals whether
     `email` belongs to a real, active account — returns the identical
@@ -109,6 +129,11 @@ class PasswordResetRequestView(APIView):
         return Response(None, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=PasswordResetConfirmSerializer,
+    responses={200: None},
+    summary="Set a new password from a reset token",
+)
 class PasswordResetConfirmView(APIView):
     """SEC-7's reset-confirm step: exchanges the token mailed by
     `send_password_reset_email` (apps/accounts/tasks.py) for a new
@@ -136,6 +161,11 @@ class PasswordResetConfirmView(APIView):
         return Response(None, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=ChangePasswordSerializer,
+    responses={200: None},
+    summary="Change your own password",
+)
 class ChangePasswordView(APIView):
     """SEC-8's change-password step. `IsAuthenticated` only — no
     `authentication_classes` override, unlike every other view in this
@@ -164,6 +194,11 @@ class ChangePasswordView(APIView):
         return Response(None, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=None,
+    responses=UserSerializer,
+    summary="The signed-in user, their role and resolved permissions",
+)
 class MeView(APIView):
     """The authenticated user's own profile. The frontend's one source of
     `AuthUser` — fetched once at boot and once right after login.
