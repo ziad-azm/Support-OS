@@ -70,6 +70,19 @@ export function ManagementDashboardPage() {
     <div className="flex flex-col gap-4">
       <PageHeader title={t('dashboard.title')} />
       <div className="flex flex-wrap items-end gap-2">
+        {/* F-15 (QA-REPORT-1), deliberately NOT fixed here: a native
+            `<input type="date">` renders ITS OWN picker chrome in the
+            browser/OS locale, not the page's `lang`/`dir` — for an Arabic
+            visitor that is still `mm/dd/yyyy`, and no prop on this element
+            can change it (the stored `value` is always ISO `yyyy-mm-dd`;
+            only the on-screen text differs, and that is drawn by the OS).
+            A real fix means a custom calendar widget, which means a new
+            dependency (no `calendar`/`popover` primitive exists anywhere
+            in `shared/ui/primitives/` today — verified) plus real RTL and
+            keyboard-nav work. Out of proportion for this polish pass;
+            recorded and deferred rather than patched around, the same
+            call this project already made for F-3 in
+            `.squad/stories/bugs/qa-report-1/attachments/QA-REPORT-1.md`. */}
         <div className="flex flex-col gap-1">
           <Label htmlFor="dashboard-report-from" className="text-sm">
             {t('filters.from')}

@@ -131,6 +131,20 @@ function ChatPane({ session }: { session: LiveChatSession }) {
     bottomRef.current?.scrollIntoView({ block: 'end' })
   }, [messages])
 
+  // F-18 (QA-REPORT-1): oxlint's `react/refs` rule flags this function as
+  // "accessing refs during render", because `form.handleSubmit(onSubmit)`
+  // below references it in the render body and its body reads
+  // `socketRef.current`. Verified false positive — `handleSubmit(fn)`
+  // returns a NEW function that only calls `fn` when the form actually
+  // submits; `onSubmit` itself never runs during render. Confirmed by
+  // isolation: removing the `.current` reads from this function's body
+  // silences the warning with no other change, and wrapping it in
+  // `useCallback` (which stabilises identity but does not change WHEN the
+  // body runs) does not silence it either — the rule's check is purely
+  // "does this referenced function's body read `.current`", not real
+  // call-timing analysis. No other form in this codebase uses
+  // `useCallback` for its submit handler; kept as a plain function to
+  // match that convention rather than restructure around a lint heuristic.
   function onSubmit(values: MessageFormValues) {
     if (socketRef.current?.readyState !== WebSocket.OPEN) return
     socketRef.current.send(JSON.stringify({ body: values.body }))

@@ -266,8 +266,14 @@ REST_FRAMEWORK = {
     # `ordering_fields` / `search_fields` (or OrderingFilter falls back to its
     # serializer's fields), so adding them globally changes nothing for
     # existing views. DRF core — no new package.
+    #
+    # `StrictOrderingFilter`, not the bare `OrderingFilter`: F-17
+    # (QA-REPORT-1) — an unrecognized `?ordering=` field silently no-opped
+    # (200, default order) instead of 400ing like every other filter
+    # parameter in this project. Drop-in subclass, see
+    # `apps.core.filters.StrictOrderingFilter`.
     "DEFAULT_FILTER_BACKENDS": [
-        "rest_framework.filters.OrderingFilter",
+        "apps.core.filters.StrictOrderingFilter",
         "rest_framework.filters.SearchFilter",
     ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.envelope_exception_handler",

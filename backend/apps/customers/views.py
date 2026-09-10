@@ -69,8 +69,8 @@ class CustomerViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     }
 
     # `ordering_fields` is what makes `?ordering=` real for these columns —
-    # OrderingFilter ignores any field not listed. Each name here must match a
-    # `ColumnDef.id` on the frontend.
+    # `StrictOrderingFilter` (apps.core.filters, F-17) 400s any field not
+    # listed here. Each name here must match a `ColumnDef.id` on the frontend.
     ordering_fields = ("name", "email", "company", "created_at")
     search_fields = ("name", "email", "company")
 

@@ -40,5 +40,13 @@ export function BrandMark({ className }: { className?: string }) {
       />
     )
   }
-  return <span className={cn('truncate font-semibold', className)}>{name}</span>
+  // F-16 (QA-REPORT-1): the sidebar collapses this to "Organization Supp…"
+  // via `truncate`, and without a `title` the full name had no way to
+  // recover on hover — the browser's native tooltip is the cheapest fix
+  // for a truncated text node with no dedicated tooltip component.
+  return (
+    <span title={name} className={cn('truncate font-semibold', className)}>
+      {name}
+    </span>
+  )
 }
