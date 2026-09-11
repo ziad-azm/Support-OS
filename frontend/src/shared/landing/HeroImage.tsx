@@ -19,15 +19,22 @@ import { useState } from 'react'
  * unconditionally and let this component decide.
  */
 export function HeroImage({ url, alt }: { url: string; alt: string }) {
-  const [failed, setFailed] = useState(false)
-  if (url === '' || failed) return null
+  // Tracks the URL that failed, not a plain boolean (F-29, QA-REPORT-1),
+  // for the same reason `BrandMark` does: `LandingContentPage`'s live
+  // preview re-renders this on every keystroke of the url field
+  // (`form.watch()`), so a boolean latched by the first, still-incomplete
+  // character typed and never cleared as the rest of a valid url followed.
+  // Comparing against the CURRENT url instead makes each keystroke its own
+  // fresh attempt.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  if (url === '' || url === failedUrl) return null
   return (
     <img
       src={url}
       alt={alt}
       loading="eager"
       className="aspect-[4/3] w-full rounded-xl border object-cover shadow-lg"
-      onError={() => setFailed(true)}
+      onError={() => setFailedUrl(url)}
     />
   )
 }

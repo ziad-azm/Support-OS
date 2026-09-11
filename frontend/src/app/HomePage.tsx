@@ -21,6 +21,7 @@ import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { PageHeader } from '@/shared/ui/PageHeader'
+import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 
 /** One curated quick-link card, gated the same way its `Sidebar.tsx`
  * counterpart is — this page picks a handful of high-value destinations
@@ -206,34 +207,47 @@ export function HomePage() {
             <CardTitle className="text-base">{t('home.upcomingTasks.title')}</CardTitle>
           </CardHeader>
           <CardContent>
-            {upcomingTasksQuery.data?.items.length ? (
-              <ul className="flex flex-col gap-2">
-                {upcomingTasksQuery.data.items.map((taskItem) => {
-                  const overdue = new Date(taskItem.due_at) < new Date()
-                  return (
-                    <li key={taskItem.id}>
-                      <Link
-                        to={`/tasks/${taskItem.id}/edit`}
-                        className="flex items-center justify-between gap-4 rounded-md p-2 text-sm hover:bg-accent"
-                      >
-                        <span className="truncate">{taskItem.title}</span>
-                        <span
-                          className={
-                            overdue
-                              ? 'shrink-0 font-medium text-destructive'
-                              : 'shrink-0 text-muted-foreground'
-                          }
+            {/* F-30 (QA-REPORT-1): this used to branch on
+                `.data?.items.length` alone, so a loading fetch and a failed
+                one both rendered "No upcoming tasks" — indistinguishable
+                from actually having none, and false reassurance during an
+                outage for an agent who has overdue tasks. `QueryBoundary`
+                is this project's own rule for exactly this ("never
+                hand-roll isPending/isError branches", CONVENTIONS.md §5). */}
+            <QueryBoundary
+              query={upcomingTasksQuery}
+              isEmpty={(data) => data.items.length === 0}
+              empty={
+                <p className="text-sm text-muted-foreground">{t('home.upcomingTasks.empty')}</p>
+              }
+            >
+              {(data) => (
+                <ul className="flex flex-col gap-2">
+                  {data.items.map((taskItem) => {
+                    const overdue = new Date(taskItem.due_at) < new Date()
+                    return (
+                      <li key={taskItem.id}>
+                        <Link
+                          to={`/tasks/${taskItem.id}/edit`}
+                          className="flex items-center justify-between gap-4 rounded-md p-2 text-sm hover:bg-accent"
                         >
-                          {dateTime(taskItem.due_at)}
-                        </span>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t('home.upcomingTasks.empty')}</p>
-            )}
+                          <span className="truncate">{taskItem.title}</span>
+                          <span
+                            className={
+                              overdue
+                                ? 'shrink-0 font-medium text-destructive'
+                                : 'shrink-0 text-muted-foreground'
+                            }
+                          >
+                            {dateTime(taskItem.due_at)}
+                          </span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </QueryBoundary>
           </CardContent>
         </Card>
 
@@ -243,28 +257,36 @@ export function HomePage() {
               <CardTitle className="text-base">{t('home.recentTickets.title')}</CardTitle>
             </CardHeader>
             <CardContent>
-              {recentTicketsQuery.data?.items.length ? (
-                <ul className="flex flex-col gap-2">
-                  {recentTicketsQuery.data.items.map((ticket) => (
-                    <li key={ticket.id}>
-                      <Link
-                        to={`/tickets/${ticket.id}`}
-                        className="flex items-center justify-between gap-4 rounded-md p-2 text-sm hover:bg-accent"
-                      >
-                        <span className="truncate">{ticket.subject}</span>
-                        <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
-                          <Badge variant={ticketStatusVariant(ticket.status)}>
-                            {t(`tickets:statuses.${ticket.status}`)}
-                          </Badge>
-                          {date(ticket.created_at)}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">{t('home.recentTickets.empty')}</p>
-              )}
+              {/* F-30 (QA-REPORT-1): same fix as the upcoming-tasks card
+                  above — see its comment. */}
+              <QueryBoundary
+                query={recentTicketsQuery}
+                isEmpty={(data) => data.items.length === 0}
+                empty={
+                  <p className="text-sm text-muted-foreground">{t('home.recentTickets.empty')}</p>
+                }
+              >
+                {(data) => (
+                  <ul className="flex flex-col gap-2">
+                    {data.items.map((ticket) => (
+                      <li key={ticket.id}>
+                        <Link
+                          to={`/tickets/${ticket.id}`}
+                          className="flex items-center justify-between gap-4 rounded-md p-2 text-sm hover:bg-accent"
+                        >
+                          <span className="truncate">{ticket.subject}</span>
+                          <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
+                            <Badge variant={ticketStatusVariant(ticket.status)}>
+                              {t(`tickets:statuses.${ticket.status}`)}
+                            </Badge>
+                            {date(ticket.created_at)}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </QueryBoundary>
             </CardContent>
           </Card>
         </Can>

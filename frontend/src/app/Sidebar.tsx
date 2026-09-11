@@ -147,7 +147,16 @@ function NavSection({
         className="flex items-center justify-between rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
       >
         <span>{label}</span>
-        <ChevronDownIcon className={cn('size-3.5 transition-transform', !open && '-rotate-90')} />
+        {/* F-28 (QA-REPORT-1): `-rotate-90` alone is a physical rotation —
+            unmirrored, a collapsed section in RTL points the same way it
+            does in LTR, away from the reading-start edge a disclosure
+            triangle should point toward. `rtl:rotate-90` (the opposite
+            sign) cancels it back to the mirror image, the same
+            base-plus-`rtl:`-override pattern this codebase already uses
+            for the `ArrowRightIcon`s in `FieldMapField.tsx`. */}
+        <ChevronDownIcon
+          className={cn('size-3.5 transition-transform', !open && '-rotate-90 rtl:rotate-90')}
+        />
       </button>
       {open ? children : null}
     </div>
@@ -219,7 +228,21 @@ export function Sidebar() {
           onClick={toggleCollapsed}
           aria-label={t(collapsed ? 'sidebar.expand' : 'sidebar.collapse')}
         >
-          {collapsed ? <ChevronsRightIcon /> : <ChevronsLeftIcon />}
+          {/* F-28 (QA-REPORT-1): the sidebar sits on the LEFT edge in LTR
+              and the RIGHT edge in RTL (`RootLayout` puts it first in a
+              flex row, and a flex row reverses under `dir="rtl"`). These
+              icons were chosen for the LTR case only — collapse points
+              toward the edge the sidebar is already touching, expand
+              points away from it into the content — so in RTL the
+              un-mirrored icon pointed at the wrong edge. `rtl:rotate-180`
+              is the same fix every other directional icon in this
+              codebase already uses (`FieldMapField.tsx`,
+              `dropdown-menu.tsx`). */}
+          {collapsed ? (
+            <ChevronsRightIcon className="rtl:rotate-180" />
+          ) : (
+            <ChevronsLeftIcon className="rtl:rotate-180" />
+          )}
         </Button>
       </div>
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">

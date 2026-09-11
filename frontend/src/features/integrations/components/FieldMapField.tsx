@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
-import { FormItem, FormLabel } from '@/shared/ui/primitives/form'
+import { FormControl, FormItem, FormLabel } from '@/shared/ui/primitives/form'
 import {
   Select,
   SelectContent,
@@ -100,17 +100,27 @@ export function FieldMapField({
         ))}
       </div>
       <div className="flex items-center gap-2">
-        <Input
-          value={draftSource}
-          onChange={(event) => setDraftSource(event.target.value)}
-          placeholder={sourcePlaceholder}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              addEntry()
-            }
-          }}
-        />
+        {/* F-31 (QA-REPORT-1): this `FormLabel` above renders
+            `htmlFor={formItemId}`, but nothing in this file ever assigned
+            that id to an element — `FormControl` is the piece that does,
+            and it wasn't imported. The label pointed at an id that existed
+            nowhere in the DOM, so clicking it focused nothing, and this
+            input's only name was a placeholder that vanishes once typing
+            starts (WCAG 3.3.2). `FormControl` puts `formItemId` onto this,
+            the field's primary always-present input. */}
+        <FormControl>
+          <Input
+            value={draftSource}
+            onChange={(event) => setDraftSource(event.target.value)}
+            placeholder={sourcePlaceholder}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                addEntry()
+              }
+            }}
+          />
+        </FormControl>
         <ArrowRightIcon
           aria-hidden="true"
           className="size-4 shrink-0 text-muted-foreground rtl:rotate-180"

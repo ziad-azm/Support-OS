@@ -134,7 +134,14 @@ function CategoryForm({
                 description={t('categories.colorHint')}
               />
               {HEX_COLOR_RE.test(colorDraft) ? (
-                <div className="flex items-center gap-2" aria-label={t('categories.colorPreview')}>
+                // F-32 (QA-REPORT-1): `role="group"` is required for
+                // `aria-label` to apply — a bare `<div>` is
+                // `role="generic"`, which ARIA prohibits naming.
+                <div
+                  role="group"
+                  className="flex items-center gap-2"
+                  aria-label={t('categories.colorPreview')}
+                >
                   <span
                     className="size-8 shrink-0 rounded border"
                     style={{ backgroundColor: colorDraft }}

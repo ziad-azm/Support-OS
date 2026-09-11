@@ -21,10 +21,18 @@ import { useBranding } from './useBranding'
 export function BrandMark({ className }: { className?: string }) {
   const { t } = useTranslation('common')
   const branding = useBranding().data ?? getBranding()
-  const [imageFailed, setImageFailed] = useState(false)
+  // Tracks the URL that failed, not a plain boolean (F-29, QA-REPORT-1): a
+  // `useState(false)` latched forever once one URL 404'd, with nothing to
+  // un-latch it after an admin corrected the URL — `BrandMark` is rendered
+  // once per layout and never unmounts, so the fixed URL just kept showing
+  // the fallback, looking like the save had silently failed. Comparing
+  // against the CURRENT url makes "did this url fail" self-correcting: a
+  // different url is never treated as failed just because a previous one
+  // was.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const name = branding.name || t('app.name')
 
-  if (branding.logo_url !== '' && !imageFailed) {
+  if (branding.logo_url !== '' && branding.logo_url !== failedUrl) {
     return (
       <img
         src={branding.logo_url}
@@ -36,7 +44,7 @@ export function BrandMark({ className }: { className?: string }) {
         // A rotted URL, a private host, or an http:// logo blocked as
         // mixed content on an https:// page all land here. Falling back to
         // the name is the difference between a rebrand and a blank header.
-        onError={() => setImageFailed(true)}
+        onError={() => setFailedUrl(branding.logo_url)}
       />
     )
   }

@@ -141,7 +141,19 @@ function SettingsForm({ settings }: { settings: OrganizationSettings }) {
                 // the only module that does that, CONVENTIONS.md §19), and
                 // there is no token that can stand in for an arbitrary
                 // not-yet-saved colour.
-                <div className="flex items-center gap-2" aria-label={t('settings.colorPreview')}>
+                // F-32 (QA-REPORT-1): `role="group"` is required for
+                // `aria-label` to apply at all — a bare `<div>` is
+                // `role="generic"`, which ARIA prohibits naming, so this
+                // was silently dropped by every browser. Same fix as the
+                // three sibling preview `<div>`s (`CategoryFormPage.tsx`,
+                // `LandingHighlightFormPage.tsx`,
+                // `LandingSocialLinkFormPage.tsx`), matching the pattern
+                // already correct at `LandingContentPage.tsx`.
+                <div
+                  role="group"
+                  className="flex items-center gap-2"
+                  aria-label={t('settings.colorPreview')}
+                >
                   <span
                     className="size-8 shrink-0 rounded border"
                     style={{ backgroundColor: primaryColorDraft }}

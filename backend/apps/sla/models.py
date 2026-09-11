@@ -46,8 +46,22 @@ class SLAPolicy(TimeStampedModel):
         verbose_name = _("SLA policy")
         verbose_name_plural = _("SLA policies")
         constraints = [
+            # `nulls_distinct=False`: Postgres treats every NULL as
+            # distinct from every other by default, so the bare
+            # constraint below let two rows both hold `(priority="high",
+            # category=None)` — the "default policy for this priority"
+            # slot was never actually unique. `resolve_policy`'s
+            # `.first()` and `bulk_target_resolver`'s
+            # `{(priority, category_id): policy}` dict comprehension then
+            # picked DIFFERENT ones of the two duplicates (different
+            # tie-break rules), so the same ticket could read `met` on one
+            # report and `breached` on another depending which resolver
+            # answered. This is what the constraint's own name always
+            # implied it already did.
             models.UniqueConstraint(
-                fields=["priority", "category"], name="unique_sla_policy_priority_category"
+                fields=["priority", "category"],
+                name="unique_sla_policy_priority_category",
+                nulls_distinct=False,
             )
         ]
         ordering = ("priority", "category__name")
@@ -133,7 +147,17 @@ class AssignmentRule(TimeStampedModel):
         verbose_name = _("assignment rule")
         verbose_name_plural = _("assignment rules")
         constraints = [
-            models.UniqueConstraint(fields=["category"], name="unique_assignment_rule_category")
+            # `nulls_distinct=False` for the same reason `SLAPolicy` needs
+            # it (see that model's own comment): without it, Postgres
+            # allowed more than one category-agnostic default rule to
+            # exist at once, and `resolve_rule`'s
+            # `.filter(category__isnull=True, ...).first()` had no
+            # guaranteed tie-break between them.
+            models.UniqueConstraint(
+                fields=["category"],
+                name="unique_assignment_rule_category",
+                nulls_distinct=False,
+            )
         ]
         ordering = ("category__name",)
 

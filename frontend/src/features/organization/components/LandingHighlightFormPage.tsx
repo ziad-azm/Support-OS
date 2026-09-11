@@ -186,7 +186,11 @@ function LandingHighlightForm({
                 label={t('landingHighlights.fields.icon')}
                 options={iconOptions}
               />
+              {/* F-32 (QA-REPORT-1): `role="group"` is required for
+                  `aria-label` to apply — a bare `<div>` is
+                  `role="generic"`, which ARIA prohibits naming. */}
               <div
+                role="group"
                 className="flex items-center gap-2 text-muted-foreground"
                 aria-label={t('landingHighlights.iconPreview')}
               >
