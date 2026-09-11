@@ -29,6 +29,13 @@
       "title": "Delete this user?",
       "description": "This permanently removes {{email}}. Their notifications are removed too. If they still own any tasks, the deletion is blocked until those are resolved."
     },
+    "twoFactor": {
+      "enabledLabel": "Two-factor authentication is enabled for this user.",
+      "reset": "Reset 2FA",
+      "resetConfirmTitle": "Reset two-factor authentication?",
+      "resetConfirmDescription": "This disables 2FA for {{email}} and removes their recovery codes. They will need to set it up again.",
+      "resetSuccess": "Two-factor authentication has been reset."
+    },
     "inviteSent": "Invitation sent.",
     "updated": "User updated.",
     "notFound": "That user could not be found."
@@ -45,6 +52,7 @@
     "permissionCount": "{{count}} permission",
     "permissionCount_other": "{{count}} permissions",
     "permissionsHint": "Changes take effect immediately for anyone holding this role.",
+    "requiresTwoFactorHint": "Users holding this role are prompted to set up two-factor authentication the next time they sign in.",
     "selectAllInGroup": "Select all",
     "deselectAllInGroup": "Deselect all",
     "permissionDescriptions": {
@@ -85,6 +93,7 @@
       "slug": "Slug",
       "description": "Description",
       "permissions": "Permissions",
+      "requiresTwoFactor": "Require two-factor authentication",
       "actions": "Actions"
     },
     "systemBadge": "System",

@@ -7,6 +7,7 @@ export type AdminUser = {
   is_active: boolean
   is_staff: boolean
   is_superuser: boolean
+  mfa_enabled: boolean
   role: number | null
   role_name: string | null
   department: number | null

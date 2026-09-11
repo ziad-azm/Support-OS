@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import AuditLog, Role, User
+from .models import AuditLog, Role, TwoFactorRecoveryCode, User
 
 
 @admin.register(Role)
@@ -133,4 +133,23 @@ class AuditLogAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None) -> bool:
+        return False
+
+
+@admin.register(TwoFactorRecoveryCode)
+class TwoFactorRecoveryCodeAdmin(admin.ModelAdmin):
+    """Read-only support visibility — never create or edit a code hash by
+    hand. Mirrors `AuditLogAdmin`'s "immutable end to end" shape directly
+    above.
+    """
+
+    list_display = ("user", "used_at", "created_at")
+    list_filter = ("used_at",)
+    search_fields = ("user__email",)
+    readonly_fields = ("user", "code_hash", "used_at", "created_at", "updated_at")
+
+    def has_add_permission(self, request) -> bool:
+        return False
+
+    def has_change_permission(self, request, obj=None) -> bool:
         return False

@@ -54,6 +54,14 @@ class Role(TimeStampedModel):
     name = models.CharField(_("name"), max_length=100)
     description = models.CharField(_("description"), max_length=255, blank=True)
     permissions = models.JSONField(_("permissions"), default=list, blank=True)
+    # SEC-9. Per-role, not a global switch — a portal customer's `Role`
+    # (seeded "customer") is never edited on this admin screen, so portal
+    # logins stay simple regardless of what any staff role requires.
+    # Enforced client-side only today — see `UserSerializer.get_mfa_required`
+    # (serializers.py) and Story 107's `## Edge Cases` for the accepted gap.
+    requires_two_factor = models.BooleanField(
+        _("requires two-factor authentication"), default=False
+    )
     # Seeded roles are referenced by slug in code and must not be deletable
     # from the admin. SEC-1 enforces this in its UI too.
     is_system = models.BooleanField(_("system role"), default=False)
@@ -147,6 +155,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True,
         blank=True,
     )
+    # SEC-9. `mfa_secret` holds the Fernet-encrypted TOTP secret once
+    # enrolment starts; `mfa_enabled` only flips True once a real code has
+    # been confirmed (`TwoFactorConfirmSerializer.save`) — an abandoned,
+    # unconfirmed enrolment leaves `mfa_secret` set but `mfa_enabled` False,
+    # the same "pending state expressed through existing/adjacent fields,
+    # not a new status column" shape Story 70 established for `is_active`/
+    # `has_usable_password()`.
+    mfa_enabled = models.BooleanField(_("two-factor authentication enabled"), default=False)
+    # Never returned by any serializer once set — see CONVENTIONS.md §36's
+    # "the only 5 readable fields are has_* booleans" rule, extended here:
+    # unlike every field that rule already covers, this one must also be
+    # DECRYPTABLE later (`apps.accounts.mfa.decrypt_secret`), which is why
+    # it is encrypted rather than write_only-plaintext or a one-way digest.
+    mfa_secret = models.CharField(_("two-factor secret"), max_length=255, blank=True)
 
     objects = UserManager()
 
@@ -216,6 +238,13 @@ class AuditLog(TimeStampedModel):
         ROLE_DELETED = "role_deleted", _("Role deleted")
         PORTAL_ACCESS_GRANTED = "portal_access_granted", _("Portal access granted")
         PORTAL_ACCESS_REVOKED = "portal_access_revoked", _("Portal access revoked")
+        TWO_FACTOR_ENABLED = "two_factor_enabled", _("Two-factor authentication enabled")
+        TWO_FACTOR_DISABLED = "two_factor_disabled", _("Two-factor authentication disabled")
+        TWO_FACTOR_RESET = "two_factor_reset", _("Two-factor authentication reset by admin")
+        TWO_FACTOR_RECOVERY_CODE_USED = (
+            "two_factor_recovery_code_used",
+            _("Two-factor recovery code used"),
+        )
 
     actor = models.ForeignKey(
         User,
@@ -253,3 +282,44 @@ class AuditLog(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.get_action_display()} — {self.target_label}"
+
+
+class TwoFactorRecoveryCode(TimeStampedModel):
+    """A single-use recovery code for an account with 2FA enabled — SEC-9
+    task 2. Ten are issued at a time, replacing any still-unused ones,
+    every time `TwoFactorConfirmSerializer`/`UserViewSet.reset_2fa` (re-)
+    activates or resets 2FA for a user — never appended to.
+
+    `code_hash` follows `apps.integrations.keys.hash_api_key`'s plain sha256
+    pattern (no slow KDF — the code is already 40 bits from
+    `secrets.token_hex`), not `AuditLog`'s "snapshot, never delete" style:
+    rows here ARE deleted, on disable/reset/re-enrolment, because a stale
+    recovery code for an account whose 2FA secret is no longer active must
+    never be checkable again.
+
+    `used_at` (nullable), not a boolean flag — mirrors
+    `notifications.Notification.read_at`'s exact shape for the same reason:
+    knowing *when* a code was used is free once a timestamp is being stored
+    anyway, and "unused" is simply `used_at__isnull=True`.
+
+    `on_delete=CASCADE` on `user` — a recovery code has no meaning without
+    the account it recovers, the same reasoning `UserViewSet`'s own
+    docstring already gives for `Notification.recipient`/`ApiKey.user`.
+    """
+
+    user = models.ForeignKey(
+        User,
+        verbose_name=_("user"),
+        related_name="recovery_codes",
+        on_delete=models.CASCADE,
+    )
+    code_hash = models.CharField(_("code hash"), max_length=64)
+    used_at = models.DateTimeField(_("used at"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("recovery code")
+        verbose_name_plural = _("recovery codes")
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.user.email} — {'used' if self.used_at else 'unused'}"

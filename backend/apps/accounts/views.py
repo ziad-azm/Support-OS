@@ -1,15 +1,18 @@
 import logging
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import update_last_login
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.agents.models import Task
@@ -18,15 +21,19 @@ from apps.core.scoping import ScopedQuerysetMixin, ScopeFilter
 from apps.core.throttling import FailOpenScopedRateThrottle
 from apps.core.views import BaseModelViewSet
 
-from .models import AuditLog, Role
+from . import mfa
+from .models import AuditLog, Role, TwoFactorRecoveryCode
 from .serializers import (
     AuditLogSerializer,
     ChangePasswordSerializer,
     InviteConfirmSerializer,
     LogoutSerializer,
+    MfaChallengeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RoleAdminSerializer,
+    TwoFactorConfirmSerializer,
+    TwoFactorDisableSerializer,
     UserAdminSerializer,
     UserSerializer,
 )
@@ -195,6 +202,139 @@ class ChangePasswordView(APIView):
 
 
 @extend_schema(
+    request=MfaChallengeSerializer,
+    responses={200: None},
+    summary="Exchange a 2FA challenge and code for a real token pair",
+)
+class MfaVerifyView(APIView):
+    """SEC-9's login-time second step. No `Authorization` header — the
+    caller has no access token yet; `mfa_token` (signed by
+    `MfaAwareTokenObtainPairSerializer`) is the credential that proves the
+    password was already checked once, the same reasoning `LogoutView`
+    above documents for its own no-Authorization-header shape.
+
+    Throttled the same as every other credential-guessing surface in this
+    file: a bare 6-digit TOTP code is far more guessable than a password.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "auth_credentials"
+
+    def post(self, request):
+        serializer = MfaChallengeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        if serializer.validated_data["recovery_code"] is not None:
+            AuditLog.objects.create(
+                actor=user,
+                action=AuditLog.Action.TWO_FACTOR_RECOVERY_CODE_USED,
+                target_user=user,
+                target_label=user.get_full_name(),
+            )
+        refresh = RefreshToken.for_user(user)
+        if api_settings.UPDATE_LAST_LOGIN:
+            update_last_login(None, user)
+        return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
+
+
+@extend_schema(
+    request=None,
+    responses={200: None},
+    summary="Begin 2FA enrolment: generate a pending TOTP secret",
+)
+class TwoFactorEnrollView(APIView):
+    """SEC-9's enrolment step 1. Overwrites any not-yet-confirmed secret on
+    every call — a user who abandons enrolment and starts again gets a
+    clean slate, never two live pending secrets. Refuses to run once 2FA is
+    already active; `TwoFactorDisableView` below is the only way back to a
+    re-enrollable state.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "auth_credentials"
+
+    def post(self, request):
+        user = request.user
+        if user.mfa_enabled:
+            raise ValidationError(
+                {
+                    "non_field_errors": [
+                        _(
+                            "Two-factor authentication is already enabled. "
+                            "Disable it before re-enrolling."
+                        )
+                    ]
+                }
+            )
+        raw_secret = mfa.generate_totp_secret()
+        user.mfa_secret = mfa.encrypt_secret(raw_secret)
+        user.save(update_fields=["mfa_secret"])
+        return Response(
+            {"secret": raw_secret, "provisioning_uri": mfa.provisioning_uri(user, raw_secret)},
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(
+    request=TwoFactorConfirmSerializer,
+    responses={200: None},
+    summary="Confirm a 2FA code and activate two-factor authentication",
+)
+class TwoFactorConfirmView(APIView):
+    """SEC-9's enrolment step 2. Returns the plaintext recovery codes
+    EXACTLY ONCE — `TwoFactorRecoveryCode.code_hash` is the only place any
+    of them are stored, so this response is the caller's only chance to
+    see them.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "auth_credentials"
+
+    def post(self, request):
+        serializer = TwoFactorConfirmSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        recovery_codes = serializer.save()
+        AuditLog.objects.create(
+            actor=request.user,
+            action=AuditLog.Action.TWO_FACTOR_ENABLED,
+            target_user=request.user,
+            target_label=request.user.get_full_name(),
+        )
+        return Response({"recovery_codes": recovery_codes}, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=TwoFactorDisableSerializer,
+    responses={200: None},
+    summary="Disable two-factor authentication on your own account",
+)
+class TwoFactorDisableView(APIView):
+    """SEC-9's self-service disable. Requires the current password — see
+    `TwoFactorDisableSerializer`'s own docstring.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [FailOpenScopedRateThrottle]
+    throttle_scope = "auth_credentials"
+
+    def post(self, request):
+        serializer = TwoFactorDisableSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        AuditLog.objects.create(
+            actor=request.user,
+            action=AuditLog.Action.TWO_FACTOR_DISABLED,
+            target_user=request.user,
+            target_label=request.user.get_full_name(),
+        )
+        return Response(None, status=status.HTTP_200_OK)
+
+
+@extend_schema(
     request=None,
     responses=UserSerializer,
     summary="The signed-in user, their role and resolved permissions",
@@ -243,6 +383,11 @@ class UserViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         "update": Permissions.USERS_MANAGE,
         "partial_update": Permissions.USERS_MANAGE,
         "destroy": Permissions.USERS_MANAGE,
+        # Keyed by the @action's own method name, both HTTP verbs (there is
+        # only one here) share it — the exact precedent
+        # `CustomerViewSet.permission_map["portal_access"]`
+        # (apps/customers/views.py:68) already establishes.
+        "reset_2fa": Permissions.USERS_MANAGE,
     }
 
     # Each name here must match a `ColumnDef.id` on the frontend, exactly
@@ -341,6 +486,31 @@ class UserViewSet(ScopedQuerysetMixin, BaseModelViewSet):
             target_label=user_label,
         )
         return response
+
+    @action(detail=True, methods=["post"], url_path="reset-2fa")
+    def reset_2fa(self, request, pk=None):
+        """Admin-side account recovery for a user who lost their device —
+        SEC-9 task 2. Never reveals the secret (it is simply discarded);
+        the user must re-enrol from scratch afterward, the same "no way
+        back in except starting over" shape `TwoFactorDisableView` gives
+        the user themselves.
+        """
+        user = self.get_object()
+        if not user.mfa_enabled:
+            raise ValidationError(
+                {"non_field_errors": [_("Two-factor authentication is not enabled for this user.")]}
+            )
+        user.mfa_enabled = False
+        user.mfa_secret = ""
+        user.save(update_fields=["mfa_enabled", "mfa_secret"])
+        TwoFactorRecoveryCode.objects.filter(user=user).delete()
+        AuditLog.objects.create(
+            actor=request.user,
+            action=AuditLog.Action.TWO_FACTOR_RESET,
+            target_user=user,
+            target_label=user.get_full_name(),
+        )
+        return Response(None, status=status.HTTP_200_OK)
 
 
 class RoleViewSet(BaseModelViewSet):

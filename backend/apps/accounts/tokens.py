@@ -5,7 +5,7 @@ pattern `apps.communications.live_chat_adapter` established
 apps/communications/live_chat_adapter.py:13-30) for a different kind of
 signed reference.
 
-Two callers, two salts, one shared signing pair:
+Three callers, three salts, one shared signing pair:
 - SEC-5 (`InviteConfirmSerializer`) signs a bare user id under
   `INVITE_SALT` — single-use is enforced by the account's own
   `is_active`/`has_usable_password()` state, not by anything in the token
@@ -19,6 +19,11 @@ Two callers, two salts, one shared signing pair:
   Django's own `default_token_generator` uses (hashing over
   `user.password`), reimplemented on this module's own
   `signing.dumps`/`loads` instead of pulling that generator in.
+- SEC-9 (`MfaAwareTokenObtainPairSerializer`/`MfaChallengeSerializer`) signs
+  a bare user id under `MFA_CHALLENGE_SALT` — the same shape as SEC-5's
+  invite token, since a 2FA challenge needs no baked-in "unused" state
+  either: the token's own 5-minute `max_age` is the entire lifetime, and it
+  is only ever read once, by `MfaChallengeSerializer.validate`.
 
 `make_password_token`/`read_password_token` themselves are payload-agnostic
 — `signing.dumps`/`loads` already accept and return any JSON-serialisable
@@ -45,6 +50,15 @@ RESET_SALT = "apps.accounts.password_reset"
 # allow for, and a shorter window narrows a leaked-email liability window
 # further still.
 RESET_TOKEN_MAX_AGE_SECONDS = 60 * 60
+
+MFA_CHALLENGE_SALT = "apps.accounts.mfa_challenge"
+# 5 minutes: long enough to switch to an authenticator app and read a code,
+# short enough that a challenge token left in browser history or a proxy
+# log is not a standing liability — shorter than RESET_TOKEN_MAX_AGE_SECONDS
+# because this token grants a narrower thing (permission to attempt one 2FA
+# code for an account whose password is already verified), not a password
+# change.
+MFA_CHALLENGE_MAX_AGE_SECONDS = 60 * 5
 
 
 def make_password_token(payload, *, salt: str = INVITE_SALT) -> str:

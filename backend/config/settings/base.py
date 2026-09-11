@@ -9,6 +9,8 @@ Environment-specific overrides live in `dev.py` and `prod.py`; select one with
 DJANGO_SETTINGS_MODULE.
 """
 
+import base64
+import hashlib
 import logging
 from datetime import timedelta
 from pathlib import Path
@@ -208,6 +210,18 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
     "SIGNING_KEY": JWT_SIGNING_KEY,
 }
+
+# SEC-9 (Story 107). Fernet requires a 32-byte urlsafe-base64 key
+# specifically, unlike JWT_SIGNING_KEY immediately above (any string works
+# for HMAC signing) — so unlike that setting's `or SECRET_KEY` fallback, an
+# unset MFA_ENCRYPTION_KEY derives a validly-shaped key from SECRET_KEY
+# instead of reusing it directly. See apps/accounts/mfa.py.
+_mfa_encryption_key = env("MFA_ENCRYPTION_KEY", default="").strip()
+MFA_ENCRYPTION_KEY = (
+    _mfa_encryption_key.encode()
+    if _mfa_encryption_key
+    else base64.urlsafe_b64encode(hashlib.sha256(SECRET_KEY.encode()).digest())
+)
 
 
 # --- CORS ---------------------------------------------------------------

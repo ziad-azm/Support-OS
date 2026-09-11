@@ -16,7 +16,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SubmitButton,
+  SwitchField,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { Loading } from '@/shared/ui/Loading'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
@@ -39,11 +45,18 @@ const schema = z.object({
   name: requiredString(100),
   description: optionalString(255),
   permissions: z.array(z.string()),
+  requires_two_factor: z.boolean(),
 })
 
 type FormValues = z.output<typeof schema>
 
-const EMPTY_DEFAULTS: FormValues = { slug: '', name: '', description: undefined, permissions: [] }
+const EMPTY_DEFAULTS: FormValues = {
+  slug: '',
+  name: '',
+  description: undefined,
+  permissions: [],
+  requires_two_factor: false,
+}
 
 function toDefaults(role: Role): FormValues {
   return {
@@ -51,6 +64,7 @@ function toDefaults(role: Role): FormValues {
     name: role.name,
     description: role.description || undefined,
     permissions: role.permissions,
+    requires_two_factor: role.requires_two_factor,
   }
 }
 
@@ -60,6 +74,7 @@ function toRoleInput(values: FormValues): RoleInput {
     name: values.name,
     description: values.description ?? '',
     permissions: values.permissions,
+    requires_two_factor: values.requires_two_factor,
   }
 }
 
@@ -178,6 +193,12 @@ function RoleForm({ mode, id, role }: { mode: 'create' | 'edit'; id?: number; ro
                   control={form.control}
                   name="description"
                   label={t('roles.fields.description')}
+                />
+                <SwitchField
+                  control={form.control}
+                  name="requires_two_factor"
+                  label={t('roles.fields.requiresTwoFactor')}
+                  description={t('roles.requiresTwoFactorHint')}
                 />
               </CardContent>
             </Card>

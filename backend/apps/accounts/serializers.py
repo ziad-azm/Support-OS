@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -9,9 +10,12 @@ from apps.core.permissions import ALL_PERMISSIONS, permissions_for
 from apps.core.serializers import BaseModelSerializer
 from apps.organization.models import Branch, Department
 
-from .models import AuditLog, Role
+from . import mfa
+from .models import AuditLog, Role, TwoFactorRecoveryCode
 from .tasks import send_password_reset_email
 from .tokens import (
+    MFA_CHALLENGE_MAX_AGE_SECONDS,
+    MFA_CHALLENGE_SALT,
     RESET_SALT,
     RESET_TOKEN_MAX_AGE_SECONDS,
     password_fingerprint,
@@ -78,6 +82,7 @@ class RoleAdminSerializer(BaseModelSerializer):
             "name",
             "description",
             "permissions",
+            "requires_two_factor",
             "is_system",
             "created_at",
             "updated_at",
@@ -122,6 +127,7 @@ class UserSerializer(serializers.ModelSerializer):
     department = DepartmentBriefSerializer(read_only=True)
     branch = BranchBriefSerializer(read_only=True)
     permissions = serializers.SerializerMethodField()
+    mfa_required = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -135,8 +141,19 @@ class UserSerializer(serializers.ModelSerializer):
             "department",
             "branch",
             "permissions",
+            "mfa_enabled",
+            "mfa_required",
         )
-        read_only_fields = ("id", "is_staff", "role", "department", "branch", "permissions")
+        read_only_fields = (
+            "id",
+            "is_staff",
+            "role",
+            "department",
+            "branch",
+            "permissions",
+            "mfa_enabled",
+            "mfa_required",
+        )
 
     def get_permissions(self, user) -> list[str]:
         """The SAME resolution the API enforces with, including the superuser
@@ -145,6 +162,14 @@ class UserSerializer(serializers.ModelSerializer):
         that the API would happily allow. See CONVENTIONS.md §22.
         """
         return sorted(permissions_for(user))
+
+    def get_mfa_required(self, user) -> bool:
+        """Whether this account's role currently mandates 2FA — SEC-9's
+        per-role enforcement. Independent of `mfa_enabled`: a required-but-
+        not-yet-enrolled account has this True and `mfa_enabled` False,
+        which is exactly the state `RequireAuth` (frontend) redirects on.
+        """
+        return bool(user.role and user.role.requires_two_factor)
 
 
 class UserAdminSerializer(serializers.ModelSerializer):
@@ -194,6 +219,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "is_active",
             "is_staff",
             "is_superuser",
+            "mfa_enabled",
             "role",
             "role_name",
             "department",
@@ -203,7 +229,14 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "date_joined",
             "last_login",
         )
-        read_only_fields = ("id", "is_staff", "is_superuser", "date_joined", "last_login")
+        read_only_fields = (
+            "id",
+            "is_staff",
+            "is_superuser",
+            "mfa_enabled",
+            "date_joined",
+            "last_login",
+        )
 
     def create(self, validated_data):
         # `is_staff` is read-only on this serializer (never settable by the
@@ -372,6 +405,125 @@ class ChangePasswordSerializer(serializers.Serializer):
         user = self.context["request"].user
         user.set_password(self.validated_data["new_password"])
         user.save(update_fields=["password"])
+        return user
+
+
+class TwoFactorConfirmSerializer(serializers.Serializer):
+    """SEC-9's enrolment-confirm step. `validate_code` only reads state —
+    the same read-only `validate_*` discipline `ChangePasswordSerializer`
+    above follows; `save()` is where `mfa_enabled` flips and recovery codes
+    are actually issued, so a wrong code never has any side effect.
+    """
+
+    code = serializers.CharField(write_only=True, max_length=10)
+
+    def validate_code(self, value):
+        user = self.context["request"].user
+        if not user.mfa_secret:
+            raise serializers.ValidationError(_("Start enrolment before confirming a code."))
+        if not mfa.verify_totp_code(mfa.decrypt_secret(user.mfa_secret), value):
+            raise serializers.ValidationError(_("That code is incorrect or has expired."))
+        return value
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        user.mfa_enabled = True
+        user.save(update_fields=["mfa_enabled"])
+        TwoFactorRecoveryCode.objects.filter(user=user).delete()
+        codes = mfa.generate_recovery_codes()
+        TwoFactorRecoveryCode.objects.bulk_create(
+            TwoFactorRecoveryCode(user=user, code_hash=mfa.hash_recovery_code(code))
+            for code in codes
+        )
+        return codes
+
+
+class TwoFactorDisableSerializer(serializers.Serializer):
+    """SEC-9's self-service disable step. Requires the caller's current
+    password — the same "a valid session alone is not proof of ownership"
+    reasoning `ChangePasswordSerializer` documents for itself, applied to a
+    toggle at least as sensitive as the password itself.
+    """
+
+    current_password = serializers.CharField(write_only=True, style={"input_type": "password"})
+
+    def validate_current_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError(_("Current password is incorrect."))
+        return value
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        user.mfa_enabled = False
+        user.mfa_secret = ""
+        user.save(update_fields=["mfa_enabled", "mfa_secret"])
+        TwoFactorRecoveryCode.objects.filter(user=user).delete()
+        return user
+
+
+class MfaChallengeSerializer(serializers.Serializer):
+    """SEC-9's login-time second step, exchanged for a real token pair once
+    the caller proves the second factor. `mfa_token` is signed by
+    `MfaAwareTokenObtainPairSerializer.validate` (throttled_token_views.py)
+    — the password was already verified once to obtain it, so no
+    Authorization header and no password is presented here again, the same
+    "the token IS the credential" reasoning `LogoutView`/
+    `PasswordResetConfirmView` already establish for their own signed
+    tokens.
+
+    Tries a TOTP code first, then falls back to an unused recovery code.
+    `attrs['recovery_code']` carries the matched row through to `save()` —
+    the view reads it back from `validated_data` afterward to decide
+    whether to write a `TWO_FACTOR_RECOVERY_CODE_USED` audit row, following
+    this codebase's "AuditLog is written in views.py, never inside a
+    serializer" convention (see every `AuditLog.objects.create(...)` call
+    site in `views.py`).
+    """
+
+    mfa_token = serializers.CharField(write_only=True)
+    code = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        user_id = read_password_token(
+            attrs["mfa_token"], salt=MFA_CHALLENGE_SALT, max_age=MFA_CHALLENGE_MAX_AGE_SECONDS
+        )
+        user = (
+            User.objects.filter(pk=user_id, is_active=True, mfa_enabled=True).first()
+            if user_id
+            else None
+        )
+        if user is None:
+            raise serializers.ValidationError(
+                {"mfa_token": [_("This sign-in attempt has expired. Please sign in again.")]}
+            )
+        code = attrs["code"]
+        if mfa.verify_totp_code(mfa.decrypt_secret(user.mfa_secret), code):
+            attrs["user"] = user
+            attrs["recovery_code"] = None
+            return attrs
+        recovery_code = next(
+            (
+                row
+                for row in TwoFactorRecoveryCode.objects.filter(user=user, used_at__isnull=True)
+                if mfa.recovery_code_matches(row.code_hash, code)
+            ),
+            None,
+        )
+        if recovery_code is None:
+            raise serializers.ValidationError(
+                {"code": [_("That code is incorrect or has expired.")]}
+            )
+        attrs["user"] = user
+        attrs["recovery_code"] = recovery_code
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.validated_data["user"]
+        recovery_code = self.validated_data["recovery_code"]
+        if recovery_code is not None:
+            recovery_code.used_at = timezone.now()
+            recovery_code.save(update_fields=["used_at"])
         return user
 
 

@@ -18,6 +18,10 @@ const schema = z.object({
   password: requiredString(),
 })
 
+const mfaSchema = z.object({
+  code: requiredString(10),
+})
+
 /** The centred mark above the login form. Renders the configured logo when
  * one is set (ORG-3); otherwise the original `LogInIcon` circle, which
  * already tracks `--primary`/`bg-primary` and therefore rebrands itself
@@ -41,14 +45,20 @@ function BrandLoginMark() {
 
 export function LoginPage() {
   const { t } = useTranslation('auth')
-  const { login } = useAuth()
+  const { login, completeMfaChallenge } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [formErrors, setFormErrors] = useState<string[]>([])
+  const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const [mfaFormErrors, setMfaFormErrors] = useState<string[]>([])
 
   const form = useAppForm({
     schema,
     defaultValues: { email: '', password: '' },
+  })
+  const mfaForm = useAppForm({
+    schema: mfaSchema,
+    defaultValues: { code: '' },
   })
 
   // `/home`, not `/`: Story 86 made `/` the public landing page. A staff
@@ -58,7 +68,13 @@ export function LoginPage() {
 
   const mutation = useMutation({
     mutationFn: (values: z.output<typeof schema>) => login(values.email, values.password),
-    onSuccess: () => navigate(from, { replace: true }),
+    onSuccess: (result) => {
+      if (result.status === 'mfa_required') {
+        setMfaToken(result.mfaToken)
+      } else {
+        navigate(from, { replace: true })
+      }
+    },
     onError: (error) => {
       if (isValidationError(error)) {
         setFormErrors(applyServerErrors(form, error))
@@ -68,6 +84,51 @@ export function LoginPage() {
       // translated message. See CONVENTIONS.md §21.
     },
   })
+
+  const mfaMutation = useMutation({
+    mutationFn: (values: z.output<typeof mfaSchema>) =>
+      completeMfaChallenge(mfaToken ?? '', values.code),
+    onSuccess: () => navigate(from, { replace: true }),
+    onError: (error) => {
+      if (isValidationError(error)) {
+        setMfaFormErrors(applyServerErrors(mfaForm, error))
+      }
+    },
+  })
+
+  if (mfaToken !== null) {
+    return (
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <BrandLoginMark />
+          <h1 className="text-2xl font-semibold tracking-tight">{t('mfaChallenge.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('mfaChallenge.subtitle')}</p>
+        </div>
+        <Card>
+          <CardContent>
+            <Form {...mfaForm}>
+              <form
+                onSubmit={mfaForm.handleSubmit((values) => mfaMutation.mutate(values))}
+                className="flex flex-col gap-4"
+              >
+                <TextField
+                  control={mfaForm.control}
+                  name="code"
+                  label={t('mfaChallenge.code')}
+                  autoComplete="one-time-code"
+                  autoFocus
+                />
+                <FormErrorSummary errors={mfaFormErrors} />
+                <SubmitButton pending={mfaMutation.isPending} size="lg" className="w-full">
+                  {t('mfaChallenge.submit')}
+                </SubmitButton>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-6">

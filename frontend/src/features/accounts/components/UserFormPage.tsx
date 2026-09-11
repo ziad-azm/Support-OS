@@ -18,13 +18,14 @@ import {
   TextField,
   useAppForm,
 } from '@/shared/ui/form'
+import { useConfirm } from '@/shared/ui/confirm/useConfirm'
 import { Loading } from '@/shared/ui/Loading'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useRoles } from '../api/useRoles'
 import { useUser } from '../api/useUser'
-import { useCreateUser, useUpdateUser } from '../api/useUserMutations'
+import { useCreateUser, useResetTwoFactor, useUpdateUser } from '../api/useUserMutations'
 import type { AdminUser, UserCreateInput, UserUpdateInput } from '../types/user'
 
 // Radix's `Select.Item` requires a non-empty `value` — this sentinel stands
@@ -228,7 +229,9 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
   const { t } = useTranslation('accounts')
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { confirm } = useConfirm()
   const [formErrors, setFormErrors] = useState<string[]>([])
+  const resetTwoFactorMutation = useResetTwoFactor()
   const { options: roleOptions, isPending: rolesPending } = useRoleOptions(t('users.noRole'))
   const { options: departmentOptions, isPending: departmentsPending } = useDepartmentOptions(
     t('users.noDepartment'),
@@ -251,6 +254,17 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
   })
 
   const updateMutation = useUpdateUser(id)
+
+  async function handleResetTwoFactor() {
+    const confirmed = await confirm({
+      title: t('users.twoFactor.resetConfirmTitle'),
+      description: t('users.twoFactor.resetConfirmDescription', { email: user.email }),
+      destructive: true,
+    })
+    if (!confirmed) return
+    await resetTwoFactorMutation.mutateAsync(id)
+    toast({ tone: 'success', message: t('users.twoFactor.resetSuccess') })
+  }
 
   function onSubmit(values: EditFormValues) {
     const input: UserUpdateInput = {
@@ -326,6 +340,16 @@ function UserEditForm({ user, id }: { user: AdminUser; id: number }) {
                 />
               </CardContent>
             </Card>
+            {user.mfa_enabled ? (
+              <Card>
+                <CardContent className="flex items-center justify-between gap-4">
+                  <span className="text-sm">{t('users.twoFactor.enabledLabel')}</span>
+                  <Button type="button" variant="outline" onClick={handleResetTwoFactor}>
+                    {t('users.twoFactor.reset')}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : null}
             <FormErrorSummary errors={formErrors} />
             <div className="flex gap-2">
               <SubmitButton pending={updateMutation.isPending}>

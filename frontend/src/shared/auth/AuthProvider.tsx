@@ -8,7 +8,9 @@ import { AuthContext } from './AuthContext'
 import { hasPermission } from './permissions'
 import { refreshAccessToken } from './refresh'
 import { clearTokens, getRefreshToken, setAccessToken, setRefreshToken } from './tokenStorage'
-import type { AuthStatus, AuthUser } from './types'
+import type { AuthStatus, AuthUser, LoginResult } from './types'
+
+type TokenResponse = { access: string; refresh: string } | { mfa_required: true; mfa_token: string }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -48,13 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const tokens = await api.post<{ access: string; refresh: string }>('/auth/token/', {
-      email,
-      password,
-    })
-    setAccessToken(tokens.access)
-    setRefreshToken(tokens.refresh)
+  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
+    const response = await api.post<TokenResponse>('/auth/token/', { email, password })
+    if ('mfa_required' in response) {
+      return { status: 'mfa_required', mfaToken: response.mfa_token }
+    }
+    setAccessToken(response.access)
+    setRefreshToken(response.refresh)
     try {
       const me = await api.get<AuthUser>('/auth/me/')
       setUser(me)
@@ -67,6 +69,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus('unauthenticated')
       throw error
     }
+    return { status: 'authenticated' }
+  }, [])
+
+  const completeMfaChallenge = useCallback(async (mfaToken: string, code: string) => {
+    const tokens = await api.post<{ access: string; refresh: string }>('/auth/token/verify-mfa/', {
+      mfa_token: mfaToken,
+      code,
+    })
+    setAccessToken(tokens.access)
+    setRefreshToken(tokens.refresh)
+    try {
+      const me = await api.get<AuthUser>('/auth/me/')
+      setUser(me)
+      setMonitoringUser(me.id)
+      setStatus('authenticated')
+    } catch (error) {
+      clearTokens()
+      setStatus('unauthenticated')
+      throw error
+    }
+  }, [])
+
+  const refreshUser = useCallback(async () => {
+    const me = await api.get<AuthUser>('/auth/me/')
+    setUser(me)
   }, [])
 
   const logout = useCallback(async () => {
@@ -88,7 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const can = useCallback((permission: string) => hasPermission(user, permission), [user])
 
   return (
-    <AuthContext.Provider value={{ user, status, can, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, status, can, login, completeMfaChallenge, refreshUser, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )

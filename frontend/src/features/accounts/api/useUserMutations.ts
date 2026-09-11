@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { createUser } from './createUser'
 import { deleteUser } from './deleteUser'
+import { resetTwoFactor } from './resetTwoFactor'
 import { updateUser } from './updateUser'
 import { userKeys } from './userKeys'
 import type { UserCreateInput, UserUpdateInput } from '../types/user'
@@ -34,6 +35,14 @@ export function useDeleteUser() {
   const invalidate = useInvalidateUsers()
   return useMutation({
     mutationFn: (id: number) => deleteUser(id),
+    onSuccess: invalidate,
+  })
+}
+
+export function useResetTwoFactor() {
+  const invalidate = useInvalidateUsers()
+  return useMutation({
+    mutationFn: (id: number) => resetTwoFactor(id),
     onSuccess: invalidate,
   })
 }

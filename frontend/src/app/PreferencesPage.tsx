@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import { ChangePasswordSection } from '@/features/auth/components/ChangePasswordSection'
+import { TwoFactorSection } from '@/features/auth/components/TwoFactorSection'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/shared/ui/ThemeToggle'
@@ -35,6 +36,7 @@ export function PreferencesPage() {
         </CardContent>
       </Card>
       <ChangePasswordSection />
+      <TwoFactorSection />
     </div>
   )
 }

@@ -48,5 +48,28 @@
     "newPassword": "New password",
     "submit": "Change password",
     "success": "Password changed."
+  },
+  "mfaChallenge": {
+    "title": "Enter your verification code",
+    "subtitle": "Open your authenticator app and enter the 6-digit code, or use a recovery code.",
+    "code": "Verification code",
+    "submit": "Verify"
+  },
+  "twoFactor": {
+    "title": "Two-factor authentication",
+    "disabledDescription": "Add an extra layer of security to your account.",
+    "enableButton": "Enable two-factor authentication",
+    "scanQr": "Scan this QR code with your authenticator app.",
+    "manualEntryHint": "Or enter this code manually:",
+    "codeLabel": "Verification code",
+    "confirmButton": "Verify and enable",
+    "recoveryCodesTitle": "Save your recovery codes",
+    "recoveryCodesHint": "Each code can be used once if you lose access to your authenticator app. Store them somewhere safe — they will not be shown again.",
+    "doneButton": "Done",
+    "enabledLabel": "Two-factor authentication is enabled.",
+    "disableButton": "Disable",
+    "disableConfirmDescription": "Enter your current password to confirm.",
+    "currentPassword": "Current password",
+    "disabled": "Two-factor authentication disabled."
   }
 }

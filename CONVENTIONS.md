@@ -852,6 +852,42 @@ fix — easy to forget once, since every existing `APIView` in
 user from a signed token instead of from `request.user` directly, so
 none of them needed to.
 
+**A 2FA challenge reuses the existing signed-token idiom rather than
+inventing a session-scoped "pending" state.** `MfaAwareTokenObtainPairSerializer`
+(SEC-9, Story 107) returns `{mfa_required: true, mfa_token: ...}` instead of
+a token pair when `user.mfa_enabled` is true — `mfa_token` is the same
+`signing.dumps`/`loads(..., max_age=...)` mechanism `INVITE_SALT`/`RESET_SALT`
+already established, under a third salt (`MFA_CHALLENGE_SALT`, 5 minutes).
+`POST /api/auth/token/verify-mfa/` exchanges it, plus a TOTP or recovery
+code, for a real token pair — no Authorization header, the same "the token
+IS the credential" reasoning `LogoutView`/`PasswordResetConfirmView` already
+document for their own signed tokens. The actual `authenticate()` password
+check still only ever happens once, inside `TokenObtainSerializer.validate`
+— this is not a second auth flow, it is the existing one with one more
+step gated behind it.
+
+**A TOTP secret is the one stored credential in this codebase that must be
+decrypted again later, not just checked by comparison — this is why it is
+the first to use real encryption at rest.** Every other stored secret
+(`EmailProviderConfig.host_password`, `ErpConnection.auth_token`,
+`ApiKey.hashed_key`) is either write-only-plaintext or a one-way digest,
+because the app never needs the original value back (§36). Verifying a
+live TOTP code needs the raw secret every time, so `apps.accounts.mfa`
+adds `cryptography`'s `Fernet` — this codebase's first encryption
+dependency, declared directly in `requirements.txt` rather than relying on
+it being present transitively (it already was, via `channels`/`daphne`'s
+websocket stack) — rather than stretching either existing pattern to fit.
+
+**Org-level "require 2FA for this role" is a plain `BooleanField` directly
+on `Role`, not a new list on `OrganizationSettings`.** §33 already settled
+this shape question twice (ORG-1/ORG-2 promoting `departments`/`branches`
+from `JSONField` lists to real models): a fact about one role belongs on
+that `Role` row, not in a parallel list keyed by slug on a different
+model. `Role.requires_two_factor` is enforced client-side only
+(`RequireAuth` redirects an under-enrolled, role-mandated account to
+`/preferences`) — a known, deliberate gap, not silently papered over. See
+Story 107's `## Edge Cases`.
+
 ---
 
 ## 22. Authorization (roles & permissions)
