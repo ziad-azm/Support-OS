@@ -78,7 +78,24 @@ export function TicketDetailPage() {
       {isValidId ? (
         <QueryBoundary query={query}>
           {(ticket) => (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:items-start">
+            // `key={ticket.id}`: without it, navigating from one ticket to
+            // another re-renders this same subtree in place rather than
+            // remounting it — the route param changes but React has no
+            // other reason to treat it as a new component instance. Every
+            // child below carries its own local state keyed off nothing but
+            // `ticketId` (the AI summary in `TicketConversation`, the draft
+            // reply in its `ReplyForm`, `SuggestedSolutionsPanel`'s
+            // suggestions) and none of it reset on the old prop value, so a
+            // cached-but-stale `useTicket` response (still `isSuccess`, not
+            // `isPending`) let a stale summary/suggestions/draft from the
+            // PREVIOUS ticket linger over the new one — and a pending draft
+            // would `useCreateMessage` onto the ticket now on screen, not
+            // the one it was written for. The `key` makes the id change do
+            // what a URL change should: start the subtree over.
+            <div
+              key={ticket.id}
+              className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:items-start"
+            >
               <div className="flex flex-col gap-4">
                 <Card>
                   <CardHeader>

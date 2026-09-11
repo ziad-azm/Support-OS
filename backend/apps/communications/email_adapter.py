@@ -39,11 +39,26 @@ class EmailAdapter(ChannelAdapter):
         ticket = None
         match = TICKET_TAG_RE.search(to_address)
         if match:
-            ticket = Ticket.objects.filter(pk=int(match.group("ticket_id"))).first()
+            candidate = Ticket.objects.filter(pk=int(match.group("ticket_id"))).first()
+            # The tag alone is not proof of identity — it is a sequential
+            # integer this same adapter's `send()` publishes in `Reply-To`
+            # on every outbound email, so it is guessable/enumerable and
+            # visible to anyone CC'd or forwarded a thread. Requiring the
+            # envelope sender to match the ticket's own customer email is
+            # what makes the tag a ROUTING hint rather than an access token:
+            # a caller who does not hold that mailbox cannot inject
+            # messages into (or read the routing existence of) a ticket
+            # that is not theirs by guessing its id.
+            if candidate is not None and (
+                candidate.customer.email
+                and candidate.customer.email.lower() == from_address.lower()
+            ):
+                ticket = candidate
 
-        # No tag, or the tagged ticket no longer exists: treat this as first
-        # contact rather than dropping the email. Never lose an inbound
-        # message over a stale or absent routing tag.
+        # No tag, a mismatched sender, or the tagged ticket no longer
+        # exists: treat this as first contact rather than dropping the
+        # email. Never lose an inbound message over a stale, absent, or
+        # untrustworthy routing tag.
         if ticket is None:
             customer, _created = Customer.objects.get_or_create(
                 email=from_address, defaults={"name": from_address}

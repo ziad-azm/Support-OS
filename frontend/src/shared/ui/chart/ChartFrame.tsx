@@ -84,7 +84,21 @@ export function ChartFrame<T>({
 
         {query.isSuccess && !isEmpty?.(query.data) ? (
           <>
-            <div role="img" aria-label={title}>
+            {/* `role="group"`, not `role="img"`: `img` is
+                children-presentational per ARIA 1.2, so every descendant
+                text node — `WaffleChart`'s percentage legend,
+                `LineChart`'s series legend, each `GaugeChart` label,
+                `BarChart`'s axis labels — was pruned from the a11y tree,
+                and a screen-reader user heard only "<title>, image" no
+                matter which chart this wrapped. It also left
+                `GaugeChart`'s `tabIndex={0}` segments (added for a
+                previous accessibility fix) as silent tab stops, since
+                focusability is a DOM property `role="img"` does nothing
+                to remove. `role="group"` still gives the region one
+                accessible name via `aria-label` without deleting its
+                children's own semantics — the same pattern already used
+                for the grouped fields in `LandingContentPage.tsx`. */}
+            <div role="group" aria-label={title}>
               {children(query.data)}
             </div>
             <Button
