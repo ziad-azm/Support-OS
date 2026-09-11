@@ -1,14 +1,18 @@
 import hashlib
 import hmac
 import json
+import logging
 import urllib.error
 import urllib.request
 
 from apps.customers.models import ContactDetail, Customer
+from apps.sla.tasks import auto_assign_ticket
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
 from .models import Message, WhatsAppProviderConfig
+
+logger = logging.getLogger(__name__)
 
 
 def verify_signature(secret: str, body: bytes, signature_header: str) -> bool:
@@ -94,6 +98,19 @@ class WhatsAppAdapter(ChannelAdapter):
                 description=body,
                 customer=customer,
             )
+            # F-25: this brand-new ticket bypasses `TicketViewSet
+            # .perform_create` — the only call site ever wired to queue
+            # `AssignmentRule`'s own "applied on ticket creation" task
+            # (Story 29) — so first-contact WhatsApp, exactly the case
+            # that most needs routing, was never auto-assigned. Same
+            # resilience contract as every other `.delay()` call site: the
+            # row is already committed. Not queued when RESUMING an
+            # existing ticket above — that ticket already has whatever
+            # assignment it has.
+            try:
+                auto_assign_ticket.delay(ticket.id)
+            except Exception:
+                logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
 
         return Message.objects.create(
             ticket=ticket,

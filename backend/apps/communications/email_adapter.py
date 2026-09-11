@@ -1,13 +1,17 @@
+import logging
 import re
 
 from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 
 from apps.customers.models import ContactDetail, Customer
+from apps.sla.tasks import auto_assign_ticket
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
 from .models import EmailProviderConfig, Message
+
+logger = logging.getLogger(__name__)
 
 # A plain email address only — this story's inbound payload is a
 # provider-agnostic shape this project defines (no real MIME "To" header
@@ -68,6 +72,17 @@ class EmailAdapter(ChannelAdapter):
                 description=body,
                 customer=customer,
             )
+            # F-25: this brand-new ticket bypasses `TicketViewSet
+            # .perform_create` — the only call site ever wired to queue
+            # `AssignmentRule`'s own "applied on ticket creation" task
+            # (Story 29) — so unsolicited inbound email, exactly the case
+            # that most needs routing, was never auto-assigned. Same
+            # resilience contract as every other `.delay()` call site: the
+            # row is already committed.
+            try:
+                auto_assign_ticket.delay(ticket.id)
+            except Exception:
+                logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
 
         return Message.objects.create(
             ticket=ticket,

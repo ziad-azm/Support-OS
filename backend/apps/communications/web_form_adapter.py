@@ -1,8 +1,13 @@
+import logging
+
 from apps.customers.models import Customer
+from apps.sla.tasks import auto_assign_ticket
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
 from .models import Message
+
+logger = logging.getLogger(__name__)
 
 
 @register_adapter
@@ -38,6 +43,20 @@ class WebFormAdapter(ChannelAdapter):
             customer=customer,
             category_id=category_id,
         )
+        # F-25: `AssignmentRule`'s own intake goal is "applied on ticket
+        # creation" (Story 29), but this adapter creates the `Ticket` row
+        # directly rather than going through `TicketViewSet.perform_create`
+        # — the one call site that was ever wired to queue it. An
+        # unsolicited web-form submission is exactly the "most needs
+        # routing" case this rules engine exists for, and it was silently
+        # skipping all of them. Same resilience contract as every other
+        # `.delay()` call site (`TicketViewSet.perform_create`, Story 29):
+        # the row is already committed, so a failure to even queue the task
+        # must not fail this request.
+        try:
+            auto_assign_ticket.delay(ticket.id)
+        except Exception:
+            logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
 
         return Message.objects.create(
             ticket=ticket,

@@ -1,14 +1,19 @@
+import logging
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core import signing
 from django.utils.translation import gettext_lazy as _
 
 from apps.customers.models import Customer
+from apps.sla.tasks import auto_assign_ticket
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
 from .models import Message
 from .serializers import MessageSerializer
+
+logger = logging.getLogger(__name__)
 
 LIVE_CHAT_SALT = "apps.communications.live_chat"
 # A week: long enough for a customer to resume a conversation across visits,
@@ -104,6 +109,11 @@ class LiveChatAdapter(ChannelAdapter):
             description=_("Started via the live chat widget."),
             customer=customer,
         )
+        # F-25: same fix as `WebFormAdapter.receive` — see its comment.
+        try:
+            auto_assign_ticket.delay(ticket.id)
+        except Exception:
+            logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
         token = signing.dumps(ticket.id, salt=LIVE_CHAT_SALT)
         return ticket, token
 

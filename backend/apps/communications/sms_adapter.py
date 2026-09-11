@@ -1,15 +1,19 @@
 import base64
 import hashlib
 import hmac
+import logging
 import urllib.error
 import urllib.parse
 import urllib.request
 
 from apps.customers.models import ContactDetail, Customer
+from apps.sla.tasks import auto_assign_ticket
 from apps.tickets.models import Ticket
 
 from .adapters import ChannelAdapter, register_adapter
 from .models import Message, SmsProviderConfig
+
+logger = logging.getLogger(__name__)
 
 
 def verify_signature(auth_token: str, url: str, params: dict, signature_header: str) -> bool:
@@ -76,6 +80,11 @@ class SMSAdapter(ChannelAdapter):
                 description=body,
                 customer=customer,
             )
+            # F-25: same fix as `WhatsAppAdapter.receive` — see its comment.
+            try:
+                auto_assign_ticket.delay(ticket.id)
+            except Exception:
+                logger.exception("Failed to queue auto-assignment for ticket %s", ticket.id)
 
         return Message.objects.create(
             ticket=ticket,
