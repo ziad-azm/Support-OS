@@ -53,8 +53,18 @@ class TicketChatConsumer(AsyncWebsocketConsumer):
             except TokenError:
                 await self.close(code=UNAUTHORIZED)
                 return
+            # `is_active=True` keeps this in step with the REST path:
+            # simplejwt's `JWTAuthentication.get_user` raises `user_inactive`
+            # when `CHECK_USER_IS_ACTIVE` is on (it is — the project does not
+            # override the default), so `POST /api/messages/` 401s a
+            # deactivated account. Without this filter the socket did not,
+            # and deactivation is this product's revoke mechanism
+            # (`UserViewSet` PATCH, `CustomerViewSet._revoke_portal_access`).
+            # `connect()` is the only auth point on a WebSocket, so a
+            # just-revoked agent holding an unexpired access token could
+            # otherwise open this and hold it open indefinitely.
             user = await database_sync_to_async(
-                get_user_model().objects.filter(pk=access["user_id"]).first
+                get_user_model().objects.filter(pk=access["user_id"], is_active=True).first
             )()
             has_permission = user is not None and Permissions.TICKETS_VIEW in (
                 await database_sync_to_async(permissions_for)(user)

@@ -35,8 +35,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         except TokenError:
             await self.close(code=UNAUTHORIZED)
             return
+        # `is_active=True` for the same reason `TicketChatConsumer` filters
+        # on it: simplejwt 401s a deactivated account on the REST path, and
+        # `connect()` is the only auth point a WebSocket ever gets.
         user = await database_sync_to_async(
-            get_user_model().objects.filter(pk=access["user_id"]).first
+            get_user_model().objects.filter(pk=access["user_id"], is_active=True).first
         )()
         if user is None:
             await self.close(code=UNAUTHORIZED)

@@ -10,18 +10,31 @@ Unlike every other feature folder, this one is not an epic from `SupportOs backl
 |----|------|-------|------------|------------|
 | 99 | [99-story-portal-task-idor-and-fail-open-default.md](99-story-portal-task-idor-and-fail-open-default.md) | Portal Task IDOR & the Fail-Open Permission Default (F-1, F-4) | — | Story 32 (`AGENT-3`), Story 34 (`AGENT-5`), Story 84 (`AUTH-3`) |
 | 100 | [100-story-role-grant-drift-and-sync-command.md](100-story-role-grant-drift-and-sync-command.md) | Role-Grant Drift & the `sync_role_permissions` Command (F-2) | — | Story 99; Story 48/49 (`SEC-1`/`SEC-2`), Story 87/89 (`ORG-1`/`ORG-2`) |
+| 101 | [101-story-link-contrast-tokens.md](101-story-link-contrast-tokens.md) | Link Contrast: a `--primary-text` Token, Bounded for Brand Overrides (F-5, F-6) | — | Story 90 (`ORG-3`), Story 51 (`DSN-4`/`DSN-5`) |
+| 102 | [102-story-management-dashboard-defects.md](102-story-management-dashboard-defects.md) | Management Dashboard: Chart Rendering & Surrounding Controls (F-7, F-11, F-12, F-13, F-14, F-19) | — | Story 101; Story 57/60 (`RPT-2`/`RPT-5`) |
+| 103 | [103-story-ticket-queue-status-and-sla.md](103-story-ticket-queue-status-and-sla.md) | Ticket Queue: Status Filter and SLA Visibility (F-8, F-9) | — | Story 98 (`ORG-4`), Story 28 (`SLA-1`), Story 57 (`RPT-2`) |
+| 104 | [104-story-openapi-schema-completeness.md](104-story-openapi-schema-completeness.md) | OpenAPI Schema Completeness (F-10) | — | Story 80 (`INT-1`) |
+| 105 | — (no plan file, see below) | QA Polish (F-15, F-16, F-17, F-18, F-20) | — | — |
 
-## Planned next — the remaining phases of qa-report-1
+**qa-report-1 is now fully worked through.** Every finding F-1..F-20 is either fixed or consciously deferred with the deferral recorded in code. The two deferrals are F-3 (an authorization-matrix test — blocked by CONVENTIONS.md §16, see the dependency note below) and F-15 (see Story 105 below).
 
-Written from the intake's own recommended slicing (`.squad/stories/bugs/qa-report-1/intake.md`, `## Extra notes`). These are **not yet written as plan files**; the row is the commitment, not the plan. Stories 99 and 100 have landed and moved to the table above.
+## Story 105 shipped without a plan file
 
-| NN | Working title | Findings | Depends on | Notes |
-|----|---------------|----------|------------|-------|
-| 101 | Link Contrast Tokens (`--primary-text`) | F-5, F-6 | — | Default `text-primary` measures **3.69:1** on dark `--background` and **3.28:1** on dark `--card`. One token, two declarations, 34 call sites. |
-| 102 | Management Dashboard Defects | F-7, F-11, F-12, F-13, F-14, F-19 | 101 (shares the token work) | `GaugeChart` clips its first label at `y=-4` and renders at 1:1 inside a ~1160px container. Shared by the SLA and agent report pages — verify every consumer. |
-| 103 | Ticket Queue: Status Filter & SLA Visibility | F-8, F-9 | Story 98 (`ORG-4`) | The backend already implements and validates `?status=` (`apps/tickets/views.py:141-145`); the frontend never sends it. `sla_status` must hold the **4-query** baseline. |
-| 104 | OpenAPI Schema Completeness | F-10 | Story 80 (`INT-1`) | 26 views are omitted from the schema entirely; `CategorySerializer` collides across two apps. |
-| 105 | QA Polish | F-15, F-16, F-17, F-18, F-20 | — | Locale-aware dates, brand-name tooltip, `?ordering=` silent no-op, one `oxlint` warning, chunk naming. |
+The five findings left after 104 — F-15, F-16, F-17, F-18, F-20 — were implemented directly rather than planned first. They were small, independent, and each fully specified by its own report entry; a plan document would have been longer than the diff. Recorded here so a later reader does not go looking for `105-story-qa-polish.md`.
+
+| Finding | Outcome | Where |
+|---|---|---|
+| F-16 | Fixed — `title` attribute so a truncated org name is recoverable on hover | `frontend/src/shared/branding/BrandMark.tsx` |
+| F-17 | Fixed — `?ordering=` now 400s on an unrecognized field instead of silently falling back to the view's default order | new `backend/apps/core/filters.py::StrictOrderingFilter`, wired into `DEFAULT_FILTER_BACKENDS` |
+| F-18 | **Verified false positive**, documented not suppressed | `frontend/src/features/live-chat/components/LiveChatWidget.tsx` |
+| F-20 | Fixed — explicit `manualChunks` so the Recharts vendor chunk is named for Recharts | `frontend/vite.config.ts` |
+| F-15 | **Deferred**, reasoning recorded in code | `frontend/src/features/reports/components/ManagementDashboardPage.tsx` |
+
+**F-17 is the one with a rule behind it.** `apps.core.scoping`'s docstring states the project's contract for filter parameters — *"NEVER a silent no-op: a typo'd filter that quietly returns everything is the harder bug to find"* — and `apply_scope_filters` 400s an unrecognized `?department=`/`?branch=` accordingly. `rest_framework.filters.OrderingFilter` was the last filter backend still exempt from that contract. `StrictOrderingFilter` is a drop-in subclass; only `remove_invalid_fields`'s failure mode changes.
+
+**F-18 was not silenced.** `oxlint`'s `react/refs` rule flags `onSubmit` because `form.handleSubmit(onSubmit)` appears in the render body and `onSubmit`'s body reads `socketRef.current`. `handleSubmit(fn)` returns a *new* function that calls `fn` only on submit, so the ref is never read during render. Confirmed by isolation: removing the `.current` reads silences it, and `useCallback` — which changes identity, not call timing — does **not**, so the rule is matching on "referenced function's body touches `.current`", not on real timing. No `oxlint-disable` comment exists anywhere in this codebase; the finding is documented in place instead, matching the precedent DSN-8 set for its own verified false positive. **The warning is expected to keep appearing in `npm run lint` output.**
+
+**F-15 is deferred, not missed.** A native `<input type="date">` draws its own picker chrome in the browser/OS locale, ignoring the page's `lang`/`dir` — an Arabic visitor still sees `mm/dd/yyyy`, and no prop on the element changes it (the stored value is always ISO `yyyy-mm-dd`; only the OS-drawn on-screen text differs). A real fix needs a custom calendar widget: a new dependency plus a `popover` primitive that does not exist in `shared/ui/primitives/` today, plus real RTL and keyboard-navigation work. That is out of proportion to a polish pass, so it is recorded in place and left — the same call this feature already made for F-3.
 
 ## Dependency notes
 
@@ -37,4 +50,4 @@ Written from the intake's own recommended slicing (`.squad/stories/bugs/qa-repor
 
 **Story 100 turned out bigger than the intake described, in a way worth recording.** The intake said "Super Admin is missing 8 permissions." Discovery found the real shape: **six permissions were held by no role at all**, and only four of those were the silent-no-op victims of `0008`-`0011`. The other two — `departments.manage`, `branches.manage` — were **never granted by any migration to anyone**, because `ORG-1`/`ORG-2` added the permission strings and the viewsets that enforce them and shipped no grant migration. A fix that only replayed the skipped grants would have left the product with permissions no role could hold. Two further findings shaped the story: a **freshly-migrated database seeds `admin` while this one carries `super_admin`**, so the repair keys on both slugs; and the project owner's account is a **superuser with `role = None`**, which bypasses `permissions_for` entirely and is precisely why six broken admin areas went unnoticed for five releases.
 
-**Stories 100–105 are independent of each other** apart from 102 depending on 101's token, and may be planned and executed in any order once 99 lands. 103 should be read against [`../multi-department-multi-branch-branding/98-story-ticket-list-own-scope-SUPPORTOS-129.md`](../multi-department-multi-branch-branding/98-story-ticket-list-own-scope-SUPPORTOS-129.md), which last touched `TicketListPage`'s filter block and established the `'all'`/`'none'` sentinel convention a status filter must follow.
+**Stories 100–105 were independent of each other** apart from 102 depending on 101's token, and were planned and executed in `NN` order once 99 landed. 103 should be read against [`../multi-department-multi-branch-branding/98-story-ticket-list-own-scope-SUPPORTOS-129.md`](../multi-department-multi-branch-branding/98-story-ticket-list-own-scope-SUPPORTOS-129.md), which last touched `TicketListPage`'s filter block and established the `'all'`/`'none'` sentinel convention a status filter must follow.

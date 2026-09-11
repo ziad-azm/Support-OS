@@ -42,43 +42,68 @@ class LiveChatAdapter(ChannelAdapter):
     channel = Message.Channel.CHAT
 
     def start_session(self, name: str, email: str | None) -> tuple[Ticket, str]:
-        """Find-or-create the customer/ticket for a new widget session and
-        return `(ticket, signed_session_token)`. Mirrors the "continue the
-        most recent non-closed ticket, else start a new one" rule Story 15
-        established for WhatsApp — a chat widget has no per-conversation
-        address either.
+        """Create the customer/ticket for a new widget session and return
+        `(ticket, signed_session_token)`.
+
+        **Always starts a NEW ticket.** This deliberately does NOT mirror the
+        "continue the most recent non-closed ticket" rule Story 15
+        established for WhatsApp, which an earlier version of this method
+        copied. That rule is safe there and unsafe here, and the difference
+        is who vouches for the identity:
+
+        * WhatsApp/SMS resume on a phone number asserted by the **provider
+          webhook** — the carrier says who sent the message, and the caller
+          cannot choose it.
+        * This endpoint is `AllowAny` with no authentication, and `email` is
+          a free-text field typed by an anonymous stranger.
+
+        With the resume lookup in place, `get_or_create(email=...)` returned
+        the *existing* customer for any address already on file, and this
+        method then handed the caller that customer's most recent non-closed
+        ticket **plus a signed 7-day session token for it**. Since
+        `Customer.email` is globally unique, `POST` with a known address was
+        enough to read every agent reply on a stranger's ticket (the token
+        joins the `ticket_<id>` channel group in
+        `TicketChatConsumer.connect`) and to post messages onto it recorded
+        as that customer's own INBOUND traffic. The ticket did not even have
+        to be a chat ticket — any non-closed ticket from any channel was
+        reachable.
+
+        `web_form_adapter.py` is the other anonymous, unauthenticated intake
+        path in this package and is the right precedent: dedup the customer
+        record, never adopt an existing ticket. Resuming a conversation
+        across visits still works for the real visitor, because the widget
+        holds its own session token in `localStorage`
+        (`frontend/src/features/live-chat/lib/session.ts`) and reconnects
+        with that — it never re-posts here to resume.
         """
         if email:
+            # Customer-record dedup only, exactly as `WebFormAdapter.receive`
+            # does it: this attaches the new ticket to an existing CRM record
+            # but grants no access to anything already on that record, so an
+            # unverified email cannot reach another person's conversation.
             customer, _created = Customer.objects.get_or_create(
                 email=email, defaults={"name": name}
             )
         else:
             customer = Customer.objects.create(name=name)
 
-        ticket = (
-            Ticket.objects.filter(customer=customer)
-            .exclude(status=Ticket.Status.CLOSED)
-            .order_by("-created_at")
-            .first()
+        # `Ticket.subject` is `max_length=200`. `LiveChatStartView.post`
+        # already rejects a `name` over 200 chars, but the "Live chat with
+        # {name}" prefix still needs its own room — and the prefix's own
+        # translated length varies by locale, so this slices the final
+        # string defensively (a plain slice, not `Truncator.chars()` — that
+        # appends its own suffix on top of the requested length instead of
+        # capping the total at it) rather than trying to precompute a
+        # locale-specific safe `name` length in the view. Without this, an
+        # over-length `name` reaches Postgres and raises an unhandled
+        # `DataError` (500), not a clean 400.
+        subject = (_("Live chat with %(name)s") % {"name": name})[:200]
+        ticket = Ticket.objects.create(
+            subject=subject,
+            description=_("Started via the live chat widget."),
+            customer=customer,
         )
-        if ticket is None:
-            # `Ticket.subject` is `max_length=200`. `LiveChatStartView.post`
-            # already rejects a `name` over 200 chars, but the "Live chat
-            # with {name}" prefix still needs its own room — and the
-            # prefix's own translated length varies by locale, so this
-            # slices the final string defensively (a plain slice, not
-            # `Truncator.chars()` — that appends its own suffix on top of
-            # the requested length instead of capping the total at it)
-            # rather than trying to precompute a locale-specific safe
-            # `name` length in the view. Without this, an over-length
-            # `name` reaches Postgres and raises an unhandled `DataError`
-            # (500), not a clean 400.
-            subject = (_("Live chat with %(name)s") % {"name": name})[:200]
-            ticket = Ticket.objects.create(
-                subject=subject,
-                description=_("Started via the live chat widget."),
-                customer=customer,
-            )
         token = signing.dumps(ticket.id, salt=LIVE_CHAT_SALT)
         return ticket, token
 
