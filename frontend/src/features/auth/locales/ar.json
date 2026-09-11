@@ -65,6 +65,7 @@
     "confirmButton": "تحقق وفعّل",
     "recoveryCodesTitle": "احفظ رموز الاسترداد الخاصة بك",
     "recoveryCodesHint": "يمكن استخدام كل رمز مرة واحدة إذا فقدت الوصول إلى تطبيق المصادقة. احتفظ بها في مكان آمن — لن تظهر مرة أخرى.",
+    "downloadButton": "تنزيل الرموز",
     "doneButton": "تم",
     "enabledLabel": "المصادقة الثنائية مفعّلة.",
     "disableButton": "تعطيل",

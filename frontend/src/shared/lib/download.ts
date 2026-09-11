@@ -1,6 +1,24 @@
 import { httpClient } from '@/shared/lib/api/client'
 
 /**
+ * Save in-memory text content (never fetched over the network) as a file —
+ * e.g. 2FA recovery codes, shown to the user exactly once and never
+ * retrievable from the server again. Unlike `downloadFile` below, there is
+ * no URL to request: the content already lives in the page.
+ */
+export function downloadTextFile(filename: string, content: string): void {
+  const blob = new Blob([content], { type: 'text/plain' })
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(objectUrl)
+}
+
+/**
  * Fetch a URL as a blob through the authenticated `httpClient` and hand it
  * to the browser's own save flow.
  *

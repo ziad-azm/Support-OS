@@ -65,6 +65,7 @@
     "confirmButton": "Verify and enable",
     "recoveryCodesTitle": "Save your recovery codes",
     "recoveryCodesHint": "Each code can be used once if you lose access to your authenticator app. Store them somewhere safe — they will not be shown again.",
+    "downloadButton": "Download codes",
     "doneButton": "Done",
     "enabledLabel": "Two-factor authentication is enabled.",
     "disableButton": "Disable",

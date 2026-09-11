@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
 
 import { useAuth } from '@/shared/auth'
+import { downloadTextFile } from '@/shared/lib/download'
 import { requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
@@ -90,9 +91,20 @@ export function TwoFactorSection() {
               <li key={code}>{code}</li>
             ))}
           </ul>
-          <Button type="button" onClick={() => setRecoveryCodes(null)}>
-            {t('twoFactor.doneButton')}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                downloadTextFile('supportos-recovery-codes.txt', recoveryCodes.join('\n'))
+              }
+            >
+              {t('twoFactor.downloadButton')}
+            </Button>
+            <Button type="button" onClick={() => setRecoveryCodes(null)}>
+              {t('twoFactor.doneButton')}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )
@@ -155,7 +167,7 @@ export function TwoFactorSection() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">{t('twoFactor.scanQr')}</p>
-          <QRCodeSVG value={pending.provisioning_uri} className="h-40 w-40" />
+          <QRCodeSVG value={pending.provisioning_uri} marginSize={4} className="h-40 w-40" />
           <p className="text-sm text-muted-foreground">{t('twoFactor.manualEntryHint')}</p>
           <code className="font-mono text-sm">{pending.secret}</code>
           <Form {...confirmForm}>
