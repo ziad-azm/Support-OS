@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apps.communications.models import Message
 
-from .models import Category, Feedback, Ticket, TicketActivity
+from .models import Category, Feedback, SavedView, Ticket, TicketActivity
 
 
 class MessageInline(admin.TabularInline):
@@ -68,4 +68,19 @@ class FeedbackAdmin(admin.ModelAdmin):
     list_display = ("ticket", "customer", "rating", "created_at")
     list_filter = ("rating",)
     search_fields = ("ticket__subject", "customer__name", "comment")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(SavedView)
+class SavedViewAdmin(admin.ModelAdmin):
+    """Read-only ops visibility, not a config UI — follows `TaskAdmin`'s
+    precedent (apps/agents/admin.py:6-17): a `SavedView` is authored,
+    renamed, and deleted by its owner (or a manager, for a shared row)
+    through the app's own switcher, not through `/admin/`. See Story 108
+    `## Context`, item 14.
+    """
+
+    list_display = ("name", "owner", "is_shared", "is_default", "created_at")
+    list_filter = ("is_shared", "is_default")
+    search_fields = ("name", "owner__email")
     readonly_fields = ("created_at", "updated_at")

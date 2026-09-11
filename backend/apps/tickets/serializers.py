@@ -1,16 +1,74 @@
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.core.serializers import BaseModelSerializer
 from apps.sla.policy import status_from_facts
 
-from .models import Category, Ticket
+from .models import Category, SavedView, Ticket
 
 
 class CategorySerializer(BaseModelSerializer):
     class Meta(BaseModelSerializer.Meta):
         model = Category
         fields = ("id", "name", "created_at", "updated_at")
+
+
+class SavedViewSerializer(BaseModelSerializer):
+    owner_name = serializers.CharField(source="owner.get_full_name", read_only=True)
+
+    # Settable on create (a saved view's whole point), frozen after — the
+    # SAME mechanism TicketSerializer.immutable_fields = ("customer",)
+    # already established (Story 12/18 `## Prerequisites`;
+    # apps/core/serializers.py::BaseModelSerializer). Renaming or
+    # re-sharing a view must never silently redefine what it filters by —
+    # the intake names save/rename/delete, not "edit filters."
+    immutable_fields = ("filters",)
+
+    class Meta(BaseModelSerializer.Meta):
+        model = SavedView
+        fields = (
+            "id",
+            "name",
+            "owner",
+            "owner_name",
+            "is_shared",
+            "is_default",
+            "filters",
+            "created_at",
+            "updated_at",
+        )
+        # `is_default` is written ONLY through `set_default` (mirrors
+        # `status`/`escalated`, Story 23); `owner` is set ONLY through
+        # `perform_create` (mirrors `Task.owner`, apps/agents/views.py:56-57).
+        read_only_fields = BaseModelSerializer.Meta.read_only_fields + ("owner", "is_default")
+        # `owner` is read-only, and `unique_saved_view_owner_name` is a
+        # 2-field UniqueConstraint, which DRF auto-derives a validator for
+        # (rest_framework/serializers.py:1452-1473, verified against the
+        # installed source this session — see Story 108 `## Context`, item
+        # 10). That auto-validator would additionally mark `owner`
+        # `required=True` (no model default, not nullable), and a field
+        # cannot be BOTH `read_only` and `required` — DRF asserts on it at
+        # serializer-instantiation time, a real crash, not a hypothetical.
+        # Disabling the auto-validator and checking the duplicate-name case
+        # explicitly in `validate()` below avoids it entirely, using the
+        # SAME shape `BaseModelSerializer.validate()` already uses for
+        # `immutable_fields`.
+        validators = []
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        name = attrs.get("name", self.instance.name if self.instance else None)
+        owner = self.instance.owner if self.instance else self.context["request"].user
+        if name is not None:
+            conflict = SavedView.objects.filter(owner=owner, name=name)
+            if self.instance is not None:
+                conflict = conflict.exclude(pk=self.instance.pk)
+            if conflict.exists():
+                raise serializers.ValidationError(
+                    {"name": [_("You already have a saved view with this name.")]}
+                )
+        return attrs
 
 
 class TicketSerializer(BaseModelSerializer):

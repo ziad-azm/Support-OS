@@ -1,5 +1,7 @@
 import logging
 
+from django.db import transaction
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -18,9 +20,9 @@ from .bulk import fetch_tickets, first_error_message, parse_ticket_ids
 from .context import build_ticket_context
 from .escalation import apply_escalation
 from .history import build_history
-from .models import Category, Ticket
+from .models import Category, SavedView, Ticket
 from .reply_suggestions import draft_reply
-from .serializers import CategorySerializer, TicketSerializer
+from .serializers import CategorySerializer, SavedViewSerializer, TicketSerializer
 from .solution_suggestions import find_ticket_solutions
 from .status import apply_status_change
 from .summarization import summarize_ticket
@@ -49,6 +51,104 @@ class CategoryViewSet(BaseModelViewSet):
 
     ordering_fields = ("name", "created_at")
     search_fields = ("name",)
+
+
+class SavedViewViewSet(BaseModelViewSet):
+    """Named, per-user saved filter/sort combinations for the ticket list —
+    TKT-8. Reuses `tickets.*` like `CategoryViewSet`/`QuickReplyViewSet` (a
+    saved view is part of the ticket-list domain, not a separate
+    permission), but ownership adds a wrinkle neither of those (fully
+    shared, no owner) has: a private row is visible only to its own
+    owner, and editing someone else's SHARED row needs `tickets.manage` —
+    enforced explicitly below, not through `permission_map` (which only
+    ever gates by action name, never by object) and not through
+    `HasPermission.has_object_permission` (which stays the
+    portal-customer-only extension point it already is). See Story 108
+    `## Context`, items 4 and 7.
+    """
+
+    queryset = SavedView.objects.select_related("owner").all()
+    serializer_class = SavedViewSerializer
+
+    permission_map = {
+        "list": Permissions.TICKETS_VIEW,
+        "retrieve": Permissions.TICKETS_VIEW,
+        # Creating (and sharing) a view needs only tickets.view — the
+        # owner-or-manager rule is an EDIT-time gate on someone else's row,
+        # per the intake's own wording. See Story 108 `## Product rules`.
+        "create": Permissions.TICKETS_VIEW,
+        "update": Permissions.TICKETS_VIEW,
+        "partial_update": Permissions.TICKETS_VIEW,
+        "destroy": Permissions.TICKETS_VIEW,
+        "set_default": Permissions.TICKETS_VIEW,
+    }
+
+    ordering_fields = ("name", "created_at")
+    search_fields = ("name",)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # A private (is_shared=False) row is visible only to its own
+        # owner; a shared row is visible to anyone who can reach this
+        # endpoint at all. An invisible row 404s on retrieve/update/
+        # destroy/set_default (DRF's get_object() filters through this),
+        # never leaking existence the way a 403 would.
+        return queryset.filter(Q(owner=self.request.user) | Q(is_shared=True))
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    def _check_editable(self, saved_view):
+        """Owner always may; otherwise the caller needs tickets.manage —
+        the established stand-in for "a manager" throughout this codebase
+        (apps.tickets.assignment.assignable_agents(), Story 108
+        `## Context` item 6), not a role-slug check.
+        """
+        if saved_view.owner_id == self.request.user.id:
+            return
+        if Permissions.TICKETS_MANAGE in permissions_for(self.request.user):
+            return
+        raise PermissionDenied()
+
+    def perform_update(self, serializer):
+        self._check_editable(serializer.instance)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._check_editable(instance)
+        instance.delete()
+
+    @action(detail=True, methods=["post"], url_path="set-default")
+    def set_default(self, request, pk=None):
+        """Marks (or clears) this view as the CALLER's own default — never
+        someone else's, even for a shared view the caller merely edits.
+        Owner-only: `is_default` reflects what loads on the caller's own
+        screen, so the owner-or-manager EDIT rule (name/`is_shared`) does
+        not extend to it. `is_default` must be present and a real
+        boolean; re-sending the current value is a 400 — the same
+        no-op-rejection contract `TicketViewSet.escalate` already
+        established (Story 23).
+        """
+        if "is_default" not in request.data:
+            raise ValidationError({"is_default": [_("This field is required.")]})
+        is_default = request.data.get("is_default")
+        if not isinstance(is_default, bool):
+            raise ValidationError({"is_default": [_("Must be true or false.")]})
+
+        saved_view = self.get_object()
+        if saved_view.owner_id != request.user.id:
+            raise PermissionDenied()
+        if is_default == saved_view.is_default:
+            raise ValidationError({"is_default": [_("Saved view already has this default state.")]})
+
+        with transaction.atomic():
+            if is_default:
+                SavedView.objects.filter(owner=request.user, is_default=True).update(
+                    is_default=False
+                )
+            saved_view.is_default = is_default
+            saved_view.save(update_fields=["is_default", "updated_at"])
+        return Response(self.get_serializer(saved_view).data)
 
 
 class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):

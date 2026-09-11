@@ -1649,6 +1649,24 @@ serializer field, not an action) does neither — a bulk endpoint's job is
 to apply the SAME rule N times, not to invent a stricter one because it
 now touches more rows at once.
 
+**A resource can be both owned and shareable at once — pick which half of
+the shape each rule follows, don't force one shape whole.** `SavedView`
+(Story 108, `TKT-8`) is the first resource in this project combining
+`Category`/`QuickReply`'s shape (a boolean makes a row visible to everyone
+holding the domain's `.view` permission) with `Task`'s shape (owned,
+personally writable) — read visibility follows the former
+(`Q(owner=user) | Q(is_shared=True)`), write access follows a THIRD rule
+neither sibling needed: **owner or a `.manage` holder**, checked
+explicitly inside `perform_update`/`perform_destroy` rather than through
+`HasPermission.has_object_permission` (which stays the
+portal-customer-only extension point it already was) or through
+`permission_map` (which can only ever gate by action name, never by row).
+"A manager" is never a role-slug check — it is "holds the domain's
+`.manage` permission," the same stand-in
+`apps.tickets.assignment.assignable_agents()` already established,
+because role permissions are data (`Role.permissions`, a `JSONField`
+editable through `SEC-2`'s UI), not code.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

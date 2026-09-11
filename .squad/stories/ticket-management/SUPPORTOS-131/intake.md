@@ -1,5 +1,5 @@
 > **Fetched from jira:** [SUPPORTOS-131](https://ziadhosny007.atlassian.net/browse/SUPPORTOS-131)  
-> *Fetched 2026-09-11T18:53:11.066Z. Edit the sections below as needed; the planner reads this file verbatim.*
+> *Fetched 2026-09-11T19:55:17.052Z. Edit the sections below as needed; the planner reads this file verbatim.*
 
 
 ## Source — work item (from tracker)
@@ -11,13 +11,11 @@
 
 ### Description
 
-As an agent, I want to merge duplicate tickets, so that one issue has one thread and one history. Description: Verified gap: nothing detects or resolves duplicates, yet they are produced structurally — COMM-1/COMM-4/COMM-5 each create a ticket per inbound message, so a customer who emails and then submits the web form about the same problem generates two. Today the only remedy is closing one by hand and losing its conversation context. Dependencies: TKT-1, TKT-5, COMM-0.
+As an agent, I want to save a filter combination and return to it, so that my working queues are one click away. Description: Verified gap: TKT-2 shipped filters and ORG-4 defaults them to the caller's own department/branch, but nothing persists a combination. Every agent rebuilds "my open urgent tickets" or "unassigned in my branch" by hand each session, and there is no way to share a team queue definition. Dependencies: TKT-2, TKT-3, ORG-4.
 
-	Task: Merge API — Implement merging a source ticket into a target: move messages, attachments and internal notes onto the target, record the merge in both tickets' TKT-5 history, and close the source with a pointer to the target. Constraints: never hard-delete the source — the merge stays auditable and reversible by inspection; apply AUTHZ permission checks to both tickets, not just one. Outcome: duplicates are consolidated without losing conversation history.
+	Task: SavedView model + API — Implement named, per-user saved filter/sort combinations with an optional shared/team flag, stored as the same query parameters the list already accepts. Constraints: store the filter payload, never a raw SQL fragment or a frozen result set; a shared view is readable by others but editable only by its owner or a manager, via AUTHZ. Outcome: filter combinations persist and can be shared.
 
-	Task: Duplicate candidate suggestion — Surface likely duplicates on the ticket detail screen (same customer, near in time, similar subject), reusing KB-3's existing text-similarity retrieval rather than adding a second search mechanism. Constraints: suggestion only, never auto-merge; AI-0 may improve ranking later but must not be a dependency of this task. Outcome: agents notice duplicates before working them twice.
-
-	Task: Merge UI — Implement target selection and a confirm step showing exactly what will move, via the shared confirm dialog. Constraints: reuse UI; make the irreversible parts explicit in the confirm copy per DSN-12. Outcome: merging is deliberate and its effect is obvious beforehand.
+	Task: Saved-view UI on the ticket list — Implement save/rename/delete plus a view switcher on the list screen, with the caller's default view applied on load. Constraints: reuse UI/FORM; a saved view is a starting point the agent can still change, never a lock — the same "default, not a boundary" rule ORG-4 established. Outcome: one-click access to personal and team queues.
 
 ### Attachments
 
@@ -69,13 +67,11 @@ External tracker links are **not** followed by the planner. Keep the id for nami
 *(Paste the full work item description. Prefilled when fetched from a tracker.)*
 
 ```
-As an agent, I want to merge duplicate tickets, so that one issue has one thread and one history. Description: Verified gap: nothing detects or resolves duplicates, yet they are produced structurally — COMM-1/COMM-4/COMM-5 each create a ticket per inbound message, so a customer who emails and then submits the web form about the same problem generates two. Today the only remedy is closing one by hand and losing its conversation context. Dependencies: TKT-1, TKT-5, COMM-0.
+As an agent, I want to save a filter combination and return to it, so that my working queues are one click away. Description: Verified gap: TKT-2 shipped filters and ORG-4 defaults them to the caller's own department/branch, but nothing persists a combination. Every agent rebuilds "my open urgent tickets" or "unassigned in my branch" by hand each session, and there is no way to share a team queue definition. Dependencies: TKT-2, TKT-3, ORG-4.
 
-	Task: Merge API — Implement merging a source ticket into a target: move messages, attachments and internal notes onto the target, record the merge in both tickets' TKT-5 history, and close the source with a pointer to the target. Constraints: never hard-delete the source — the merge stays auditable and reversible by inspection; apply AUTHZ permission checks to both tickets, not just one. Outcome: duplicates are consolidated without losing conversation history.
+	Task: SavedView model + API — Implement named, per-user saved filter/sort combinations with an optional shared/team flag, stored as the same query parameters the list already accepts. Constraints: store the filter payload, never a raw SQL fragment or a frozen result set; a shared view is readable by others but editable only by its owner or a manager, via AUTHZ. Outcome: filter combinations persist and can be shared.
 
-	Task: Duplicate candidate suggestion — Surface likely duplicates on the ticket detail screen (same customer, near in time, similar subject), reusing KB-3's existing text-similarity retrieval rather than adding a second search mechanism. Constraints: suggestion only, never auto-merge; AI-0 may improve ranking later but must not be a dependency of this task. Outcome: agents notice duplicates before working them twice.
-
-	Task: Merge UI — Implement target selection and a confirm step showing exactly what will move, via the shared confirm dialog. Constraints: reuse UI; make the irreversible parts explicit in the confirm copy per DSN-12. Outcome: merging is deliberate and its effect is obvious beforehand.
+	Task: Saved-view UI on the ticket list — Implement save/rename/delete plus a view switcher on the list screen, with the caller's default view applied on load. Constraints: reuse UI/FORM; a saved view is a starting point the agent can still change, never a lock — the same "default, not a boundary" rule ORG-4 established. Outcome: one-click access to personal and team queues.
 ```
 
 ---

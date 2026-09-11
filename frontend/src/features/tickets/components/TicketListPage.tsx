@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -27,11 +27,13 @@ import { Empty } from '@/shared/ui/Empty'
 import { PageHeader } from '@/shared/ui/PageHeader'
 
 import { useCategories } from '../api/useCategories'
+import { useSavedViews } from '../api/useSavedViews'
 import { useTickets } from '../api/useTickets'
 import { slaStatusVariant, ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
+import { SavedViewBar } from './SavedViewBar'
 import { TicketBulkActionBar } from './TicketBulkActionBar'
 import { TICKET_PRIORITIES, TICKET_STATUSES } from '../types/ticket'
-import type { Ticket, TicketPriority, TicketStatus } from '../types/ticket'
+import type { Ticket } from '../types/ticket'
 
 const SEARCH_DEBOUNCE_MS = 300
 
@@ -91,9 +93,38 @@ export function TicketListPage() {
   // "Bulk selection" paragraph.
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set())
   const canBulkAct = can('tickets.manage')
+  // TKT-8: which saved view (if any) the current filters were last applied
+  // from. Purely a "what did I start from" pointer for the switcher's own
+  // rename/delete/set-default targeting — NOT a live binding. Changing a
+  // filter afterward does not clear this, because a saved view is a
+  // starting point the agent can still change, never a lock (ORG-4's own
+  // "default, not a boundary" rule, reused verbatim here).
+  const [selectedViewId, setSelectedViewId] = useState<number | null>(null)
+  const savedViewsQuery = useSavedViews()
+  const appliedDefaultRef = useRef(false)
   const categoriesQuery = useCategories()
   const departmentsQuery = useDepartments()
   const branchesQuery = useBranches()
+
+  function applyFilters(filters: Record<string, string>) {
+    setSearchInput(filters.search ?? '')
+    setSearch(filters.search ?? '')
+    setCategoryFilter(filters.category ?? 'all')
+    setStatusFilter(filters.status ?? 'all')
+    setPriorityFilter(filters.priority ?? 'all')
+    setDepartmentFilter(filters.department ?? 'all')
+    setBranchFilter(filters.branch ?? 'all')
+    setOnlyMine(filters.assigned_to_me === 'true')
+    if (filters.ordering) {
+      const desc = filters.ordering.startsWith('-')
+      setSort({
+        field: desc ? filters.ordering.slice(1) : filters.ordering,
+        direction: desc ? 'desc' : 'asc',
+      })
+    } else {
+      setSort(null)
+    }
+  }
 
   useEffect(() => {
     const handle = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS)
@@ -118,6 +149,39 @@ export function TicketListPage() {
     setPage,
   ])
 
+  // TKT-8: applies the caller's OWN default saved view (if any) ONCE,
+  // after `useSavedViews()` resolves — it cannot run any earlier, since
+  // the saved-views list is genuinely async (unlike `user.department`,
+  // which `useAuth()` already resolves synchronously by the time this
+  // page mounts, see ORG-4 `## Prerequisites`). This means the list can
+  // paint ONE extra request under ORG-4's own department/branch defaults
+  // before this effect fires and re-applies the saved default — a known,
+  // accepted cost (see Story 108 `## Edge Cases`), not a regression of
+  // ORG-4's own synchronous guarantee for a caller with NO default view,
+  // who is fully unaffected by this effect (the `find` below returns
+  // `undefined` and nothing happens).
+  useEffect(() => {
+    if (appliedDefaultRef.current) return
+    if (!savedViewsQuery.isSuccess) return
+    appliedDefaultRef.current = true
+    const defaultView = savedViewsQuery.data.items.find(
+      (view) => view.owner === user?.id && view.is_default,
+    )
+    if (defaultView) {
+      applyFilters(defaultView.filters)
+      setSelectedViewId(defaultView.id)
+    }
+  }, [savedViewsQuery.isSuccess, savedViewsQuery.data, user])
+
+  // Clears the switcher's selection whenever the currently-selected view
+  // disappears from a refetched list (deleted by its owner or, for a
+  // shared view, by a manager).
+  useEffect(() => {
+    if (selectedViewId === null || !savedViewsQuery.isSuccess) return
+    const stillExists = savedViewsQuery.data.items.some((view) => view.id === selectedViewId)
+    if (!stillExists) setSelectedViewId(null)
+  }, [selectedViewId, savedViewsQuery.isSuccess, savedViewsQuery.data])
+
   function handleSortChange(next: SortState) {
     setSelectedIds(new Set())
     setSort(next)
@@ -128,16 +192,17 @@ export function TicketListPage() {
     setPage(next)
   }
 
-  const query = useTickets({
-    ...params,
+  const filterParams: Record<string, string> = {
     ...(search ? { search } : {}),
     ...(categoryFilter !== 'all' ? { category: categoryFilter } : {}),
-    ...(statusFilter !== 'all' ? { status: statusFilter as TicketStatus } : {}),
-    ...(priorityFilter !== 'all' ? { priority: priorityFilter as TicketPriority } : {}),
+    ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+    ...(priorityFilter !== 'all' ? { priority: priorityFilter } : {}),
     ...(departmentFilter !== 'all' ? { department: departmentFilter } : {}),
     ...(branchFilter !== 'all' ? { branch: branchFilter } : {}),
-    ...(onlyMine ? { assigned_to_me: 'true' as const } : {}),
-  })
+    ...(onlyMine ? { assigned_to_me: 'true' } : {}),
+    ...(sort ? { ordering: `${sort.direction === 'desc' ? '-' : ''}${sort.field}` } : {}),
+  }
+  const query = useTickets({ ...params, ...filterParams })
 
   const columns: readonly ColumnDef<Ticket>[] = [
     {
@@ -258,6 +323,12 @@ export function TicketListPage() {
         onChange={(event) => setSearchInput(event.target.value)}
         placeholder={t('searchPlaceholder')}
         aria-label={t('search')}
+      />
+      <SavedViewBar
+        filters={filterParams}
+        selectedViewId={selectedViewId}
+        onSelectView={setSelectedViewId}
+        onApply={applyFilters}
       />
       <div className="flex flex-wrap items-center gap-2">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>

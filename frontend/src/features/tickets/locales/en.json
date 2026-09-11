@@ -234,5 +234,33 @@
     "met": "Met",
     "pending": "On track",
     "breached": "Breached"
+  },
+  "savedViews": {
+    "switcherLabel": "Saved view",
+    "customOption": "Custom filters",
+    "defaultBadge": "Default",
+    "sharedBadge": "Shared",
+    "actions": {
+      "save": "Save current view",
+      "rename": "Rename",
+      "delete": "Delete",
+      "setDefault": "Set as default",
+      "clearDefault": "Remove as default"
+    },
+    "saveDialog": { "title": "Save current view" },
+    "renameDialog": { "title": "Rename saved view" },
+    "fields": {
+      "name": "Name",
+      "shared": "Share with the team",
+      "sharedDescription": "Visible to everyone who can see tickets. Only you or a manager can rename or delete it."
+    },
+    "delete": {
+      "title": "Delete this saved view?",
+      "description": "This removes it for everyone who could see it. This cannot be undone."
+    },
+    "created": "Saved view created.",
+    "updated": "Saved view updated.",
+    "deleted": "Saved view deleted.",
+    "defaultUpdated": "Default view updated."
   }
 }

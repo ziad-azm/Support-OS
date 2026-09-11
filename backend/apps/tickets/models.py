@@ -270,3 +270,78 @@ class Feedback(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.get_rating_display()} — ticket #{self.ticket_id}"
+
+
+class SavedView(TimeStampedModel):
+    """A named, owned filter/sort preset for the ticket list — TKT-8. Stores
+    the SAME query-param dict `TicketViewSet.get_queryset` already accepts
+    (`filters`), never SQL and never a frozen id list (the intake's own
+    constraint) — applying a view just replays those params through the
+    existing endpoint.
+
+    The first resource in this app combining `Category`/`QuickReply`'s
+    shape (shared, visible to anyone who can see tickets) with `Task`'s
+    shape (owned, personally writable) — see Story 108 `## Context`, item
+    7. `is_shared=False` (the default) makes a row private to its owner,
+    exactly like `Task`; `is_shared=True` makes it readable by everyone,
+    exactly like `Category`, but — unlike `Category` — still editable only
+    by its owner or a `tickets.manage` holder, never by "anyone who can
+    manage tickets" outright. See `apps/tickets/views.py::SavedViewViewSet`.
+    """
+
+    # CASCADE: a saved view has no meaning independent of the account that
+    # made it — the same reasoning `Task.owner` (apps/agents/models.py)
+    # already uses for an owned personal resource, not `SET_NULL`
+    # (`assigned_agent`/`category`), which is for a reference a record
+    # should SURVIVE losing.
+    owner = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="saved_views",
+        verbose_name=_("owner"),
+    )
+    name = models.CharField(_("name"), max_length=100)
+    # Visible to every caller holding tickets.view, not scoped to the
+    # owner's own department/team — a single flag, matching
+    # Category/QuickReply's own "shared = visible to anyone who can see
+    # tickets" shape (Story 108 `## Story Goal`), not a second per-team ACL
+    # this project has no queryable concept for.
+    is_shared = models.BooleanField(_("shared"), default=False)
+    # The exact query-param dict `GET /api/tickets/` accepts — string
+    # keys/values, e.g. {"category": "3", "status": "open",
+    # "assigned_to_me": "true", "ordering": "-created_at"}. Writable on
+    # create only (`SavedViewSerializer.immutable_fields`, Backend Task 2).
+    # JSONField precedent: apps/accounts/models.py:56 (Role.permissions).
+    filters = models.JSONField(_("filters"), default=dict, blank=True)
+    # Owner-scoped meaning: true here means "this loads for ME on open,"
+    # never "this loads for everyone who can see it." Written ONLY through
+    # `SavedViewViewSet.set_default`, mirroring `Ticket.escalated`'s
+    # action-only field (Story 23) — never through the ordinary
+    # create/update path. See Story 108 `## Story Goal` for why defaulting
+    # to a view you do not own is out of scope.
+    is_default = models.BooleanField(_("default"), default=False)
+
+    class Meta:
+        verbose_name = _("saved view")
+        verbose_name_plural = _("saved views")
+        ordering = ("name",)
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "name"], name="unique_saved_view_owner_name"),
+            # At most one default per owner. No NULLs are involved (unlike
+            # SLAPolicy/AssignmentRule's category-nullable constraints,
+            # apps/sla/models.py:61-65,156-160), so `nulls_distinct` does
+            # not apply here — `condition=` alone is what makes this a
+            # PARTIAL index over `is_default=True` rows only, the same
+            # "the constraint's name should mean what it says" reasoning
+            # apps/sla/migrations/0005_enforce_single_default_policy_and_rule.py
+            # already established for this project's other "only one
+            # default" cases.
+            models.UniqueConstraint(
+                fields=["owner"],
+                condition=models.Q(is_default=True),
+                name="unique_saved_view_owner_default",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.name
