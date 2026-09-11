@@ -21,7 +21,7 @@ import {
 import { Switch } from '@/shared/ui/primitives/switch'
 import { DataTable } from '@/shared/ui/data-table/DataTable'
 import { TableLink } from '@/shared/ui/data-table/TableLink'
-import type { ColumnDef } from '@/shared/ui/data-table/types'
+import type { ColumnDef, SortState } from '@/shared/ui/data-table/types'
 import { useServerTable } from '@/shared/ui/data-table/useServerTable'
 import { Empty } from '@/shared/ui/Empty'
 import { PageHeader } from '@/shared/ui/PageHeader'
@@ -29,6 +29,7 @@ import { PageHeader } from '@/shared/ui/PageHeader'
 import { useCategories } from '../api/useCategories'
 import { useTickets } from '../api/useTickets'
 import { slaStatusVariant, ticketPriorityVariant, ticketStatusVariant } from '../lib/statusBadge'
+import { TicketBulkActionBar } from './TicketBulkActionBar'
 import { TICKET_PRIORITIES, TICKET_STATUSES } from '../types/ticket'
 import type { Ticket, TicketPriority, TicketStatus } from '../types/ticket'
 
@@ -44,7 +45,7 @@ const SEARCH_DEBOUNCE_MS = 300
 export function TicketListPage() {
   const { t } = useTranslation('tickets')
   const { date } = useFormatters()
-  const { user } = useAuth()
+  const { user, can } = useAuth()
   const { sort, setSort, setPage, params } = useServerTable({
     initialSort: { field: 'created_at', direction: 'desc' },
   })
@@ -85,6 +86,11 @@ export function TicketListPage() {
   // Same two-sentinel contract as `departmentFilter` above (ORG-2).
   const [branchFilter, setBranchFilter] = useState(user?.branch ? String(user.branch.id) : 'all')
   const [onlyMine, setOnlyMine] = useState(false)
+  // TKT-7: page-scoped only — cleared on every sort/filter/page change
+  // below, never carried forward silently. See CONVENTIONS.md §19's
+  // "Bulk selection" paragraph.
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set())
+  const canBulkAct = can('tickets.manage')
   const categoriesQuery = useCategories()
   const departmentsQuery = useDepartments()
   const branchesQuery = useBranches()
@@ -95,9 +101,12 @@ export function TicketListPage() {
   }, [searchInput])
 
   // A filter change narrows the result set the same way a search does —
-  // reset to page 1, or the user can land on a now-nonexistent page.
+  // reset to page 1, or the user can land on a now-nonexistent page. A
+  // narrowed/reordered result set could also silently no longer contain a
+  // selected row, so selection is cleared here too — TKT-7.
   useEffect(() => {
     setPage(1)
+    setSelectedIds(new Set())
   }, [
     search,
     categoryFilter,
@@ -108,6 +117,16 @@ export function TicketListPage() {
     onlyMine,
     setPage,
   ])
+
+  function handleSortChange(next: SortState) {
+    setSelectedIds(new Set())
+    setSort(next)
+  }
+
+  function handlePageChange(next: number) {
+    setSelectedIds(new Set())
+    setPage(next)
+  }
 
   const query = useTickets({
     ...params,
@@ -320,14 +339,16 @@ export function TicketListPage() {
           </Label>
         </div>
       </div>
+      <TicketBulkActionBar selectedIds={selectedIds} onDone={() => setSelectedIds(new Set())} />
       <DataTable
         columns={columns}
         query={query}
         rowKey={(row) => String(row.id)}
         sort={sort}
-        onSortChange={setSort}
-        onPageChange={setPage}
+        onSortChange={handleSortChange}
+        onPageChange={handlePageChange}
         caption={t('title')}
+        selection={canBulkAct ? { selectedIds, onSelectionChange: setSelectedIds } : undefined}
         empty={
           search ? (
             <Empty title={t('noSearchResults')} />

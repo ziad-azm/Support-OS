@@ -94,6 +94,20 @@
     "deEscalateConfirmDescription": "This clears the escalation flag.",
     "updated": "Escalation updated."
   },
+  "bulk": {
+    "assignLabel": "Bulk assign",
+    "statusLabel": "Bulk status",
+    "priorityLabel": "Bulk priority",
+    "assignConfirmTitle": "Assign {{count}} tickets to {{agent}}?",
+    "statusConfirmTitle": "Change the status of {{count}} tickets to {{status}}?",
+    "priorityConfirmTitle": "Change the priority of {{count}} tickets to {{priority}}?",
+    "confirmDescription": "This applies to every ticket you selected. A row can still fail if the change isn't valid for its current state — you'll see a summary after.",
+    "allSucceeded": "{{count}} tickets updated.",
+    "allSucceeded_one": "1 ticket updated.",
+    "partialSuccess": "{{okCount}} of {{total}} tickets updated.",
+    "allFailed": "The update failed for all {{count}} selected tickets.",
+    "failureDetail": "#{{id}}: {{error}}"
+  },
   "created": "Ticket created.",
   "updated": "Ticket updated.",
   "deleted": "Ticket deleted.",

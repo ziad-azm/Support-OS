@@ -27,3 +27,15 @@ export type ColumnDef<T> = {
    *  still exportable, still reachable via the row's own detail page. */
   priority?: 'always' | 'sm'
 }
+
+/** Multi-select wiring for `DataTable` — opt-in per screen (TKT-7).
+ * Row identity is `rowKey(row)`, the SAME string `DataTableProps.rowKey`
+ * already computes, so selection needs no separate per-`T` id type.
+ */
+export type DataTableSelection = {
+  /** Currently-selected row keys. The CALLER owns clearing this on
+   * sort/filter/page changes — `DataTable` itself never clears it. See
+   * CONVENTIONS.md §19's "Bulk selection" paragraph. */
+  selectedIds: ReadonlySet<string>
+  onSelectionChange: (next: ReadonlySet<string>) => void
+}

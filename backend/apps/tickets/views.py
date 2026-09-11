@@ -14,14 +14,15 @@ from apps.sla.policy import annotate_sla_facts, bulk_target_resolver, compute_sl
 from apps.sla.tasks import auto_assign_ticket
 
 from .assignment import apply_assignment, assignable_agents
+from .bulk import fetch_tickets, first_error_message, parse_ticket_ids
 from .context import build_ticket_context
 from .escalation import apply_escalation
 from .history import build_history
-from .models import Category, Ticket, TicketActivity
+from .models import Category, Ticket
 from .reply_suggestions import draft_reply
 from .serializers import CategorySerializer, TicketSerializer
 from .solution_suggestions import find_ticket_solutions
-from .status import is_valid_transition
+from .status import apply_status_change
 from .summarization import summarize_ticket
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,13 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         # through to authenticated-only. See Story 23 `## Migration / Rollback`.
         "set_status": Permissions.TICKETS_MANAGE,
         "escalate": Permissions.TICKETS_MANAGE,
+        # TKT-7: same reasoning as every entry above — keyed by the
+        # @action's own method name, missing means authenticated-only not
+        # denied. All three reuse tickets.manage, the same gate the
+        # single-ticket assign/set_status/priority-edit already use.
+        "bulk_assign": Permissions.TICKETS_MANAGE,
+        "bulk_status": Permissions.TICKETS_MANAGE,
+        "bulk_priority": Permissions.TICKETS_MANAGE,
         "history": Permissions.TICKETS_VIEW,
         "context": Permissions.TICKETS_VIEW,
         "sla": Permissions.TICKETS_VIEW,
@@ -231,42 +239,16 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
     @action(detail=True, methods=["post"], url_path="status")
     def set_status(self, request, pk=None):
         """Change a ticket's status along a valid transition — TKT-4.
-
-        `status` must be present in the body — an omitted key is a 400, the
-        same explicit-value rule §23 uses for `assign`'s `assigned_agent`.
-        Re-sending the ticket's current status is also a 400: "no-op" is not
-        a transition. See `apps/tickets/status.py` for the graph.
+        Delegates validation/logging to `apps.tickets.status.apply_status_change`
+        — the same helper TKT-7's `bulk_status` calls, so both enforce ONE
+        path (Story 106 `## Prerequisites`). `status` must be present in
+        the body — an omitted key is a 400.
         """
         if "status" not in request.data:
             raise ValidationError({"status": [_("This field is required.")]})
 
-        new_status = request.data.get("status")
-        if new_status not in Ticket.Status.values:
-            raise ValidationError({"status": [_("Must be a valid status.")]})
-
         ticket = self.get_object()
-        if new_status == ticket.status:
-            raise ValidationError({"status": [_("Ticket is already in this status.")]})
-        if not is_valid_transition(ticket.status, new_status):
-            raise ValidationError(
-                {
-                    "status": [
-                        _("Cannot change status from %(current)s to %(new)s.")
-                        % {"current": ticket.status, "new": new_status}
-                    ]
-                }
-            )
-
-        old_status = ticket.status
-        ticket.status = new_status
-        ticket.save(update_fields=["status", "updated_at"])
-        TicketActivity.objects.create(
-            ticket=ticket,
-            actor=request.user,
-            kind=TicketActivity.Kind.STATUS_CHANGED,
-            from_value=old_status,
-            to_value=new_status,
-        )
+        apply_status_change(ticket, request.data.get("status"), actor=request.user)
         return Response(self.get_serializer(ticket).data)
 
     @action(detail=True, methods=["post"], url_path="escalate")
@@ -291,6 +273,104 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         if not apply_escalation(ticket, escalated):
             raise ValidationError({"escalated": [_("Ticket already has this escalation state.")]})
         return Response(self.get_serializer(ticket).data)
+
+    @action(detail=False, methods=["post"], url_path="bulk-assign")
+    def bulk_assign(self, request):
+        """Assign or unassign many tickets in one call — TKT-7. Same body
+        contract as `assign` (`assigned_agent` required; an id assigns,
+        `null` unassigns; validated against the SAME `assignable_agents()`
+        queryset) applied to every id in `ticket_ids`, via the SAME
+        `apply_assignment` helper `assign` itself calls — no second,
+        looser validation or logging path. A not-found ticket id is a
+        per-row failure, never a whole-request 400.
+        """
+        if "assigned_agent" not in request.data:
+            raise ValidationError({"assigned_agent": [_("This field is required.")]})
+
+        agent_id = request.data.get("assigned_agent")
+        agent = None
+        if agent_id is not None:
+            try:
+                agent_id = int(agent_id)
+            except (TypeError, ValueError):
+                raise ValidationError({"assigned_agent": [_("Must be a valid user id.")]}) from None
+            agent = assignable_agents().filter(pk=agent_id).first()
+            if agent is None:
+                raise ValidationError(
+                    {"assigned_agent": [_("That user cannot be assigned tickets.")]}
+                )
+
+        ticket_ids = parse_ticket_ids(request.data)
+        tickets_by_id = fetch_tickets(self.get_queryset(), ticket_ids)
+
+        results = []
+        for ticket_id in ticket_ids:
+            ticket = tickets_by_id.get(ticket_id)
+            if ticket is None:
+                results.append({"id": ticket_id, "ok": False, "error": str(_("Ticket not found."))})
+                continue
+            apply_assignment(ticket, agent, actor=request.user)
+            results.append({"id": ticket_id, "ok": True})
+        return Response({"results": results})
+
+    @action(detail=False, methods=["post"], url_path="bulk-status")
+    def bulk_status(self, request):
+        """Change the status of many tickets in one call — TKT-7. Each id
+        is validated and logged through the SAME `apply_status_change`
+        helper `set_status` calls, so a transition illegal for one
+        ticket's current status is only THAT row's failure — tickets in
+        different states legitimately react differently to the same
+        requested target status.
+        """
+        if "status" not in request.data:
+            raise ValidationError({"status": [_("This field is required.")]})
+        new_status = request.data.get("status")
+
+        ticket_ids = parse_ticket_ids(request.data)
+        tickets_by_id = fetch_tickets(self.get_queryset(), ticket_ids)
+
+        results = []
+        for ticket_id in ticket_ids:
+            ticket = tickets_by_id.get(ticket_id)
+            if ticket is None:
+                results.append({"id": ticket_id, "ok": False, "error": str(_("Ticket not found."))})
+                continue
+            try:
+                apply_status_change(ticket, new_status, actor=request.user)
+            except ValidationError as exc:
+                results.append({"id": ticket_id, "ok": False, "error": first_error_message(exc)})
+                continue
+            results.append({"id": ticket_id, "ok": True})
+        return Response({"results": results})
+
+    @action(detail=False, methods=["post"], url_path="bulk-priority")
+    def bulk_priority(self, request):
+        """Change the priority of many tickets in one call — TKT-7.
+        `priority` is a plain writable field on `TicketSerializer` — unlike
+        `status`/`assigned_agent` it has no dedicated single-ticket action
+        and no activity-log entry even on an ordinary edit (Story 106
+        `## Prerequisites`) — so this mirrors that: no no-op rejection, no
+        `TicketActivity` row, just the field write.
+        """
+        if "priority" not in request.data:
+            raise ValidationError({"priority": [_("This field is required.")]})
+        new_priority = request.data.get("priority")
+        if new_priority not in Ticket.Priority.values:
+            raise ValidationError({"priority": [_("Must be a valid priority.")]})
+
+        ticket_ids = parse_ticket_ids(request.data)
+        tickets_by_id = fetch_tickets(self.get_queryset(), ticket_ids)
+
+        results = []
+        for ticket_id in ticket_ids:
+            ticket = tickets_by_id.get(ticket_id)
+            if ticket is None:
+                results.append({"id": ticket_id, "ok": False, "error": str(_("Ticket not found."))})
+                continue
+            ticket.priority = new_priority
+            ticket.save(update_fields=["priority", "updated_at"])
+            results.append({"id": ticket_id, "ok": True})
+        return Response({"results": results})
 
     @action(detail=True, methods=["get"], url_path="history")
     def history(self, request, pk=None):

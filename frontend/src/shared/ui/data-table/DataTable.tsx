@@ -7,6 +7,7 @@ import { ApiRequestError } from '@/shared/lib/api/errors'
 import type { Page } from '@/shared/lib/api/types'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/primitives/button'
+import { Checkbox } from '@/shared/ui/primitives/checkbox'
 import { Skeleton } from '@/shared/ui/primitives/skeleton'
 import {
   Table,
@@ -20,7 +21,7 @@ import { Empty } from '@/shared/ui/Empty'
 import { ErrorState } from '@/shared/ui/ErrorState'
 
 import { DataTablePagination } from './DataTablePagination'
-import type { ColumnDef, SortState } from './types'
+import type { ColumnDef, DataTableSelection, SortState } from './types'
 
 type DataTableProps<T> = {
   columns: readonly ColumnDef<T>[]
@@ -32,6 +33,10 @@ type DataTableProps<T> = {
   /** Visually-hidden <caption>. Required for a screen reader to name the table. */
   caption: string
   empty?: ReactNode
+  /** Adds a leading checkbox column (per-row + select-all-on-page). Omit
+   * for a screen that has not adopted selection — every other consumer
+   * of `DataTable` today is unaffected by this prop's existence. */
+  selection?: DataTableSelection
 }
 
 function nextSort(columnId: string, current: SortState): SortState {
@@ -64,8 +69,31 @@ export function DataTable<T>({
   onPageChange,
   caption,
   empty,
+  selection,
 }: DataTableProps<T>) {
   const { t } = useTranslation()
+
+  const pageRowIds = query.isSuccess ? query.data.items.map(rowKey) : []
+  const selectedOnPage = selection ? pageRowIds.filter((id) => selection.selectedIds.has(id)) : []
+  const allOnPageSelected = pageRowIds.length > 0 && selectedOnPage.length === pageRowIds.length
+  const someOnPageSelected = selectedOnPage.length > 0 && !allOnPageSelected
+  const colSpan = columns.length + (selection ? 1 : 0)
+
+  function toggleAllOnPage() {
+    if (!selection) return
+    const next = new Set(selection.selectedIds)
+    if (allOnPageSelected) pageRowIds.forEach((id) => next.delete(id))
+    else pageRowIds.forEach((id) => next.add(id))
+    selection.onSelectionChange(next)
+  }
+
+  function toggleRow(id: string) {
+    if (!selection) return
+    const next = new Set(selection.selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    selection.onSelectionChange(next)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,6 +101,16 @@ export function DataTable<T>({
         <caption className="sr-only">{caption}</caption>
         <TableHeader>
           <TableRow>
+            {selection ? (
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allOnPageSelected ? true : someOnPageSelected ? 'indeterminate' : false}
+                  onCheckedChange={() => toggleAllOnPage()}
+                  disabled={pageRowIds.length === 0}
+                  aria-label={t('table.selectAllOnPage')}
+                />
+              </TableHead>
+            ) : null}
             {columns.map((column) => (
               <TableHead
                 key={column.id}
@@ -117,6 +155,11 @@ export function DataTable<T>({
           {query.isPending
             ? Array.from({ length: 3 }, (_, rowIndex) => (
                 <TableRow key={rowIndex}>
+                  {selection ? (
+                    <TableCell>
+                      <Skeleton className="size-4" />
+                    </TableCell>
+                  ) : null}
                   {columns.map((column) => (
                     <TableCell key={column.id}>
                       <Skeleton className="h-4 w-full" />
@@ -137,7 +180,7 @@ export function DataTable<T>({
                       })
                 return (
                   <TableRow>
-                    <TableCell colSpan={columns.length}>
+                    <TableCell colSpan={colSpan}>
                       <ErrorState error={error} onRetry={() => void query.refetch()} />
                     </TableCell>
                   </TableRow>
@@ -147,28 +190,40 @@ export function DataTable<T>({
 
           {query.isSuccess && query.data.items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columns.length}>
+              <TableCell colSpan={colSpan}>
                 {empty ?? <Empty title={t('table.noResults')} />}
               </TableCell>
             </TableRow>
           ) : null}
 
           {query.isSuccess && query.data.items.length > 0
-            ? query.data.items.map((row) => (
-                <TableRow key={rowKey(row)}>
-                  {columns.map((column) => (
-                    <TableCell
-                      key={column.id}
-                      className={cn(
-                        column.align === 'end' && 'text-end',
-                        column.priority === 'sm' && 'hidden sm:table-cell',
-                      )}
-                    >
-                      {column.cell(row)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+            ? query.data.items.map((row) => {
+                const id = rowKey(row)
+                return (
+                  <TableRow key={id}>
+                    {selection ? (
+                      <TableCell>
+                        <Checkbox
+                          checked={selection.selectedIds.has(id)}
+                          onCheckedChange={() => toggleRow(id)}
+                          aria-label={t('table.selectRow', { id })}
+                        />
+                      </TableCell>
+                    ) : null}
+                    {columns.map((column) => (
+                      <TableCell
+                        key={column.id}
+                        className={cn(
+                          column.align === 'end' && 'text-end',
+                          column.priority === 'sm' && 'hidden sm:table-cell',
+                        )}
+                      >
+                        {column.cell(row)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })
             : null}
         </TableBody>
       </Table>

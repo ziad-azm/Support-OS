@@ -50,7 +50,12 @@
     "nextPage": "Next page",
     "pageOf": "Page {{page}} of {{total}}",
     "rowCount": "{{displayCount}} result",
-    "rowCount_other": "{{displayCount}} results"
+    "rowCount_other": "{{displayCount}} results",
+    "selectAllOnPage": "Select all on this page",
+    "selectRow": "Select row {{id}}",
+    "selectedCount": "{{count}} selected",
+    "selectedCount_other": "{{count}} selected",
+    "clearSelection": "Clear selection"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",

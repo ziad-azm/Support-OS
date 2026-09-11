@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { assignTicket } from './assignTicket'
+import { bulkAssignTickets } from './bulkAssignTickets'
+import { bulkSetTicketPriority } from './bulkSetTicketPriority'
+import { bulkSetTicketStatus } from './bulkSetTicketStatus'
 import { createTicket } from './createTicket'
 import { deleteTicket } from './deleteTicket'
 import { escalateTicket } from './escalateTicket'
@@ -10,7 +13,7 @@ import { suggestTicketSolutions } from './suggestTicketSolutions'
 import { summarizeTicket } from './summarizeTicket'
 import { ticketKeys } from './ticketKeys'
 import { updateTicket } from './updateTicket'
-import type { TicketInput, TicketStatus } from '../types/ticket'
+import type { TicketInput, TicketPriority, TicketStatus } from '../types/ticket'
 
 /**
  * Prefix-wide invalidation, per CONVENTIONS.md §23 — unlike Story 11's
@@ -62,6 +65,41 @@ export function useEscalateTicket(id: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (escalated: boolean) => escalateTicket(id, escalated),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
+  })
+}
+
+// Unlike useAssignTicket(id)/useSetTicketStatus(id), these three take no
+// `id` parameter — they are not per-ticket, the same shape
+// useCreateTicket/useDeleteTicket already use. TKT-7.
+export function useBulkAssignTickets() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      ticketIds,
+      assignedAgent,
+    }: {
+      ticketIds: number[]
+      assignedAgent: number | null
+    }) => bulkAssignTickets(ticketIds, assignedAgent),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
+  })
+}
+
+export function useBulkSetTicketStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ ticketIds, status }: { ticketIds: number[]; status: TicketStatus }) =>
+      bulkSetTicketStatus(ticketIds, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
+  })
+}
+
+export function useBulkSetTicketPriority() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ ticketIds, priority }: { ticketIds: number[]; priority: TicketPriority }) =>
+      bulkSetTicketPriority(ticketIds, priority),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
   })
 }

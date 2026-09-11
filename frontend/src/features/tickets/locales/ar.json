@@ -94,6 +94,20 @@
     "deEscalateConfirmDescription": "سيؤدي هذا إلى إزالة علامة التصعيد.",
     "updated": "تم تحديث حالة التصعيد."
   },
+  "bulk": {
+    "assignLabel": "تعيين جماعي",
+    "statusLabel": "تغيير الحالة جماعيًا",
+    "priorityLabel": "تغيير الأولوية جماعيًا",
+    "assignConfirmTitle": "تعيين {{count}} تذكرة إلى {{agent}}؟",
+    "statusConfirmTitle": "تغيير حالة {{count}} تذكرة إلى {{status}}؟",
+    "priorityConfirmTitle": "تغيير أولوية {{count}} تذكرة إلى {{priority}}؟",
+    "confirmDescription": "سينطبق هذا على كل تذكرة حددتها. قد يفشل تغيير أحد الصفوف إذا لم يكن التغيير صالحًا لحالته الحالية — سترى ملخصًا بعد التنفيذ.",
+    "allSucceeded": "تم تحديث {{count}} تذكرة.",
+    "allSucceeded_one": "تم تحديث تذكرة واحدة.",
+    "partialSuccess": "تم تحديث {{okCount}} من أصل {{total}} تذكرة.",
+    "allFailed": "فشل التحديث لجميع التذاكر المحددة ({{count}}).",
+    "failureDetail": "‎#{{id}}: {{error}}"
+  },
   "created": "تم إنشاء التذكرة.",
   "updated": "تم تحديث التذكرة.",
   "deleted": "تم حذف التذكرة.",

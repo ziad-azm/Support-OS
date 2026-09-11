@@ -516,6 +516,28 @@ Radix's `Select.Item` requires a non-empty `value`. **Changing a filter
 resets the page** the same way changing `search` already does — a filtered
 result set can be narrower than the page the user was on.
 
+**Bulk selection is an opt-in prop on `DataTable`, never a second table
+component.** `DataTableSelection` (Story 106, `TKT-7`) adds a leading
+checkbox column — per-row plus select-all-on-page — only when a consumer
+passes `selection`; every other `DataTable` call site is unaffected, both
+at compile time (the prop is optional) and at runtime (no `selection`
+means no checkbox column is rendered at all). Selection is **page-scoped
+only**: it holds row keys for whatever page/sort/filter state produced
+them, and the owning page is responsible for clearing it on every sort,
+filter, or page change — `DataTable` itself never clears it, and never
+tries to reconcile a stale selection against a new result set.
+`TicketListPage` clears `selectedIds` in the same effect that already
+resets `page` to 1 on a filter change, plus in its
+`onSortChange`/`onPageChange` wrappers — always cleared, never silently
+carried across a result-set change that could no longer contain the same
+rows. **The bulk-action bar itself is not part of `DataTable`.**
+`SelectionActionBar` (`shared/ui/data-table/`) is a reusable,
+content-agnostic shell — a count, a clear button, a slot — and the
+buttons inside it are entirely feature-specific (`TicketBulkActionBar`,
+ticket-only today). This mirrors the same "shared mechanism,
+feature-specific content" split `ColumnDef`/`columns` already establish
+between `DataTable` and its callers.
+
 **Runtime branding is the one exception, and it is bounded (ORG-3).**
 `src/shared/branding/` is the only module allowed to write a colour at
 runtime, it writes exactly two custom properties — `--primary` and
@@ -1606,6 +1628,26 @@ needed no guard at all — its own docstring already treats "deleted with
 its recipient" as correct, not a hazard. The lesson: a removed HTTP verb
 is not necessarily a permanent decision — re-examine it once a real guard
 exists, rather than treating "we once removed this verb" as settled.
+
+**A bulk endpoint reuses the single-item's validation/logging helper and
+reports one result per row — it never gets its own looser rule, and it
+never fails the whole request for one bad row.**
+`TicketViewSet.bulk_assign`/`bulk_status` (Story 106, `TKT-7`) call the
+exact same `apply_assignment`/`apply_status_change` functions
+`assign`/`set_status` call — a bulk caller and a single-ticket caller can
+never drift, because there is only one function that decides whether a
+change is legal and only one call site that writes a `TicketActivity`
+row. `apps/tickets/bulk.py::parse_ticket_ids` validates the REQUEST's
+shape up front (empty/malformed/oversized `ticket_ids` is one 400), but a
+per-ticket problem — not found, an illegal transition for that ticket's
+current state, ... — is caught per iteration and turned into `{"id",
+"ok": False, "error"}`, never an exception that aborts the rows after it.
+**A field with no single-ticket action gets no bulk-only escalation,
+either.** `bulk_priority` writes no `TicketActivity` row and rejects no
+no-op, because the single-ticket priority edit (a plain writable
+serializer field, not an action) does neither — a bulk endpoint's job is
+to apply the SAME rule N times, not to invent a stricter one because it
+now touches more rows at once.
 
 ---
 
