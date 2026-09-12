@@ -2119,6 +2119,58 @@ built-in close button, and `DialogClose`, so all four dismiss paths run
 through `FormDialog`'s one dirty-check, by construction, not by keeping two
 paths in sync by hand.
 
+### Motion completion & micro-interaction craft (`DSN-16`, Story 113)
+
+`MOTION-0` (Story 97) shipped the token vocabulary, the reduced-motion
+policy, `Reveal`'s promotion, and — verified against current code rather
+than assumed from this story's own intake, which pre-dated a re-check —
+the toast entrance, dropdown/select duration, table-row hover duration, and
+the route-change fade on `<main>`, all already complete. This story closes
+the two genuine gaps that remained:
+
+- **`checkbox.tsx`/`switch.tsx`/`radio-group.tsx`/`tabs.tsx`** now carry an
+  explicit `duration-(--motion-fast) ease-state` (or the matching
+  property-list fix on `checkbox.tsx`, which transitioned only its focus
+  ring, not its checked-state background/border) — a property changing in
+  place, hence `ease-state`, not `ease-entrance`. `dialog`/`alert-dialog`/
+  `dropdown-menu`/`select`/`button`/`input`/`table` (row hover) needed no
+  change — `MOTION-0` already covered them.
+- **`DataTable.tsx` gained one container-level cross-fade** on `<TableBody>`
+  (`animate-in fade-in duration-(--motion-base) ease-entrance`, re-triggered
+  on a content-signature change built from `query`'s pending/error/empty/
+  row-id state) — covering skeleton→content, empty→populated, and a
+  filter- or bulk-action-driven refetch alike, in one place inherited by
+  every `DataTable` consumer. **Not per-row**: animating each `<TableRow>`
+  independently at list scale is exactly what a container-level fade is for
+  avoiding; a genuine per-row exit animation is not attempted at all — see
+  below.
+
+**Deliberately not built, each for a concrete reason:**
+- **A true per-row exit animation** (a row visibly leaving when a filter or
+  bulk action removes it from view) needs a leaving-state machine — React
+  unmounts a removed `<tr>` before any CSS transition on it could run — the
+  same category of gap as `ToastProvider`'s own exit, which `MOTION-0`
+  named out of scope for the identical reason. Would need an animation
+  library this codebase has never added.
+- **`QueryBoundary.tsx`'s own loading→content fade.** 43 files call it; its
+  `children(data)` render prop is caller JSX, so a non-invasive fade needs
+  wrapping it in a new `<div>` — an unaudited risk against `CONVENTIONS.md`
+  § 7's "stable contract" call on this exact component.
+- **Optimistic-update settle.** No optimistic update exists anywhere in
+  this codebase (`grep -rln "onMutate" frontend/src` — no hits) — nothing
+  to animate.
+- **`sheet`/`popover`/`tooltip` motion, and the View Transitions API for
+  routing** — both already named out of scope by `MOTION-0` for the same
+  reasons (the primitives do not exist; the API needs per-`<Link>` wiring
+  the shared-component-only constraint forbids). Still true.
+
+**Motion quality pass (verification walk against `DSN-13`'s route set):** no
+animation exceeds its token's duration, no two overlapping animations fight
+for the same element, nothing moves under `prefers-reduced-motion: reduce`
+except the exempt `animate-spin`/`animate-pulse`, no cumulative layout
+shift, and `en`/LTR + `ar`/RTL both read correctly — no further deliberate
+exception was found beyond the ones already recorded above.
+
 ---
 
 ## 26. Customer portal identity & scoping

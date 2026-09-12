@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
@@ -79,6 +80,38 @@ export function DataTable<T>({
   const someOnPageSelected = selectedOnPage.length > 0 && !allOnPageSelected
   const colSpan = columns.length + (selection ? 1 : 0)
 
+  // A single signature standing in for "what the table currently shows" —
+  // pending, error, empty, or the sorted set of row ids on this page.
+  // Re-triggers one container-level fade (DSN-16, Story 113) whenever it
+  // changes, covering skeleton→content, empty→populated, and a
+  // filter/bulk-action-driven refetch alike — the same "content changed
+  // for a reason other than the user reading/clicking" case in each. NOT
+  // per-row: animating 25 individual <TableRow>s independently is exactly
+  // what the intake's own "cheap at list scale" constraint forbids — a
+  // true per-row exit animation is not attempted at all (see
+  // CONVENTIONS.md's `DSN-16` entry).
+  const contentSignature = query.isPending
+    ? 'pending'
+    : query.isError
+      ? 'error'
+      : query.isSuccess
+        ? query.data.items.length === 0
+          ? 'empty'
+          : query.data.items.map(rowKey).join(',')
+        : 'idle'
+
+  const [renderedSignature, setRenderedSignature] = useState(contentSignature)
+  const [animating, setAnimating] = useState(false)
+  if (renderedSignature !== contentSignature) {
+    setRenderedSignature(contentSignature)
+    setAnimating(false)
+  }
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setAnimating(true))
+    return () => cancelAnimationFrame(frame)
+  }, [contentSignature])
+
   function toggleAllOnPage() {
     if (!selection) return
     const next = new Set(selection.selectedIds)
@@ -151,7 +184,9 @@ export function DataTable<T>({
             ))}
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody
+          className={cn(animating && 'animate-in fade-in duration-(--motion-base) ease-entrance')}
+        >
           {query.isPending
             ? Array.from({ length: 3 }, (_, rowIndex) => (
                 <TableRow key={rowIndex}>
