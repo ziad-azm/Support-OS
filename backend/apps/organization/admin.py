@@ -4,11 +4,14 @@ from django.urls import reverse
 
 from .models import (
     Branch,
+    BusinessCalendar,
     Department,
+    Holiday,
     LandingContent,
     LandingHighlight,
     LandingSocialLink,
     OrganizationSettings,
+    WorkingWindow,
 )
 
 
@@ -33,9 +36,35 @@ class BranchAdmin(admin.ModelAdmin):
     that).
     """
 
+    list_display = ("name", "description", "calendar", "created_at")
+    search_fields = ("name", "description")
+    readonly_fields = ("created_at", "updated_at")
+
+
+class WorkingWindowInline(admin.TabularInline):
+    """`ContactDetailInline` (apps/customers/admin.py), for `WorkingWindow`."""
+
+    model = WorkingWindow
+    extra = 1
+
+
+class HolidayInline(admin.TabularInline):
+    """`ContactDetailInline` (apps/customers/admin.py), for `Holiday`."""
+
+    model = Holiday
+    extra = 1
+
+
+@admin.register(BusinessCalendar)
+class BusinessCalendarAdmin(admin.ModelAdmin):
+    """A manual fallback, like `BranchAdmin` above — `/settings/calendars`
+    is the primary UI. See Story 111 `## Story Goal`.
+    """
+
     list_display = ("name", "description", "created_at")
     search_fields = ("name", "description")
     readonly_fields = ("created_at", "updated_at")
+    inlines = (WorkingWindowInline, HolidayInline)
 
 
 @admin.register(OrganizationSettings)

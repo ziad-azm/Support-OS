@@ -13,11 +13,12 @@ class SLAPolicyAdmin(admin.ModelAdmin):
     list_display = (
         "priority",
         "category",
+        "calendar",
         "response_target_minutes",
         "resolution_target_minutes",
         "created_at",
     )
-    list_filter = ("priority", "category")
+    list_filter = ("priority", "category", "calendar")
     readonly_fields = ("created_at", "updated_at")
 
 

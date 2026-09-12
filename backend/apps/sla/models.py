@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import TimeStampedModel
+from apps.organization.models import BusinessCalendar
 from apps.tickets.models import Category, Ticket
 
 
@@ -30,6 +31,17 @@ class SLAPolicy(TimeStampedModel):
         blank=True,
         related_name="sla_policies",
         verbose_name=_("category"),
+    )
+    # SET_NULL, nullable, opt-in — a policy with no calendar keeps today's
+    # 24/7 wall-clock behaviour exactly. See Story 111 `## Prerequisites`
+    # for the two-surface (`SLAPolicy`/`Branch`) calendar-resolution order.
+    calendar = models.ForeignKey(
+        BusinessCalendar,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sla_policies",
+        verbose_name=_("business calendar"),
     )
     response_target_minutes = models.PositiveIntegerField(
         _("response target (minutes)"),

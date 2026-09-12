@@ -3047,6 +3047,46 @@ silently do not run. Any stack claiming parity includes `worker` and `beat`.
 
 ---
 
+## 38. Business hours & working-time arithmetic (SLA-5)
+
+**One working-time primitive, every consumer calls it.**
+`apps/organization/business_hours.py::advance`/`elapsed_working_minutes`
+(Story 111) is the single implementation of "advance a timestamp by N
+working minutes" / "measure elapsed working minutes between two
+timestamps." `apps/sla/policy.py::compute_sla_status` and
+`apps/sla/escalation_rules.py::is_at_risk`/`is_idle` are its only consumers
+today — a future feature needing the same arithmetic (a second reporting
+metric, a different domain's deadline) must import this module, never
+re-derive it.
+
+**A calendar is optional, all the way down.** No `SLAPolicy`/`Branch`/
+`OrganizationSettings` configuration is required anywhere; a
+`BusinessCalendar` with zero `WorkingWindow` rows and a ticket/policy/branch
+with no calendar at all both resolve to the exact same plain wall-clock
+arithmetic this codebase used before Story 111. Nothing "breaks" by
+omission — see that story's own `## Story Goal`.
+
+**Calendar resolution has one order, defined once.**
+`apps/sla/policy.py::resolve_calendar(ticket, policy)`: the resolved
+`SLAPolicy`'s own `calendar`, else the ticket's `branch.calendar`, else
+`None`. Both `compute_sla_status` and `escalation_rules.py`'s
+`is_at_risk`/`is_idle` call this same function — never a second, parallel
+resolution.
+
+**Not every SLA consumer is calendar-aware, and that is a recorded,
+deliberate limitation, not an oversight.** The bulk ticket-list
+`sla_status` column (`apps/sla/policy.py::bulk_target_resolver`/
+`annotate_sla_facts`, `apps/tickets/serializers.py::get_sla_status`) and
+`apps/reports/sla.py` (RPT-2) still compute plain wall-clock due times even
+when a ticket's resolved policy/branch has a calendar. A ticket's list
+badge can therefore disagree with its own `GET /tickets/<id>/sla/` detail
+once a calendar is involved — see Story 111 `## Edge Cases & Failure
+Modes`. Extending the bulk path needs its own batching design (the exact
+deferral Story 28 already recorded for the N+1 problem itself) and is not
+assumed solved by this addition.
+
+---
+
 ## 38. Data retention & data-subject rights (SEC-10)
 
 Two independent halves, deliberately living in two different apps.

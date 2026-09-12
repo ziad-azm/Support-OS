@@ -61,8 +61,14 @@ def evaluate_escalations() -> None:
         return
 
     now = timezone.now()
-    candidates = Ticket.objects.filter(escalated=False).exclude(
-        status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]
+    # `select_related("branch__calendar")`: `is_at_risk`/`is_idle` (SLA-5,
+    # Story 111) each resolve a calendar off `ticket.branch.calendar` — one
+    # extra query per ticket otherwise, on top of this task's own already
+    # accepted per-ticket cost (Story 30).
+    candidates = (
+        Ticket.objects.select_related("branch__calendar")
+        .filter(escalated=False)
+        .exclude(status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED])
     )
     for ticket in candidates:
         if is_at_risk(ticket, at_risk_minutes, now) or is_idle(ticket, idle_minutes, now):

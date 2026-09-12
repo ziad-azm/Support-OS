@@ -17,7 +17,7 @@ import {
 import type { FieldProps } from './types'
 
 type TextFieldProps<TFieldValues extends FieldValues> = FieldProps<TFieldValues> & {
-  type?: 'text' | 'email' | 'password' | 'number' | 'datetime-local'
+  type?: 'text' | 'email' | 'password' | 'number' | 'datetime-local' | 'time' | 'date'
   autoComplete?: string
   autoFocus?: boolean
   /** `"auto"` for a field whose content's script (e.g. Arabic) doesn't

@@ -8,11 +8,14 @@ from apps.core.serializers import BaseModelSerializer
 from .models import (
     PHONE_VALIDATOR,
     Branch,
+    BusinessCalendar,
     Department,
+    Holiday,
     LandingContent,
     LandingHighlight,
     LandingSocialLink,
     OrganizationSettings,
+    WorkingWindow,
 )
 
 
@@ -37,11 +40,70 @@ class BranchSerializer(BaseModelSerializer):
     `UniqueValidator` is needed (contrast `CustomerSerializer.email`, which
     overrides the generated field and therefore must declare one —
     apps/customers/serializers.py:36-43).
+
+    `calendar_name` mirrors `TicketSerializer.category_name`'s verified
+    dotted-source + `allow_null=True` pattern — SLA-5 (Story 111).
     """
+
+    calendar_name = serializers.CharField(source="calendar.name", read_only=True, allow_null=True)
 
     class Meta(BaseModelSerializer.Meta):
         model = Branch
+        fields = (
+            "id",
+            "name",
+            "description",
+            "calendar",
+            "calendar_name",
+            "created_at",
+            "updated_at",
+        )
+
+
+class CalendarSerializer(BaseModelSerializer):
+    """CRUD over `BusinessCalendar` — SLA-5's management screen. Shaped
+    exactly like `BranchSerializer` above.
+    """
+
+    class Meta(BaseModelSerializer.Meta):
+        model = BusinessCalendar
         fields = ("id", "name", "description", "created_at", "updated_at")
+
+
+class WorkingWindowSerializer(BaseModelSerializer):
+    """CRUD over one `WorkingWindow`, scoped by `calendar` — the exact
+    `ContactDetailSerializer` shape (apps/customers/serializers.py).
+    `(calendar, weekday)`'s `UniqueConstraint` auto-derives a
+    `UniqueTogetherValidator`, the same verified-safe DRF behaviour
+    `ContactDetailSerializer`'s own docstring records.
+    """
+
+    class Meta(BaseModelSerializer.Meta):
+        model = WorkingWindow
+        fields = ("id", "calendar", "weekday", "start_time", "end_time", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        """DRF never calls model `clean()` — the same gap
+        `ContactDetailSerializer.validate` fills for its own model.
+        `start_time`/`end_time` fall back to the existing instance's
+        values on a PATCH that sends only one of the pair.
+        """
+        start_time = attrs.get("start_time", getattr(self.instance, "start_time", None))
+        end_time = attrs.get("end_time", getattr(self.instance, "end_time", None))
+        if start_time is not None and end_time is not None and end_time <= start_time:
+            raise serializers.ValidationError({"end_time": _("End time must be after start time.")})
+        return attrs
+
+
+class HolidaySerializer(BaseModelSerializer):
+    """CRUD over one `Holiday`, scoped by `calendar` — the exact
+    `ContactDetailSerializer` shape. `(calendar, date)`'s
+    `UniqueConstraint` auto-derives its own `UniqueTogetherValidator`.
+    """
+
+    class Meta(BaseModelSerializer.Meta):
+        model = Holiday
+        fields = ("id", "calendar", "date", "label", "created_at", "updated_at")
 
 
 class BrandingSerializer(serializers.ModelSerializer):

@@ -4,12 +4,15 @@ from rest_framework.routers import SimpleRouter
 from .views import (
     BranchViewSet,
     BrandingView,
+    CalendarViewSet,
     DepartmentViewSet,
+    HolidayViewSet,
     LandingContentAdminView,
     LandingContentView,
     LandingHighlightViewSet,
     LandingSocialLinkViewSet,
     SettingsView,
+    WorkingWindowViewSet,
 )
 
 app_name = "organization"
@@ -21,6 +24,9 @@ app_name = "organization"
 router = SimpleRouter()
 router.register("departments", DepartmentViewSet, basename="department")
 router.register("branches", BranchViewSet, basename="branch")
+router.register("calendars", CalendarViewSet, basename="calendar")
+router.register("working-windows", WorkingWindowViewSet, basename="working-window")
+router.register("holidays", HolidayViewSet, basename="holiday")
 router.register("landing-highlights", LandingHighlightViewSet, basename="landing-highlight")
 router.register("landing-social-links", LandingSocialLinkViewSet, basename="landing-social-link")
 

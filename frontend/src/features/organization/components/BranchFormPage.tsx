@@ -3,12 +3,19 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
+import { useCalendars } from '@/shared/calendars'
 import { optionalString, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormErrorSummary,
+  SelectField,
+  SubmitButton,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
@@ -16,24 +23,43 @@ import { useBranch } from '../api/useBranch'
 import { useCreateBranch, useUpdateBranch } from '../api/useBranchMutations'
 import type { Branch, BranchInput } from '../types/branch'
 
+// Radix's `Select.Item` requires a non-empty `value` — this sentinel
+// stands in for "no calendar", the same `CATEGORY_NONE`/`BRANCH_NONE`
+// shape `TicketFormPage.tsx` uses. See CONVENTIONS.md §19. SLA-5
+// (Story 111).
+const CALENDAR_NONE = 'none'
+
 const schema = z.object({
   name: requiredString(100),
   // `.transform(… ?? '')` because `description` is `blank=True` and NOT
   // nullable on the server — a cleared field must round-trip as `''`, not
   // `null` (CONVENTIONS.md §23's `optionalString`/`nullableString` table).
   description: optionalString(255).transform((value) => value ?? ''),
+  // Kept as a string, not `nullablePositiveInt()` — Select's
+  // value/onValueChange are string-typed (Radix), the same
+  // `TicketFormPage.tsx` reasoning. Converted to a number or `null` only
+  // in `toBranchInput`.
+  calendar: z.string().min(1),
 })
 
 type FormValues = z.output<typeof schema>
 
-const EMPTY_DEFAULTS: FormValues = { name: '', description: '' }
+const EMPTY_DEFAULTS: FormValues = { name: '', description: '', calendar: CALENDAR_NONE }
 
 function toDefaults(branch: Branch): FormValues {
-  return { name: branch.name, description: branch.description }
+  return {
+    name: branch.name,
+    description: branch.description,
+    calendar: branch.calendar === null ? CALENDAR_NONE : String(branch.calendar),
+  }
 }
 
 function toBranchInput(values: FormValues): BranchInput {
-  return { name: values.name, description: values.description }
+  return {
+    name: values.name,
+    description: values.description,
+    calendar: values.calendar === CALENDAR_NONE ? null : Number(values.calendar),
+  }
 }
 
 /** One component for both create and edit, per `RoleFormPage`'s pattern
@@ -70,6 +96,7 @@ function BranchForm({
   const navigate = useNavigate()
   const { toast } = useToast()
   const [formErrors, setFormErrors] = useState<string[]>([])
+  const calendarsQuery = useCalendars()
 
   const form = useAppForm({
     schema,
@@ -111,6 +138,18 @@ function BranchForm({
                 control={form.control}
                 name="description"
                 label={t('branches.fields.description')}
+              />
+              <SelectField
+                control={form.control}
+                name="calendar"
+                label={t('branches.fields.calendar')}
+                options={[
+                  { value: CALENDAR_NONE, label: t('branches.fields.noCalendar') },
+                  ...(calendarsQuery.data?.items.map((calendar) => ({
+                    value: String(calendar.id),
+                    label: calendar.name,
+                  })) ?? []),
+                ]}
               />
             </CardContent>
           </Card>

@@ -41,6 +41,8 @@ class Permissions:
     DEPARTMENTS_MANAGE = "departments.manage"
     BRANCHES_VIEW = "branches.view"
     BRANCHES_MANAGE = "branches.manage"
+    CALENDARS_VIEW = "calendars.view"
+    CALENDARS_MANAGE = "calendars.manage"
     API_KEYS_MANAGE = "api_keys.manage"
     INTEGRATIONS_MANAGE = "integrations.manage"
     COMMUNICATIONS_MANAGE = "communications.manage"

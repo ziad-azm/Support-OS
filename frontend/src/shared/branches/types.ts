@@ -7,6 +7,8 @@ export type Branch = {
   id: number
   name: string
   description: string
+  calendar: number | null
+  calendar_name: string | null
   created_at: string
   updated_at: string
 }

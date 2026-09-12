@@ -16,7 +16,8 @@ from django.db.models import OuterRef, QuerySet, Subquery
 from django.utils import timezone
 
 from apps.communications.models import Message
-from apps.organization.models import OrganizationSettings
+from apps.organization.business_hours import advance
+from apps.organization.models import BusinessCalendar, OrganizationSettings
 from apps.tickets.models import Ticket, TicketActivity
 
 from .models import SLAPolicy
@@ -63,6 +64,22 @@ def _org_default_policy() -> SLAPolicy | None:
     )
 
 
+def resolve_calendar(ticket: Ticket, policy: SLAPolicy | None) -> BusinessCalendar | None:
+    """The calendar that applies to this ticket's working-time
+    arithmetic: the resolved `SLAPolicy`'s own `calendar` if set, else
+    the ticket's `branch.calendar` if set, else `None` (today's 24/7
+    wall-clock behaviour). `policy` is optional so `is_idle`
+    (`apps/sla/escalation_rules.py`, which has no SLA policy to hang a
+    calendar override off) can resolve a calendar from the ticket's
+    branch alone by passing `None`. See Story 111 `## Prerequisites`.
+    """
+    if policy is not None and policy.calendar_id is not None:
+        return policy.calendar
+    if ticket.branch_id is not None:
+        return ticket.branch.calendar
+    return None
+
+
 def dimension_status(due_at, achieved_at, now) -> str:
     """ "met" (achieved by the deadline), "breached" (deadline passed,
     whether achieved late or not at all), or "pending" (not yet due, not
@@ -89,8 +106,13 @@ def compute_sla_status(ticket: Ticket) -> dict | None:
         return None
 
     now = timezone.now()
-    response_due_at = ticket.created_at + timedelta(minutes=policy.response_target_minutes)
-    resolution_due_at = ticket.created_at + timedelta(minutes=policy.resolution_target_minutes)
+    calendar = resolve_calendar(ticket, policy)
+    if calendar is not None:
+        response_due_at = advance(calendar, ticket.created_at, policy.response_target_minutes)
+        resolution_due_at = advance(calendar, ticket.created_at, policy.resolution_target_minutes)
+    else:
+        response_due_at = ticket.created_at + timedelta(minutes=policy.response_target_minutes)
+        resolution_due_at = ticket.created_at + timedelta(minutes=policy.resolution_target_minutes)
 
     first_reply = (
         Message.objects.filter(ticket=ticket, direction=Message.Direction.OUTBOUND)

@@ -701,6 +701,47 @@ export const router = createBrowserRouter([
                 ],
               },
               {
+                // SLA-5 (Story 111) — `BranchListPage`'s exact pair above,
+                // for `BusinessCalendar`.
+                element: <RequirePermission permission="calendars.view" />,
+                children: [
+                  {
+                    path: 'settings/calendars',
+                    lazy: async () => {
+                      const { CalendarListPage } =
+                        await import('@/features/organization/components/CalendarListPage')
+                      return { element: <CalendarListPage /> }
+                    },
+                  },
+                ],
+              },
+              {
+                // Split from the `calendars.view` list route above, the
+                // same reason the `branches.manage` group above is split
+                // from its own list route.
+                element: <RequirePermission permission="calendars.manage" />,
+                children: [
+                  {
+                    // Must stay before `settings/calendars/:id/edit`, the
+                    // same declaration order `branches/new` uses.
+                    path: 'settings/calendars/new',
+                    lazy: async () => {
+                      const { CalendarFormPage } =
+                        await import('@/features/organization/components/CalendarFormPage')
+                      return { element: <CalendarFormPage /> }
+                    },
+                  },
+                  {
+                    path: 'settings/calendars/:id/edit',
+                    lazy: async () => {
+                      const { CalendarFormPage } =
+                        await import('@/features/organization/components/CalendarFormPage')
+                      return { element: <CalendarFormPage /> }
+                    },
+                  },
+                ],
+              },
+              {
                 path: 'tasks',
                 lazy: async () => {
                   const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')

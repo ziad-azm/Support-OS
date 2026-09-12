@@ -1,4 +1,6 @@
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -8,21 +10,27 @@ from apps.core.views import BaseModelViewSet
 
 from .models import (
     Branch,
+    BusinessCalendar,
     Department,
+    Holiday,
     LandingContent,
     LandingHighlight,
     LandingSocialLink,
     OrganizationSettings,
+    WorkingWindow,
 )
 from .serializers import (
     BranchSerializer,
     BrandingSerializer,
+    CalendarSerializer,
     DepartmentSerializer,
+    HolidaySerializer,
     LandingContentAdminSerializer,
     LandingHighlightSerializer,
     LandingSocialLinkSerializer,
     OrganizationSettingsSerializer,
     PublicLandingContentSerializer,
+    WorkingWindowSerializer,
 )
 
 
@@ -67,7 +75,7 @@ class BranchViewSet(BaseModelViewSet):
     models are scoped BY, not a thing that is itself scoped.
     """
 
-    queryset = Branch.objects.all()
+    queryset = Branch.objects.select_related("calendar").all()
     serializer_class = BranchSerializer
 
     permission_map = {
@@ -82,6 +90,95 @@ class BranchViewSet(BaseModelViewSet):
     # Each name must match a `ColumnDef.id` on `BranchListPage` (§23).
     ordering_fields = ("name", "created_at")
     search_fields = ("name", "description")
+
+
+class CalendarViewSet(BaseModelViewSet):
+    """`BusinessCalendar` CRUD — SLA-5's management screen (Story 111).
+    `BranchViewSet` above, for the calendar primitive. Two permissions:
+    `calendars.view` reaches `admin`/`manager` (the `BranchFormPage`
+    picker needs it); `calendars.manage` is admin-only. See migration
+    `0017_grant_calendar_permissions`.
+    """
+
+    queryset = BusinessCalendar.objects.all()
+    serializer_class = CalendarSerializer
+
+    permission_map = {
+        "list": Permissions.CALENDARS_VIEW,
+        "retrieve": Permissions.CALENDARS_VIEW,
+        "create": Permissions.CALENDARS_MANAGE,
+        "update": Permissions.CALENDARS_MANAGE,
+        "partial_update": Permissions.CALENDARS_MANAGE,
+        "destroy": Permissions.CALENDARS_MANAGE,
+    }
+
+    ordering_fields = ("name", "created_at")
+    search_fields = ("name", "description")
+
+
+class WorkingWindowViewSet(BaseModelViewSet):
+    """`WorkingWindow` CRUD for one calendar — SLA-5 (Story 111).
+    `ContactDetailViewSet` (apps/customers/views.py) — reuses
+    `calendars.*`, not a separate permission domain, the same reasoning
+    that story records for `ContactDetail` reusing `customers.*`
+    (Story 11).
+    """
+
+    queryset = WorkingWindow.objects.all()
+    serializer_class = WorkingWindowSerializer
+
+    permission_map = {
+        "list": Permissions.CALENDARS_VIEW,
+        "retrieve": Permissions.CALENDARS_VIEW,
+        "create": Permissions.CALENDARS_MANAGE,
+        "update": Permissions.CALENDARS_MANAGE,
+        "partial_update": Permissions.CALENDARS_MANAGE,
+        "destroy": Permissions.CALENDARS_MANAGE,
+    }
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action != "list":
+            return queryset
+        calendar_id = self.request.query_params.get("calendar")
+        if not calendar_id:
+            raise ValidationError({"calendar": [_("This query parameter is required.")]})
+        try:
+            calendar_id = int(calendar_id)
+        except ValueError:
+            raise ValidationError({"calendar": [_("Must be a valid calendar id.")]}) from None
+        return queryset.filter(calendar_id=calendar_id)
+
+
+class HolidayViewSet(BaseModelViewSet):
+    """`Holiday` CRUD for one calendar — SLA-5 (Story 111).
+    `WorkingWindowViewSet` above, identical shape.
+    """
+
+    queryset = Holiday.objects.all()
+    serializer_class = HolidaySerializer
+
+    permission_map = {
+        "list": Permissions.CALENDARS_VIEW,
+        "retrieve": Permissions.CALENDARS_VIEW,
+        "create": Permissions.CALENDARS_MANAGE,
+        "update": Permissions.CALENDARS_MANAGE,
+        "partial_update": Permissions.CALENDARS_MANAGE,
+        "destroy": Permissions.CALENDARS_MANAGE,
+    }
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action != "list":
+            return queryset
+        calendar_id = self.request.query_params.get("calendar")
+        if not calendar_id:
+            raise ValidationError({"calendar": [_("This query parameter is required.")]})
+        try:
+            calendar_id = int(calendar_id)
+        except ValueError:
+            raise ValidationError({"calendar": [_("Must be a valid calendar id.")]}) from None
+        return queryset.filter(calendar_id=calendar_id)
 
 
 @extend_schema(

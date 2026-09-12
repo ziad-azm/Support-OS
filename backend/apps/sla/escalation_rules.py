@@ -8,10 +8,9 @@ and the same verified-safe reverse-direction import into
 from `apps.sla`, so no cycle).
 """
 
-from datetime import timedelta
-
 from apps.communications.models import Message
-from apps.sla.policy import compute_sla_status
+from apps.organization.business_hours import elapsed_working_minutes
+from apps.sla.policy import compute_sla_status, resolve_calendar, resolve_policy
 from apps.tickets.models import Ticket, TicketActivity
 
 from .models import EscalationRule
@@ -62,30 +61,48 @@ def _last_activity_at(ticket: Ticket):
 def is_at_risk(ticket: Ticket, threshold_minutes: int | None, now) -> bool:
     """`True` if the ticket's response or resolution dimension is still
     `pending` (per `compute_sla_status`, Story 28) and due within
-    `threshold_minutes`. `False` immediately if `threshold_minutes` is
-    `None` (no `at_risk` rule enabled), or no `SLAPolicy` applies to this
-    ticket at all — at-risk escalation is opt-in twice over.
+    `threshold_minutes` WORKING minutes — measured with the same
+    calendar `compute_sla_status` itself resolved for this ticket, per
+    Story 111's single working-time primitive rule. `False` immediately
+    if `threshold_minutes` is `None` (no `at_risk` rule enabled), or no
+    `SLAPolicy` applies to this ticket at all — at-risk escalation is
+    opt-in twice over.
     """
     if threshold_minutes is None:
         return False
     sla = compute_sla_status(ticket)
     if sla is None:
         return False
-    threshold = timedelta(minutes=threshold_minutes)
+    calendar = resolve_calendar(ticket, resolve_policy(ticket))
     for due_at, dimension_status in (
         (sla["response_due_at"], sla["response_status"]),
         (sla["resolution_due_at"], sla["resolution_status"]),
     ):
-        if dimension_status == "pending" and due_at - now <= threshold:
+        if dimension_status != "pending":
+            continue
+        if calendar is not None:
+            remaining = elapsed_working_minutes(calendar, now, due_at)
+        else:
+            remaining = (due_at - now).total_seconds() / 60
+        if remaining <= threshold_minutes:
             return True
     return False
 
 
 def is_idle(ticket: Ticket, threshold_minutes: int | None, now) -> bool:
     """`True` if `threshold_minutes` is not `None` and the ticket's last
-    activity (message or logged activity, whichever is newer) is at least
-    that many minutes in the past.
+    activity (message or logged activity, whichever is newer) is at
+    least that many WORKING minutes in the past, per the ticket's branch
+    calendar if one is set (`resolve_calendar(ticket, None)` — idle has
+    no SLA policy to hang a calendar override off, see Story 111
+    `## Prerequisites`), else plain wall-clock minutes.
     """
     if threshold_minutes is None:
         return False
-    return now - _last_activity_at(ticket) >= timedelta(minutes=threshold_minutes)
+    last_activity_at = _last_activity_at(ticket)
+    calendar = resolve_calendar(ticket, None)
+    if calendar is not None:
+        elapsed = elapsed_working_minutes(calendar, last_activity_at, now)
+    else:
+        elapsed = (now - last_activity_at).total_seconds() / 60
+    return elapsed >= threshold_minutes

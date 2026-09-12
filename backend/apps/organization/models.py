@@ -76,6 +76,19 @@ class Branch(TimeStampedModel):
 
     name = models.CharField(_("name"), max_length=100, unique=True)
     description = models.CharField(_("description"), max_length=255, blank=True)
+    # SET_NULL, nullable — the same call every other optional Branch
+    # relationship makes. A branch with no calendar keeps its tickets on
+    # 24/7 wall-clock SLA arithmetic, unchanged from before SLA-5. String
+    # reference: `BusinessCalendar` is declared further down in this same
+    # module. See Story 111 `## Prerequisites`.
+    calendar = models.ForeignKey(
+        "BusinessCalendar",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="branches",
+        verbose_name=_("business calendar"),
+    )
 
     class Meta:
         verbose_name = _("branch")
@@ -84,6 +97,115 @@ class Branch(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.name
+
+
+class BusinessCalendar(TimeStampedModel):
+    """A named set of weekly working windows plus dated holiday
+    exceptions — SLA-5's shared working-time primitive. The actual
+    arithmetic (`advance`, `elapsed_working_minutes`) lives in
+    `apps/organization/business_hours.py`, imported by `apps.sla` (see
+    that app's `## Prerequisites`, Story 111) — this model only holds the
+    configured shape.
+
+    A calendar with ZERO `working_windows` rows is treated identically to
+    no calendar at all: `business_hours.py` falls back to plain
+    wall-clock arithmetic rather than concluding "no working time ever
+    exists," which would make a due date unreachable. See
+    `business_hours.py`'s own docstring.
+    """
+
+    name = models.CharField(_("name"), max_length=100, unique=True)
+    description = models.CharField(_("description"), max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = _("business calendar")
+        verbose_name_plural = _("business calendars")
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class WorkingWindow(TimeStampedModel):
+    """One weekday's working hours on a `BusinessCalendar` — SLA-5. ONE
+    row per weekday (`UniqueConstraint` below): no split morning/
+    afternoon shifts and no overnight (wrap-past-midnight) windows in
+    this story — see Story 111 `## Story Goal`.
+
+    `weekday` uses Python's own `datetime.weekday()` numbering
+    (Monday=0 ... Sunday=6) directly, so `business_hours.py` never needs
+    to translate between two conventions.
+    """
+
+    class Weekday(models.IntegerChoices):
+        MONDAY = 0, _("Monday")
+        TUESDAY = 1, _("Tuesday")
+        WEDNESDAY = 2, _("Wednesday")
+        THURSDAY = 3, _("Thursday")
+        FRIDAY = 4, _("Friday")
+        SATURDAY = 5, _("Saturday")
+        SUNDAY = 6, _("Sunday")
+
+    calendar = models.ForeignKey(
+        BusinessCalendar,
+        on_delete=models.CASCADE,
+        related_name="working_windows",
+        verbose_name=_("calendar"),
+    )
+    weekday = models.PositiveSmallIntegerField(_("weekday"), choices=Weekday.choices)
+    start_time = models.TimeField(_("start time"))
+    end_time = models.TimeField(_("end time"))
+
+    class Meta:
+        verbose_name = _("working window")
+        verbose_name_plural = _("working windows")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["calendar", "weekday"], name="unique_working_window_calendar_weekday"
+            )
+        ]
+        ordering = ("weekday", "start_time")
+
+    def clean(self):
+        # Guards the admin (DRF never calls model `clean()` — the same
+        # gap `WorkingWindowSerializer.validate` fills for the API path,
+        # the split `ContactDetailSerializer.validate` already
+        # establishes).
+        if self.start_time is not None and self.end_time is not None:
+            if self.end_time <= self.start_time:
+                raise ValidationError({"end_time": _("End time must be after start time.")})
+
+    def __str__(self) -> str:
+        return f"{self.get_weekday_display()} {self.start_time}-{self.end_time}"
+
+
+class Holiday(TimeStampedModel):
+    """One dated exception on a `BusinessCalendar` — SLA-5. A holiday
+    date with no working window that weekday is a harmless no-op; the
+    date simply never mattered to begin with.
+    """
+
+    calendar = models.ForeignKey(
+        BusinessCalendar,
+        on_delete=models.CASCADE,
+        related_name="holidays",
+        verbose_name=_("calendar"),
+    )
+    date = models.DateField(_("date"))
+    label = models.CharField(_("label"), max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = _("holiday")
+        verbose_name_plural = _("holidays")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["calendar", "date"], name="unique_holiday_calendar_date"
+            )
+        ]
+        ordering = ("date",)
+
+    def __str__(self) -> str:
+        return f"{self.date} ({self.label})" if self.label else str(self.date)
 
 
 class OrganizationSettings(TimeStampedModel):

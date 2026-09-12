@@ -61,6 +61,8 @@
     "fields": {
       "name": "Name",
       "description": "Description",
+      "calendar": "Business calendar",
+      "noCalendar": "No calendar (24/7)",
       "createdAt": "Created",
       "actions": "Actions"
     },
@@ -71,6 +73,84 @@
     "delete": {
       "title": "Delete branch?",
       "description": "Users, customers, and tickets in this branch keep their records; they simply become unassigned."
+    }
+  },
+  "calendars": {
+    "title": "Business Calendars",
+    "new": "New calendar",
+    "edit": "Edit calendar",
+    "search": "Search calendars",
+    "searchPlaceholder": "Search by name",
+    "empty": "No calendars yet",
+    "emptyDescription": "Create a calendar to measure SLA targets in working hours instead of around the clock.",
+    "noSearchResults": "No calendars match your search",
+    "created": "Calendar created.",
+    "updated": "Calendar updated.",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "save": "Save",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete calendar?",
+      "description": "SLA policies and branches using this calendar fall back to 24/7 wall-clock SLA targets."
+    },
+    "workingWindows": {
+      "title": "Working hours",
+      "empty": "No working hours configured — this calendar has no effect until at least one day is added.",
+      "fields": {
+        "weekday": "Day",
+        "startTime": "Start time",
+        "endTime": "End time"
+      },
+      "actions": {
+        "add": "Add",
+        "save": "Save",
+        "edit": "Edit",
+        "remove": "Remove",
+        "cancel": "Cancel"
+      },
+      "created": "Working hours added.",
+      "updated": "Working hours updated.",
+      "delete": {
+        "title": "Remove working hours?",
+        "description": "This day becomes non-working for this calendar."
+      },
+      "weekdays": {
+        "0": "Monday",
+        "1": "Tuesday",
+        "2": "Wednesday",
+        "3": "Thursday",
+        "4": "Friday",
+        "5": "Saturday",
+        "6": "Sunday"
+      }
+    },
+    "holidays": {
+      "title": "Holidays",
+      "empty": "No holidays added.",
+      "fields": {
+        "date": "Date",
+        "label": "Label"
+      },
+      "actions": {
+        "add": "Add",
+        "save": "Save",
+        "edit": "Edit",
+        "remove": "Remove",
+        "cancel": "Cancel"
+      },
+      "created": "Holiday added.",
+      "updated": "Holiday updated.",
+      "delete": {
+        "title": "Remove holiday?",
+        "description": "This date becomes a normal working day again."
+      }
     }
   },
   "landing": {

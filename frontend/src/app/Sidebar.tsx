@@ -4,6 +4,7 @@ import {
   BarChart3Icon,
   BookOpenIcon,
   Building2Icon,
+  CalendarClockIcon,
   ChevronDownIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
@@ -186,6 +187,7 @@ export function Sidebar() {
     can('settings.manage') ||
     can('departments.view') ||
     can('branches.view') ||
+    can('calendars.view') ||
     can('integrations.manage') ||
     can('communications.manage') ||
     can('webhooks.manage')
@@ -393,6 +395,14 @@ export function Sidebar() {
                 to="/settings/branches"
                 icon={MapPinIcon}
                 label={t('organization:branches.title')}
+                collapsed={collapsed}
+              />
+            </Can>
+            <Can permission="calendars.view">
+              <SidebarLink
+                to="/settings/calendars"
+                icon={CalendarClockIcon}
+                label={t('organization:calendars.title')}
                 collapsed={collapsed}
               />
             </Can>
