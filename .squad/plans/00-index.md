@@ -12,7 +12,7 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | communication-channels | [communication-channels/00-overview.md](communication-channels/00-overview.md) | 13–17, 19 (EPIC 5 fully planned) |
 | agent-workspace | [agent-workspace/00-overview.md](agent-workspace/00-overview.md) | 25–26, 32–34 (EPIC 6 fully planned) |
 | sla-automation | [sla-automation/00-overview.md](sla-automation/00-overview.md) | 27–31 (EPIC 7 fully planned), 111 (SUPPORTOS-133 addition), 112 (SUPPORTOS-134 addition) |
-| design-intelligence-ui-ux-system | [design-intelligence-ui-ux-system/00-overview.md](design-intelligence-ui-ux-system/00-overview.md) | 35–38, 50–51 (EPIC 8 fully planned; DSN-0/1/2/3/4 implemented, DSN-5 planned) |
+| design-intelligence-ui-ux-system | [design-intelligence-ui-ux-system/00-overview.md](design-intelligence-ui-ux-system/00-overview.md) | 35–38, 50–51, 61–69, 112–114 (EPIC 8 fully planned AND implemented, `DSN-0` through `DSN-17` plus `MOTION-0` all implemented) |
 | knowledge-base | [knowledge-base/00-overview.md](knowledge-base/00-overview.md) | 39–41 (EPIC 9 fully planned, KB-1/KB-2/KB-3) |
 | customer-portal | [customer-portal/00-overview.md](customer-portal/00-overview.md) | 42–47 (EPIC 10 fully planned, PORTAL-0 through PORTAL-5) |
 | security-administration | [security-administration/00-overview.md](security-administration/00-overview.md) | 48–49, 52–53, 70–73, 107, 110 (EPIC 12, SEC-1 through SEC-10 fully planned; SEC-1 through SEC-9 implemented; SEC-8 (Story 73) and SEC-10 (Story 110, SUPPORTOS-136) planned, not yet implemented) |
