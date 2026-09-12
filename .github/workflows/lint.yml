@@ -48,5 +48,7 @@ jobs:
         run: npm run format:check
       - name: check:rtl (logical CSS properties)
         run: npm run check:rtl
+      - name: check:contrast (WCAG token pairs)
+        run: npm run check:contrast
       - name: build (typechecks via tsc -b)
         run: npm run build

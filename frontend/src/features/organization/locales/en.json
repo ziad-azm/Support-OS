@@ -16,6 +16,9 @@
     "colorHint": "Enter a colour as #RRGGBB. Leave blank to use the default brand colour.",
     "invalidColor": "Enter a colour as #RRGGBB.",
     "colorPreview": "Brand colour preview",
+    "colorAdjustedLight": "In light mode, this colour will render as {{light}} for text to stay readable.",
+    "colorAdjustedDark": "In dark mode, this colour will render as {{dark}} for text to stay readable.",
+    "colorAdjustedBoth": "This colour will render as {{light}} in light mode and {{dark}} in dark mode for text to stay readable.",
     "retentionHint": "Leave any field blank to disable automatic removal for that data class.",
     "actions": {
       "save": "Save"

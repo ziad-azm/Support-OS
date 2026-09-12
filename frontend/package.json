@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check:rtl": "node scripts/check-rtl.mjs"
+    "check:rtl": "node scripts/check-rtl.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

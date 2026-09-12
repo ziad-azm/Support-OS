@@ -57,6 +57,13 @@
   --primary-text: var(--brand-text-light, oklch(0.546 0.215 262.881));
   --secondary: oklch(0.554 0.041 257.417); /* #64748B — DSN Secondary, MASTER.md line 23 */
   --secondary-foreground: oklch(1 0 0); /* #FFFFFF */
+  /* The dark palette's neutral slate used AS TEXT. No brand-override hook
+     (unlike --primary-text) — --secondary is not org-configurable.
+     Light mode needs no change: --secondary already measures 4.55:1 on
+     --background and 4.76:1 on --card (DSN-17, Story 114). */
+  --secondary-text: oklch(
+    0.554 0.041 257.417
+  ); /* = --secondary; 4.55:1 on background, 4.76:1 on card, verified */
   --muted: oklch(0.949 0.008 241.666); /* #EAEFF3 — MASTER.md Muted, Story 51 */
   --muted-foreground: oklch(
     0.446 0.037 257.281
@@ -78,6 +85,20 @@
   --input: oklch(
     0.929 0.013 255.508
   ); /* mirrors new --border — preserves the equality verified in prior code */
+  /* `--input` (above) is a FILL — the translucent `bg-input/30`/`bg-input/50`
+     wash behind an input/select in dark mode. This is its own, separate
+     role: the BORDER colour of a control whose resting state has no fill
+     distinct from the page (`Input`, `SelectTrigger`, `Checkbox`,
+     `RadioGroupItem` all render `bg-transparent` until checked/focused),
+     making the border their sole boundary cue — WCAG 1.4.11 requires 3:1
+     for exactly this case. Measured: mirroring `--border`'s value (as it
+     did before this token existed) reached only 1.18:1 against
+     `--background`. Same hue family as `--foreground`/`--ring` (257°),
+     darkened until AA's non-text 3:1 clears with margin (DSN-17,
+     Story 114). */
+  --input-border: oklch(
+    0.65 0.02 257
+  ); /* #88909C — 3.08:1 on background, 3.22:1 on card, verified */
   --ring: oklch(
     0.446 0.037 257.281
   ); /* #475569 — MASTER.md Ring, Story 51 (never adopted before) */
@@ -128,6 +149,16 @@
   --primary-text: var(--brand-text-dark, oklch(0.69 0.19 262.881));
   --secondary: oklch(0.554 0.041 257.417);
   --secondary-foreground: oklch(1 0 0);
+  /* NOT "same as :root" — --secondary as text measures 4.01:1 on
+     --background and 3.56:1 on --card, both under AA's 4.5:1 (DSN-17,
+     Story 114). No current call site uses `text-secondary` as body text
+     (verified: `grep -rn "text-secondary\b" frontend/src` returns only
+     fill usage) — added pre-emptively, extending `bugs/101`'s
+     `--primary-text` mechanism to the next token the matrix condemned, per
+     that story's own instruction. Lightened at the same hue, chroma
+     unchanged (still in gamut): oklch(0.65 0.041 257.417) = #8090A9 —
+     5.89:1 on --card and 5.23:1 on --background, both verified. */
+  --secondary-text: oklch(0.65 0.041 257.417);
   --muted: oklch(0.28 0.02 257); /* #232933 — Story 51 */
   --muted-foreground: oklch(0.72 0.02 257); /* #9DA5B1 — Story 51 */
   --accent: oklch(0.269 0 0);
@@ -146,6 +177,17 @@
      against the new --card, both still clearing WCAG 2.4.11's 3:1 floor. */
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
+  /* Same split as :root — --input stays the translucent fill; this is its
+     border-only counterpart. A FIXED value, not an alpha overlay: an
+     alpha-over-background composite's effective contrast depends on
+     whatever is behind it, which is how the 10%-white overlay silently
+     drifted to ≈1.3:1 against both `--background` and `--card` without
+     anyone measuring it — a fixed hex lets 3:1 be verified once and stay
+     true regardless of what the token composites over. Same 257° hue
+     family, lightened until 3:1 clears both surfaces (DSN-17, Story 114). */
+  --input-border: oklch(
+    0.52 0.02 257
+  ); /* #626A75 — 3.49:1 on background, 3.09:1 on card, verified */
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -174,6 +216,7 @@
   --color-primary-text: var(--primary-text);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-text: var(--secondary-text);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
@@ -187,6 +230,7 @@
   --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-input-border: var(--input-border);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);

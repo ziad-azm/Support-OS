@@ -2171,6 +2171,39 @@ except the exempt `animate-spin`/`animate-pulse`, no cumulative layout
 shift, and `en`/LTR + `ar`/RTL both read correctly — no further deliberate
 exception was found beyond the ones already recorded above.
 
+### Measured colour & contrast audit (`DSN-17`, Story 114)
+
+Every semantic token pair in both themes, measured by a real oklch→sRGB→WCAG
+conversion (`frontend/scripts/check-contrast.mjs`), not eyeballed — see that
+script and this story's own plan file for the full matrix. Two genuine
+failures were found beyond the two `bugs/101` already fixed (`--primary` as
+text):
+
+- **`--secondary` used as text failed AA in dark mode** (3.56:1 on `--card`)
+  and on `--muted` in light mode (4.11:1) — no current call site renders it
+  as body text, but a `--secondary-text` token was added anyway, extending
+  `--primary-text`'s split-the-token mechanism per this story's own
+  instruction, not waiting for a defect to land first.
+- **Every interactive control's resting-state border failed WCAG 1.4.11's
+  3:1 non-text/UI-boundary threshold in both themes** (`--input`, mirroring
+  `--border`'s subtle value, measured ~1.2-1.3:1) — `Input`/`SelectTrigger`/
+  `Checkbox`/`RadioGroupItem` all rely on that border alone in their resting
+  state. A new `--input-border` token (separate from `--input`'s existing
+  translucent-fill role) fixes this; `--border` itself is unchanged — every
+  one of its consumers (`Card`, `TableRow`, `SelectContent`) has its own
+  distinct fill or is non-interactive, so 1.4.11 does not apply to it.
+
+`--foreground`/`--muted-foreground`/`--ring`/`--primary-text` (both themes)
+and every fill+its-own-foreground pair already passed and needed no change.
+
+The org-supplied brand colour (`shared/branding/`) already always resolves
+legible via `brandTextFor()`'s blend algorithm (`bugs/101`) — this story
+adds a warning in Organization Settings surfacing *when* an admin's exact
+colour needed adjusting, reusing that same function with no new derivation.
+
+`npm run check:contrast` (wired into `.github/workflows/lint.yml` beside
+`check:rtl`) now gates every future token edit against the same matrix.
+
 ---
 
 ## 26. Customer portal identity & scoping

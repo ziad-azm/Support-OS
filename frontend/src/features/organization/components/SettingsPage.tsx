@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
 
 import { HEX_COLOR_RE } from '@/shared/branding/config'
-import { foregroundFor } from '@/shared/branding/contrast'
+import { brandTextFor, foregroundFor } from '@/shared/branding/contrast'
 import { i18next } from '@/shared/i18n'
 import { nullablePositiveInt, optionalString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
@@ -143,39 +143,66 @@ function SettingsForm({ settings }: { settings: OrganizationSettings }) {
                 description={t('settings.colorHint')}
               />
               {HEX_COLOR_RE.test(primaryColorDraft) ? (
-                // Inline styles with a literal hex value, deliberately: this
-                // previews an admin-TYPED value before it becomes anything —
-                // it never writes a design token itself (shared/branding/ is
-                // the only module that does that, CONVENTIONS.md §19), and
-                // there is no token that can stand in for an arbitrary
-                // not-yet-saved colour.
-                // F-32 (QA-REPORT-1): `role="group"` is required for
-                // `aria-label` to apply at all — a bare `<div>` is
-                // `role="generic"`, which ARIA prohibits naming, so this
-                // was silently dropped by every browser. Same fix as the
-                // three sibling preview `<div>`s (`CategoryFormPage.tsx`,
-                // `LandingHighlightFormPage.tsx`,
-                // `LandingSocialLinkFormPage.tsx`), matching the pattern
-                // already correct at `LandingContentPage.tsx`.
-                <div
-                  role="group"
-                  className="flex items-center gap-2"
-                  aria-label={t('settings.colorPreview')}
-                >
-                  <span
-                    className="size-8 shrink-0 rounded border"
-                    style={{ backgroundColor: primaryColorDraft }}
-                  />
-                  <span
-                    className="rounded px-3 py-1.5 text-sm font-medium"
-                    style={{
-                      backgroundColor: primaryColorDraft,
-                      color: foregroundFor(primaryColorDraft),
-                    }}
+                <>
+                  {/* Inline styles with a literal hex value, deliberately: this
+                      previews an admin-TYPED value before it becomes anything —
+                      it never writes a design token itself (shared/branding/ is
+                      the only module that does that, CONVENTIONS.md §19), and
+                      there is no token that can stand in for an arbitrary
+                      not-yet-saved colour.
+                      F-32 (QA-REPORT-1): `role="group"` is required for
+                      `aria-label` to apply at all — a bare `<div>` is
+                      `role="generic"`, which ARIA prohibits naming, so this
+                      was silently dropped by every browser. Same fix as the
+                      three sibling preview `<div>`s (`CategoryFormPage.tsx`,
+                      `LandingHighlightFormPage.tsx`,
+                      `LandingSocialLinkFormPage.tsx`), matching the pattern
+                      already correct at `LandingContentPage.tsx`. */}
+                  <div
+                    role="group"
+                    className="flex items-center gap-2"
+                    aria-label={t('settings.colorPreview')}
                   >
-                    {t('settings.actions.save')}
-                  </span>
-                </div>
+                    <span
+                      className="size-8 shrink-0 rounded border"
+                      style={{ backgroundColor: primaryColorDraft }}
+                    />
+                    <span
+                      className="rounded px-3 py-1.5 text-sm font-medium"
+                      style={{
+                        backgroundColor: primaryColorDraft,
+                        color: foregroundFor(primaryColorDraft),
+                      }}
+                    >
+                      {t('settings.actions.save')}
+                    </span>
+                  </div>
+                  {(() => {
+                    // The fill-legibility preview above (`foregroundFor`)
+                    // answers a different question than this one: whether
+                    // the admin's exact colour, used AS TEXT, needed
+                    // adjusting to stay AA-legible. `brandTextFor` already
+                    // computes and guarantees this (bugs/101); this only
+                    // surfaces its result — no new derivation (DSN-17,
+                    // Story 114).
+                    const derived = brandTextFor(primaryColorDraft)
+                    const needsLight = derived.light !== primaryColorDraft
+                    const needsDark = derived.dark !== primaryColorDraft
+                    if (!needsLight && !needsDark) return null
+                    return (
+                      <p role="status" className="text-sm text-muted-foreground">
+                        {needsLight && needsDark
+                          ? t('settings.colorAdjustedBoth', {
+                              light: derived.light,
+                              dark: derived.dark,
+                            })
+                          : needsLight
+                            ? t('settings.colorAdjustedLight', { light: derived.light })
+                            : t('settings.colorAdjustedDark', { dark: derived.dark })}
+                      </p>
+                    )
+                  })()}
+                </>
               ) : null}
               <TextField
                 control={form.control}
