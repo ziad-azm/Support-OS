@@ -1,5 +1,11 @@
 /** `as const` arrays, not `enum` — CONVENTIONS.md §3 (`erasableSyntaxOnly`). */
-export const TICKET_STATUSES = ['open', 'in_progress', 'resolved', 'closed'] as const
+export const TICKET_STATUSES = [
+  'open',
+  'in_progress',
+  'pending_customer',
+  'resolved',
+  'closed',
+] as const
 export type TicketStatus = (typeof TICKET_STATUSES)[number]
 
 export const TICKET_PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
@@ -14,7 +20,8 @@ export type TicketPriority = (typeof TICKET_PRIORITIES)[number]
  */
 export const TICKET_STATUS_TRANSITIONS: Record<TicketStatus, readonly TicketStatus[]> = {
   open: ['in_progress', 'closed'],
-  in_progress: ['open', 'resolved', 'closed'],
+  in_progress: ['open', 'pending_customer', 'resolved', 'closed'],
+  pending_customer: ['in_progress'],
   resolved: ['in_progress', 'closed'],
   closed: [],
 }
@@ -72,5 +79,5 @@ export type TicketInput = {
  * own `dimension_status` vocabulary, not a second scale. `null` when no SLA
  * policy applies (tracking is opt-in) and on non-list responses, whose
  * queryset carries no SLA annotations. Full detail: `GET /tickets/<id>/sla/`. */
-export const SLA_STATUSES = ['met', 'pending', 'breached'] as const
+export const SLA_STATUSES = ['met', 'pending', 'breached', 'paused'] as const
 export type SlaStatus = (typeof SLA_STATUSES)[number]

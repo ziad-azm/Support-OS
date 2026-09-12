@@ -14,13 +14,25 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
+from apps.organization.business_hours import elapsed_working_minutes
+from apps.sla.policy import resolve_calendar, resolve_policy
+
 from .models import Ticket, TicketActivity
 
 VALID_TRANSITIONS: dict[str, frozenset[str]] = {
     Ticket.Status.OPEN: frozenset({Ticket.Status.IN_PROGRESS, Ticket.Status.CLOSED}),
     Ticket.Status.IN_PROGRESS: frozenset(
-        {Ticket.Status.OPEN, Ticket.Status.RESOLVED, Ticket.Status.CLOSED}
+        {
+            Ticket.Status.OPEN,
+            Ticket.Status.PENDING_CUSTOMER,
+            Ticket.Status.RESOLVED,
+            Ticket.Status.CLOSED,
+        }
     ),
+    # SLA-6 (Story 112): the only way out is back to `in_progress` — see
+    # Story 112 `## Prerequisites` for why `resolved`/`closed` are not
+    # reachable directly from here.
+    Ticket.Status.PENDING_CUSTOMER: frozenset({Ticket.Status.IN_PROGRESS}),
     Ticket.Status.RESOLVED: frozenset({Ticket.Status.IN_PROGRESS, Ticket.Status.CLOSED}),
     Ticket.Status.CLOSED: frozenset(),
 }
@@ -60,8 +72,31 @@ def apply_status_change(ticket: Ticket, new_status: str, actor) -> None:
     old_status = ticket.status
     ticket.status = new_status
     update_fields = ["status", "updated_at"]
+    now = timezone.now()
+
+    if new_status == Ticket.Status.PENDING_CUSTOMER:
+        ticket.pending_customer_since = now
+        update_fields.append("pending_customer_since")
+    elif old_status == Ticket.Status.PENDING_CUSTOMER:
+        # Leaving a wait — SLA-6 (Story 112). Folds the just-ended pause
+        # into the running total, working-time-aware when a calendar
+        # applies (the same `resolve_calendar` lookup
+        # `compute_sla_status` uses, so the two can never disagree about
+        # which calendar governs this ticket).
+        paused_since = ticket.pending_customer_since
+        if paused_since is not None:
+            calendar = resolve_calendar(ticket, resolve_policy(ticket))
+            if calendar is not None:
+                elapsed = elapsed_working_minutes(calendar, paused_since, now)
+            else:
+                elapsed = int((now - paused_since).total_seconds() // 60)
+            ticket.sla_paused_minutes += elapsed
+            update_fields.append("sla_paused_minutes")
+        ticket.pending_customer_since = None
+        update_fields.append("pending_customer_since")
+
     if new_status == Ticket.Status.CLOSED:
-        ticket.closed_at = timezone.now()
+        ticket.closed_at = now
         update_fields.append("closed_at")
     ticket.save(update_fields=update_fields)
     TicketActivity.objects.create(
@@ -71,3 +106,16 @@ def apply_status_change(ticket: Ticket, new_status: str, actor) -> None:
         from_value=old_status,
         to_value=new_status,
     )
+
+
+def resume_from_pending_customer(ticket: Ticket) -> None:
+    """Ends a `pending_customer` wait automatically — the customer just
+    replied (`apps/tickets/signals.py`, SLA-6, Story 112). A no-op if the
+    ticket has already left `pending_customer` by the time this runs
+    (e.g. an agent manually resumed it moments earlier) — never raises
+    for an already-resolved race, unlike `apply_status_change`'s own
+    strict validation.
+    """
+    if ticket.status != Ticket.Status.PENDING_CUSTOMER:
+        return
+    apply_status_change(ticket, Ticket.Status.IN_PROGRESS, actor=None)

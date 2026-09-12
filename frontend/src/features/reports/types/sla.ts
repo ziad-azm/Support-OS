@@ -13,5 +13,8 @@ export type SlaBreachRateRow = {
   met: number
   breached: number
   pending: number
+  /** SLA-6 (Story 112): tickets currently `pending_customer` — excluded
+   * from `rate`'s denominator, the same as `pending`. */
+  paused: number
   rate: number | null
 }

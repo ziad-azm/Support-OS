@@ -37,30 +37,37 @@ export function TicketSlaSection({ ticketId }: { ticketId: number }) {
             sla === null ? (
               <p className="text-sm text-muted-foreground">{t('sla.noPolicy')}</p>
             ) : (
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <dt className="text-sm text-muted-foreground">{t('sla.response')}</dt>
-                  <dd className="flex flex-wrap items-center gap-2">
-                    <Badge variant={badgeVariant(sla.response_status)}>
-                      {t(`sla.statuses.${sla.response_status}`)}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {dateTime(sla.response_due_at)}
-                    </span>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">{t('sla.resolution')}</dt>
-                  <dd className="flex flex-wrap items-center gap-2">
-                    <Badge variant={badgeVariant(sla.resolution_status)}>
-                      {t(`sla.statuses.${sla.resolution_status}`)}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {dateTime(sla.resolution_due_at)}
-                    </span>
-                  </dd>
-                </div>
-              </dl>
+              <div className="flex flex-col gap-3">
+                {sla.paused ? (
+                  <div>
+                    <Badge variant="secondary">{t('sla.paused')}</Badge>
+                  </div>
+                ) : null}
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-sm text-muted-foreground">{t('sla.response')}</dt>
+                    <dd className="flex flex-wrap items-center gap-2">
+                      <Badge variant={badgeVariant(sla.response_status)}>
+                        {t(`sla.statuses.${sla.response_status}`)}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {dateTime(sla.response_due_at)}
+                      </span>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">{t('sla.resolution')}</dt>
+                    <dd className="flex flex-wrap items-center gap-2">
+                      <Badge variant={badgeVariant(sla.resolution_status)}>
+                        {t(`sla.statuses.${sla.resolution_status}`)}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {dateTime(sla.resolution_due_at)}
+                      </span>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
             )
           }
         </QueryBoundary>

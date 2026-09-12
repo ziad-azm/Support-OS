@@ -29,6 +29,7 @@
   "statuses": {
     "open": "مفتوحة",
     "in_progress": "قيد المعالجة",
+    "pending_customer": "بانتظار العميل",
     "resolved": "تم الحل",
     "closed": "مغلقة"
   },
@@ -176,6 +177,7 @@
   "sla": {
     "title": "حالة اتفاقية مستوى الخدمة",
     "noPolicy": "لا توجد سياسة SLA مُهيّأة لأولوية هذه التذكرة.",
+    "paused": "اتفاقية مستوى الخدمة متوقفة مؤقتًا — بانتظار العميل",
     "response": "الاستجابة",
     "resolution": "الحل",
     "statuses": {
@@ -247,7 +249,8 @@
   "slaStatuses": {
     "met": "مُحققة",
     "pending": "ضمن المدة",
-    "breached": "مخروقة"
+    "breached": "مخروقة",
+    "paused": "متوقفة مؤقتًا"
   },
   "savedViews": {
     "switcherLabel": "العرض المحفوظ",

@@ -96,7 +96,14 @@ def is_idle(ticket: Ticket, threshold_minutes: int | None, now) -> bool:
     calendar if one is set (`resolve_calendar(ticket, None)` — idle has
     no SLA policy to hang a calendar override off, see Story 111
     `## Prerequisites`), else plain wall-clock minutes.
+
+    SLA-6 (Story 112): a ticket currently `pending_customer` is never
+    idle — it is blocked on the customer, not neglected. This is checked
+    before `threshold_minutes` itself, so it applies even when an `idle`
+    rule is enabled.
     """
+    if ticket.status == Ticket.Status.PENDING_CUSTOMER:
+        return False
     if threshold_minutes is None:
         return False
     last_activity_at = _last_activity_at(ticket)

@@ -47,7 +47,16 @@ def _annotated_tickets(start, end):
     """
     return annotate_sla_facts(
         Ticket.objects.filter(created_at__gte=start, created_at__lt=end)
-    ).values("id", "created_at", "priority", "category_id", "first_response_at", "resolved_at")
+    ).values(
+        "id",
+        "created_at",
+        "priority",
+        "category_id",
+        "first_response_at",
+        "resolved_at",
+        "status",
+        "sla_paused_minutes",
+    )
 
 
 def sla_trend(start, end, bucket: str) -> list[dict]:
@@ -83,12 +92,19 @@ def sla_trend(start, end, bucket: str) -> list[dict]:
         created = row["created_at"]
 
         if row["first_response_at"] is not None:
-            minutes = (row["first_response_at"] - created).total_seconds() / 60
+            minutes = max(
+                (row["first_response_at"] - created).total_seconds() / 60
+                - row["sla_paused_minutes"],
+                0,
+            )
             key = (bucket_key, RESPONSE)
             sums[key] = sums.get(key, 0) + minutes
             counts[key] = counts.get(key, 0) + 1
         if row["resolved_at"] is not None:
-            minutes = (row["resolved_at"] - created).total_seconds() / 60
+            minutes = max(
+                (row["resolved_at"] - created).total_seconds() / 60 - row["sla_paused_minutes"],
+                0,
+            )
             key = (bucket_key, RESOLUTION)
             sums[key] = sums.get(key, 0) + minutes
             counts[key] = counts.get(key, 0) + 1
@@ -101,32 +117,46 @@ def sla_trend(start, end, bucket: str) -> list[dict]:
 
 
 def sla_breach_rate(start, end) -> list[dict]:
-    """`met`/`breached`/`pending` counts and a breach rate for each of
-    `response`/`resolution` over the whole [start, end) range — one
-    snapshot, not a time series (CONVENTIONS.md § 25 row 4, "Performance
-    vs Target").
+    """`met`/`breached`/`pending`/`paused` counts and a breach rate for
+    each of `response`/`resolution` over the whole [start, end) range —
+    one snapshot, not a time series (CONVENTIONS.md § 25 row 4,
+    "Performance vs Target").
 
     Returns `[{"key": "response", "met": 2, "breached": 9, "pending": 0,
-    "rate": 0.818}, {"key": "resolution", ...}]`. `rate` excludes
-    `pending` from the denominator — a ticket not yet past its deadline is
-    not evidence of either meeting or missing it — and is `None` when
-    `met + breached == 0` (nothing to rate yet).
+    "paused": 1, "rate": 0.818}, {"key": "resolution", ...}]`. `rate`
+    excludes `pending` AND `paused` from the denominator — a ticket not
+    yet past its deadline, or one currently waiting on the customer, is
+    not evidence of either meeting or missing the target — and is `None`
+    when `met + breached == 0` (nothing to rate yet).
+
+    `paused` — SLA-6 (Story 112): a ticket currently `pending_customer`
+    is counted there directly, before any due-date math, the same
+    short-circuit `apps.sla.policy.status_from_facts` uses. A ticket that
+    HAS a closed-out pause (already resumed) is not `paused` here — its
+    `sla_paused_minutes` instead extends both due dates, the same
+    wall-clock-only simplification this bulk path already accepts for
+    calendar awareness (Story 111 `## Prerequisites`).
     """
     resolve = bulk_target_resolver()
     now = timezone.now()
     counts = {
-        RESPONSE: {"met": 0, "breached": 0, "pending": 0},
-        RESOLUTION: {"met": 0, "breached": 0, "pending": 0},
+        RESPONSE: {"met": 0, "breached": 0, "pending": 0, "paused": 0},
+        RESOLUTION: {"met": 0, "breached": 0, "pending": 0, "paused": 0},
     }
 
     for row in _annotated_tickets(start, end):
+        if row["status"] == Ticket.Status.PENDING_CUSTOMER:
+            counts[RESPONSE]["paused"] += 1
+            counts[RESOLUTION]["paused"] += 1
+            continue
         targets = resolve(row["priority"], row["category_id"])
         if targets is None:
             continue
         response_target, resolution_target = targets
         created = row["created_at"]
-        response_due = created + timedelta(minutes=response_target)
-        resolution_due = created + timedelta(minutes=resolution_target)
+        paused = row["sla_paused_minutes"]
+        response_due = created + timedelta(minutes=response_target + paused)
+        resolution_due = created + timedelta(minutes=resolution_target + paused)
         counts[RESPONSE][dimension_status(response_due, row["first_response_at"], now)] += 1
         counts[RESOLUTION][dimension_status(resolution_due, row["resolved_at"], now)] += 1
 

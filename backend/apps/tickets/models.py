@@ -35,6 +35,7 @@ class Ticket(TimeStampedModel):
     class Status(models.TextChoices):
         OPEN = "open", _("Open")
         IN_PROGRESS = "in_progress", _("In progress")
+        PENDING_CUSTOMER = "pending_customer", _("Waiting on customer")
         RESOLVED = "resolved", _("Resolved")
         CLOSED = "closed", _("Closed")
 
@@ -159,6 +160,23 @@ class Ticket(TimeStampedModel):
     # this ticket's retention clock. Mirrors `escalated_at`'s exact "set
     # once, on one specific transition" shape.
     closed_at = models.DateTimeField(_("closed at"), null=True, blank=True)
+    # SLA-6 (Story 112). Set when `status` becomes `pending_customer`,
+    # cleared when it leaves that status (either direction) — the same
+    # "set on entry, cleared/frozen on exit" shape `escalated_at` already
+    # uses. Read live by `apps/sla/policy.py::compute_sla_status` to add
+    # the STILL-OPEN pause to `sla_paused_minutes` for a ticket paused
+    # right now; only `apps/tickets/status.py::apply_status_change`
+    # writes this field.
+    pending_customer_since = models.DateTimeField(
+        _("pending customer since"), null=True, blank=True
+    )
+    # SLA-6 (Story 112). The running total of paused minutes — WORKING
+    # minutes when a calendar applies to this ticket (SLA-5), else plain
+    # wall-clock minutes — accumulated by `apply_status_change` every
+    # time the ticket LEAVES `pending_customer`. Stored explicitly, not
+    # recomputed from history: editing a `WorkingWindow`/`Holiday` later
+    # must never silently rewrite an already-closed-out pause.
+    sla_paused_minutes = models.PositiveIntegerField(_("SLA paused minutes"), default=0)
 
     class Meta:
         verbose_name = _("ticket")

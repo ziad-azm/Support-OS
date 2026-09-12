@@ -3187,3 +3187,39 @@ they only ever re-select rows still past the cutoff and not yet in the
 target end state; there is no `select_for_update`/distributed lock
 anywhere in `config/celery.py`/`settings/base.py` to reuse, and none is
 added by this story either.
+
+---
+
+## 39. SLA clock pause & the second signals exception (SLA-6)
+
+**`apps/tickets/signals.py` (Story 112) is this codebase's SECOND
+deliberate use of Django model signals, after `apps.integrations.signals`
+(INT-4, §32).** Read §32 first — its own instruction — before adding a
+THIRD. The justification is identical: an inbound `Message` (a customer's
+own reply) is created from five independent channel-adapter call sites,
+with more likely in the future, and this codebase has already been bitten
+once by the decentralized-call-site alternative (`EmailAdapter.receive`'s
+own "F-25" comment, apps/communications/email_adapter.py). A `post_save`
+receiver on `Message`, watching for `direction=INBOUND`, is what ends a
+ticket's `pending_customer` wait automatically, no matter which channel
+the reply arrives on — see Story 112 `## Prerequisites`.
+
+**A ticket's accumulated SLA pause is stored explicitly
+(`Ticket.sla_paused_minutes`), never recomputed from history, and only
+`apps/tickets/status.py::apply_status_change` writes it.** The still-OPEN
+portion of a pause in progress right now is the one exception: it is added
+live by `apps/sla/policy.py::_effective_paused_minutes`, the same "compute
+what hasn't finished yet" rule this codebase already applies to
+`response_status`/`resolution_status` themselves (§23's SLA-1 paragraph).
+Editing a `WorkingWindow`/`Holiday` (SLA-5) later can still change a LIVE
+due-date computation, but it can never rewrite an already-closed-out pause
+— that total is a fact about the past, not a live derivation.
+
+**Not every SLA consumer needs to agree on how precisely a pause is
+measured.** The single-ticket detail path (`compute_sla_status`) is
+calendar-aware for pause the same way it already is for due times (§38's
+business-hours section); the ticket-list and reporting bulk paths
+(`status_from_facts`, `apps/reports/sla.py`) treat accumulated pause as
+plain minutes, no calendar lookup — the identical, already-accepted
+simplification §38 documents for due-time calendar-awareness on those same
+two paths, now extended to cover pause too.

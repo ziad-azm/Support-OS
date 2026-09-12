@@ -13,4 +13,9 @@ export type TicketSla = {
   response_status: SlaDimensionStatus
   resolution_due_at: string
   resolution_status: SlaDimensionStatus
+  /** SLA-6 (Story 112): true while this ticket is currently `pending_customer`. */
+  paused: boolean
+  /** SLA-6 (Story 112): accumulated paused minutes, live-inclusive of any
+   * still-open pause. */
+  paused_minutes: number
 } | null

@@ -29,6 +29,7 @@
   "statuses": {
     "open": "Open",
     "in_progress": "In progress",
+    "pending_customer": "Waiting on customer",
     "resolved": "Resolved",
     "closed": "Closed"
   },
@@ -176,6 +177,7 @@
   "sla": {
     "title": "SLA Status",
     "noPolicy": "No SLA policy configured for this ticket's priority.",
+    "paused": "SLA paused — waiting on customer",
     "response": "Response",
     "resolution": "Resolution",
     "statuses": {
@@ -247,7 +249,8 @@
   "slaStatuses": {
     "met": "Met",
     "pending": "On track",
-    "breached": "Breached"
+    "breached": "Breached",
+    "paused": "Paused"
   },
   "savedViews": {
     "switcherLabel": "Saved view",

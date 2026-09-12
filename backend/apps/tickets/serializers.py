@@ -166,9 +166,10 @@ class TicketSerializer(BaseModelSerializer):
         )
 
     def get_sla_status(self, obj) -> str | None:
-        """`met` / `breached` / `pending`, or `None` when no SLA policy
-        applies to this ticket (tracking is opt-in — most tickets in a fresh
-        install have none).
+        """`met` / `breached` / `pending` / `paused` (SLA-6, Story 112 —
+        `paused` while the ticket is `pending_customer`), or `None` when
+        no SLA policy applies to this ticket (tracking is opt-in — most
+        tickets in a fresh install have none).
 
         Reads the `first_response_at`/`resolved_at` annotations
         (`annotate_sla_facts`) and the per-request resolver
@@ -190,4 +191,6 @@ class TicketSerializer(BaseModelSerializer):
             obj.resolved_at,
             resolve,
             timezone.now(),
+            obj.status,
+            obj.sla_paused_minutes,
         )

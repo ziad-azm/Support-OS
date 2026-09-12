@@ -248,6 +248,7 @@ class SlaBreachRateReportView(BaseReportView):
         ("met", _("Met")),
         ("breached", _("Breached")),
         ("pending", _("Pending")),
+        ("paused", _("Paused")),
         ("rate", _("Breach rate")),
     )
     csv_filename = "sla-breach-rate"

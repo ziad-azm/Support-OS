@@ -181,6 +181,7 @@ export function SlaReportsPage() {
               t('breachRate.met'),
               t('breachRate.breached'),
               t('breachRate.pending'),
+              t('breachRate.paused'),
               t('breachRate.rate'),
             ]}
             rows={rows.map((row) => [
@@ -188,6 +189,7 @@ export function SlaReportsPage() {
               String(row.met),
               String(row.breached),
               String(row.pending),
+              String(row.paused),
               row.rate === null
                 ? t('breachRate.noData')
                 : number(row.rate, { style: 'percent', maximumFractionDigits: 1 }),

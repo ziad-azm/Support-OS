@@ -16,7 +16,7 @@ from django.db.models import OuterRef, QuerySet, Subquery
 from django.utils import timezone
 
 from apps.communications.models import Message
-from apps.organization.business_hours import advance
+from apps.organization.business_hours import advance, elapsed_working_minutes
 from apps.organization.models import BusinessCalendar, OrganizationSettings
 from apps.tickets.models import Ticket, TicketActivity
 
@@ -80,6 +80,27 @@ def resolve_calendar(ticket: Ticket, policy: SLAPolicy | None) -> BusinessCalend
     return None
 
 
+def _effective_paused_minutes(ticket: Ticket, calendar: BusinessCalendar | None, now) -> int:
+    """`ticket.sla_paused_minutes` (every CLOSED-OUT `pending_customer`
+    period) plus, if the ticket is paused RIGHT NOW, the still-open
+    period's own elapsed minutes so far — computed live, never
+    persisted, the same "compute what hasn't finished yet" rule this
+    module already applies to `response_status`/`resolution_status`
+    themselves. SLA-6 (Story 112).
+    """
+    paused_minutes = ticket.sla_paused_minutes
+    is_paused_now = (
+        ticket.status == Ticket.Status.PENDING_CUSTOMER
+        and ticket.pending_customer_since is not None
+    )
+    if is_paused_now:
+        if calendar is not None:
+            paused_minutes += elapsed_working_minutes(calendar, ticket.pending_customer_since, now)
+        else:
+            paused_minutes += int((now - ticket.pending_customer_since).total_seconds() // 60)
+    return paused_minutes
+
+
 def dimension_status(due_at, achieved_at, now) -> str:
     """ "met" (achieved by the deadline), "breached" (deadline passed,
     whether achieved late or not at all), or "pending" (not yet due, not
@@ -107,12 +128,21 @@ def compute_sla_status(ticket: Ticket) -> dict | None:
 
     now = timezone.now()
     calendar = resolve_calendar(ticket, policy)
+    paused_minutes = _effective_paused_minutes(ticket, calendar, now)
     if calendar is not None:
-        response_due_at = advance(calendar, ticket.created_at, policy.response_target_minutes)
-        resolution_due_at = advance(calendar, ticket.created_at, policy.resolution_target_minutes)
+        response_due_at = advance(
+            calendar, ticket.created_at, policy.response_target_minutes + paused_minutes
+        )
+        resolution_due_at = advance(
+            calendar, ticket.created_at, policy.resolution_target_minutes + paused_minutes
+        )
     else:
-        response_due_at = ticket.created_at + timedelta(minutes=policy.response_target_minutes)
-        resolution_due_at = ticket.created_at + timedelta(minutes=policy.resolution_target_minutes)
+        response_due_at = ticket.created_at + timedelta(
+            minutes=policy.response_target_minutes + paused_minutes
+        )
+        resolution_due_at = ticket.created_at + timedelta(
+            minutes=policy.resolution_target_minutes + paused_minutes
+        )
 
     first_reply = (
         Message.objects.filter(ticket=ticket, direction=Message.Direction.OUTBOUND)
@@ -143,6 +173,8 @@ def compute_sla_status(ticket: Ticket) -> dict | None:
         "response_status": dimension_status(response_due_at, first_response_at, now),
         "resolution_due_at": resolution_due_at,
         "resolution_status": dimension_status(resolution_due_at, resolved_at, now),
+        "paused": ticket.status == Ticket.Status.PENDING_CUSTOMER,
+        "paused_minutes": paused_minutes,
     }
 
 
@@ -223,26 +255,56 @@ def annotate_sla_facts(queryset: QuerySet) -> QuerySet:
 
 
 def status_from_facts(
-    created_at, priority, category_id, first_response_at, resolved_at, resolve, now
+    created_at,
+    priority,
+    category_id,
+    first_response_at,
+    resolved_at,
+    resolve,
+    now,
+    status: str,
+    paused_minutes: int,
 ) -> str | None:
     """One ticket's overall SLA status, from already-fetched facts.
 
-    The WORSE of the two dimensions, in `dimension_status`'s own vocabulary
-    (`met` / `breached` / `pending`) — deliberately not a new three-value
-    scale. An "at risk" tier was considered and rejected: nothing in this
-    codebase defines an approaching-breach threshold, so it would be an
-    invented number pretending to be a measurement.
+    The WORSE of the two dimensions, in `dimension_status`'s own
+    vocabulary (`met` / `breached` / `pending`) — deliberately not a new
+    three-value scale. An "at risk" tier was considered and rejected:
+    nothing in this codebase defines an approaching-breach threshold, so
+    it would be an invented number pretending to be a measurement.
 
     `None` when no policy resolves — SLA tracking is opt-in, the same
     outcome `compute_sla_status` already treats as normal.
+
+    `status`/`paused_minutes` — SLA-6 (Story 112): the ticket's own
+    `status`/`sla_paused_minutes` columns, already present on any
+    `Ticket` row this is called for, no extra query. If `status` is
+    `Ticket.Status.PENDING_CUSTOMER`, returns `"paused"` immediately,
+    before any due-date math — a currently-paused ticket is neither
+    `met`, `pending`, nor `breached` from a team-owned-time perspective,
+    and must never contribute to a breach figure. Otherwise,
+    `paused_minutes` extends both due dates by that many minutes — the
+    same wall-clock-only simplification this bulk path already accepts
+    for calendar awareness (Story 111 `## Prerequisites`); only the
+    single-ticket `compute_sla_status` is calendar-aware.
     """
+    if status == Ticket.Status.PENDING_CUSTOMER:
+        return "paused"
     targets = resolve(priority, category_id)
     if targets is None:
         return None
     response_target, resolution_target = targets
     statuses = (
-        dimension_status(created_at + timedelta(minutes=response_target), first_response_at, now),
-        dimension_status(created_at + timedelta(minutes=resolution_target), resolved_at, now),
+        dimension_status(
+            created_at + timedelta(minutes=response_target + paused_minutes),
+            first_response_at,
+            now,
+        ),
+        dimension_status(
+            created_at + timedelta(minutes=resolution_target + paused_minutes),
+            resolved_at,
+            now,
+        ),
     )
     for worst in ("breached", "pending", "met"):
         if worst in statuses:
