@@ -245,6 +245,9 @@ class AuditLog(TimeStampedModel):
             "two_factor_recovery_code_used",
             _("Two-factor recovery code used"),
         )
+        DATA_RETENTION_RUN = "data_retention_run", _("Scheduled data retention run")
+        CUSTOMER_DATA_EXPORTED = "customer_data_exported", _("Customer data exported")
+        CUSTOMER_DATA_ERASED = "customer_data_erased", _("Customer data erased")
 
     actor = models.ForeignKey(
         User,
@@ -270,6 +273,23 @@ class AuditLog(TimeStampedModel):
         blank=True,
         related_name="audit_logs_as_target",
         verbose_name=_("target role"),
+    )
+    # SEC-10. Extends the exact two-nullable-FK shape `target_user`/
+    # `target_role` above already establish, to a third target type — not
+    # a `GenericForeignKey`, for the identical reason this class's own
+    # docstring gives for the first two (apps/notifications/models.py's
+    # "a plain FK to the one target type that exists today" rule). String
+    # reference (`"customers.Customer"`), matching `accounts.User.department`/
+    # `.branch`'s own reference style — `apps.accounts` importing
+    # `apps.customers` directly would be a new, unnecessary inter-app
+    # coupling this avoids.
+    target_customer = models.ForeignKey(
+        "customers.Customer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs_as_target",
+        verbose_name=_("target customer"),
     )
     target_label = models.CharField(_("target label"), max_length=150)
     from_value = models.TextField(_("from value"), blank=True)

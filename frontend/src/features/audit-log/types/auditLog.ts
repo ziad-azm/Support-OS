@@ -10,6 +10,13 @@ export const AUDIT_LOG_ACTIONS = [
   'role_deleted',
   'portal_access_granted',
   'portal_access_revoked',
+  'two_factor_enabled',
+  'two_factor_disabled',
+  'two_factor_reset',
+  'two_factor_recovery_code_used',
+  'data_retention_run',
+  'customer_data_exported',
+  'customer_data_erased',
 ] as const
 
 export type AuditLogAction = (typeof AUDIT_LOG_ACTIONS)[number]
@@ -23,6 +30,7 @@ export type AuditLog = {
   action_display: string
   target_user: number | null
   target_role: number | null
+  target_customer: number | null
   target_label: string
   from_value: string
   to_value: string

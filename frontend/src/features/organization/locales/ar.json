@@ -7,11 +7,16 @@
       "logoUrl": "رابط الشعار",
       "primaryColor": "لون العلامة",
       "defaultResponseMinutes": "هدف الاستجابة الافتراضي (بالدقائق)",
-      "defaultResolutionMinutes": "هدف الحل الافتراضي (بالدقائق)"
+      "defaultResolutionMinutes": "هدف الحل الافتراضي (بالدقائق)",
+      "retentionClosedTicketsDays": "الاحتفاظ بالتذاكر المغلقة (أيام)",
+      "retentionMessagesDays": "الاحتفاظ بالرسائل (أيام)",
+      "retentionAttachmentsDays": "الاحتفاظ بالمرفقات (أيام)",
+      "retentionAuditLogDays": "الاحتفاظ بسجل التدقيق (أيام)"
     },
     "colorHint": "أدخل لونًا بصيغة #RRGGBB. اتركه فارغًا لاستخدام لون العلامة الافتراضي.",
     "invalidColor": "أدخل لونًا بصيغة #RRGGBB.",
     "colorPreview": "معاينة لون العلامة",
+    "retentionHint": "اترك أي حقل فارغًا لتعطيل الإزالة التلقائية لتلك الفئة من البيانات.",
     "actions": {
       "save": "حفظ"
     }

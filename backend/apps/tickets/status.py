@@ -10,6 +10,7 @@ the choices happen to be listed. `closed` is deliberately terminal — see
 Story 23 `## Story Goal`, "What this story does... not".
 """
 
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
@@ -58,7 +59,11 @@ def apply_status_change(ticket: Ticket, new_status: str, actor) -> None:
 
     old_status = ticket.status
     ticket.status = new_status
-    ticket.save(update_fields=["status", "updated_at"])
+    update_fields = ["status", "updated_at"]
+    if new_status == Ticket.Status.CLOSED:
+        ticket.closed_at = timezone.now()
+        update_fields.append("closed_at")
+    ticket.save(update_fields=update_fields)
     TicketActivity.objects.create(
         ticket=ticket,
         actor=actor,

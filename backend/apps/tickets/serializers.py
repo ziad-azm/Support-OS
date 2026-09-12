@@ -144,6 +144,7 @@ class TicketSerializer(BaseModelSerializer):
             "priority",
             "escalated",
             "escalated_at",
+            "closed_at",
             "merged_into",
             "merged_into_subject",
             "created_at",
@@ -160,6 +161,7 @@ class TicketSerializer(BaseModelSerializer):
             "status",
             "escalated",
             "escalated_at",
+            "closed_at",
             "merged_into",
         )
 

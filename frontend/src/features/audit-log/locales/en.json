@@ -16,7 +16,8 @@
     "targetType": "Filter by target type",
     "allTargetTypes": "All targets",
     "targetTypeUser": "Users",
-    "targetTypeRole": "Roles"
+    "targetTypeRole": "Roles",
+    "targetTypeCustomer": "Customers"
   },
   "actions": {
     "user_created": "User created",
@@ -28,6 +29,13 @@
     "role_permissions_changed": "Role permissions changed",
     "role_deleted": "Role deleted",
     "portal_access_granted": "Portal access granted",
-    "portal_access_revoked": "Portal access revoked"
+    "portal_access_revoked": "Portal access revoked",
+    "two_factor_enabled": "Two-factor authentication enabled",
+    "two_factor_disabled": "Two-factor authentication disabled",
+    "two_factor_reset": "Two-factor authentication reset by admin",
+    "two_factor_recovery_code_used": "Two-factor recovery code used",
+    "data_retention_run": "Scheduled data retention run",
+    "customer_data_exported": "Customer data exported",
+    "customer_data_erased": "Customer data erased"
   }
 }

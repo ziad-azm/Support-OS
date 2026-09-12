@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createCustomer } from './createCustomer'
 import { customerKeys } from './customerKeys'
 import { deleteCustomer } from './deleteCustomer'
+import { eraseCustomerData } from './eraseCustomerData'
 import { grantPortalAccess } from './grantPortalAccess'
 import { revokePortalAccess } from './revokePortalAccess'
 import { updateCustomer } from './updateCustomer'
@@ -52,6 +53,14 @@ export function useRevokePortalAccess(id: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => revokePortalAccess(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: customerKeys.all }),
+  })
+}
+
+export function useEraseCustomerData(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => eraseCustomerData(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: customerKeys.all }),
   })
 }

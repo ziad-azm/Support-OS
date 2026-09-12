@@ -652,8 +652,12 @@ class AuditLogViewSet(BaseModelViewSet):
                 queryset = queryset.filter(target_user__isnull=False)
             elif target_type == "role":
                 queryset = queryset.filter(target_role__isnull=False)
+            elif target_type == "customer":
+                queryset = queryset.filter(target_customer__isnull=False)
             else:
-                raise ValidationError({"target_type": [_('Must be "user" or "role".')]})
+                raise ValidationError(
+                    {"target_type": [_('Must be "user", "role", or "customer".')]}
+                )
 
         date_from = params.get("date_from")
         if date_from:

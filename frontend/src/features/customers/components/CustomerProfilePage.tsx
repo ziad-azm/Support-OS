@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 
 import { Can } from '@/shared/auth'
 import { useFormatters } from '@/shared/hooks/useFormatters'
+import { isValidationError } from '@/shared/validation/serverErrors'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
@@ -11,9 +12,11 @@ import { Empty } from '@/shared/ui/Empty'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
+import { exportCustomerData } from '../api/exportCustomerData'
 import { useCustomer } from '../api/useCustomer'
 import {
   useDeleteCustomer,
+  useEraseCustomerData,
   useGrantPortalAccess,
   useRevokePortalAccess,
 } from '../api/useCustomerMutations'
@@ -39,6 +42,7 @@ export function CustomerProfilePage() {
   const deleteMutation = useDeleteCustomer()
   const grantMutation = useGrantPortalAccess(id)
   const revokeMutation = useRevokePortalAccess(id)
+  const eraseMutation = useEraseCustomerData(id)
 
   async function handleDelete() {
     const confirmed = await confirm({
@@ -69,6 +73,31 @@ export function CustomerProfilePage() {
     revokeMutation.mutate(undefined, {
       onSuccess: () => toast({ tone: 'success', message: t('portalAccess.revoked') }),
     })
+  }
+
+  async function handleExportData(customer: { id: number; name: string }) {
+    try {
+      await exportCustomerData(customer.id, `customer-${customer.id}-export.json`)
+    } catch {
+      toast({ tone: 'error', message: t('dataRights.exportFailed') })
+    }
+  }
+
+  async function handleEraseData() {
+    const confirmed = await confirm({
+      title: t('dataRights.eraseConfirm.title'),
+      description: t('dataRights.eraseConfirm.description'),
+      destructive: true,
+    })
+    if (!confirmed) return
+    try {
+      await eraseMutation.mutateAsync()
+      toast({ tone: 'success', message: t('dataRights.erased') })
+    } catch (error) {
+      if (isValidationError(error)) {
+        toast({ tone: 'error', message: error.message })
+      }
+    }
   }
 
   return (
@@ -154,6 +183,25 @@ export function CustomerProfilePage() {
                         </span>
                       )}
                     </div>
+                  </Can>
+                  <Can permission="customers.export_data">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void handleExportData(customer)}
+                    >
+                      {t('dataRights.export')}
+                    </Button>
+                  </Can>
+                  <Can permission="customers.erase_data">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={eraseMutation.isPending}
+                      onClick={() => void handleEraseData()}
+                    >
+                      {t('dataRights.erase')}
+                    </Button>
                   </Can>
                 </CardContent>
               </Card>

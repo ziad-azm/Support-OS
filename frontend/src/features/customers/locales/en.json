@@ -50,6 +50,16 @@
       "description": "The customer will no longer be able to sign in to the portal."
     }
   },
+  "dataRights": {
+    "export": "Export data",
+    "erase": "Erase data",
+    "exportFailed": "Could not generate the data export.",
+    "erased": "Customer data erased.",
+    "eraseConfirm": {
+      "title": "Erase this customer's data?",
+      "description": "This permanently removes their contact details, notes, and attachments, and blanks the content of their tickets and messages. Their ticket history and record are kept for reporting, but their personal details are gone. This cannot be undone."
+    }
+  },
   "contacts": {
     "title": "Contact channels",
     "empty": "No contact channels yet.",

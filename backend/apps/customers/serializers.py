@@ -73,6 +73,7 @@ class CustomerSerializer(BaseModelSerializer):
             "whatsapp_enabled",
             "company",
             "external_id",
+            "legal_hold",
             "portal_access_enabled",
             "branch",
             "branch_name",

@@ -150,6 +150,24 @@ class OrganizationSettings(TimeStampedModel):
     default_resolution_target_minutes = models.PositiveIntegerField(
         _("default resolution target (minutes)"), null=True, blank=True
     )
+    # SEC-10. Each is independently nullable/opt-in — the same "blank means
+    # no policy configured for this data class, do nothing" shape
+    # `default_response_target_minutes` above already establishes. Consumed
+    # only by `apps.compliance.tasks.run_data_retention` (never read by
+    # this app itself) — see CONVENTIONS.md §33 for why these are four more
+    # scalars here rather than a new model.
+    retention_closed_tickets_days = models.PositiveIntegerField(
+        _("closed ticket retention (days)"), null=True, blank=True
+    )
+    retention_messages_days = models.PositiveIntegerField(
+        _("message retention (days)"), null=True, blank=True
+    )
+    retention_attachments_days = models.PositiveIntegerField(
+        _("attachment retention (days)"), null=True, blank=True
+    )
+    retention_audit_log_days = models.PositiveIntegerField(
+        _("audit log retention (days)"), null=True, blank=True
+    )
 
     class Meta:
         verbose_name = _("organization settings")

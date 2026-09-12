@@ -3044,3 +3044,62 @@ a real background task yet" was stale.** Fifteen modules dispatch or define
 tasks; without a worker, invite/password-reset email, SLA escalation,
 auto-assignment, notifications, AI jobs, ERP sync and webhook delivery all
 silently do not run. Any stack claiming parity includes `worker` and `beat`.
+
+---
+
+## 38. Data retention & data-subject rights (SEC-10)
+
+Two independent halves, deliberately living in two different apps.
+
+**The scheduled purge/anonymize job lives in a NEW app, `apps/compliance`
+— not in `tickets`/`communications`/`customers`/`accounts`, even though it
+touches all four.** No single one of those apps "owns" a cross-cutting
+compliance sweep any more than `tickets` owns SLA escalation — `apps/sla`
+already established the precedent that a scheduled, cross-model automation
+job gets its own app (`apps/README.md` rule 4). `apps/compliance` has no
+`models.py` at all — the four retention-DAY settings it reads live on
+`organization.OrganizationSettings` (SEC-4), read fresh on every run the
+same way `apps.sla.policy.resolve_policy` already reads that model's SLA
+defaults.
+
+**The customer-scoped export/erasure actions live in `apps/customers`
+instead**, as new `@action`s on the existing `CustomerViewSet` — the same
+"belongs to exactly one business area, cross-app reads are normal" shape
+`apps/customers/timeline.py::build_timeline` already established for
+`CustomerViewSet.timeline` (`apps/README.md` rule 1 beating rule 2).
+
+**Erasure anonymizes the `Customer` row; it never deletes it.**
+`Ticket.customer` is `on_delete=PROTECT` — a customer with any ticket
+history cannot be hard-deleted without breaking that guarantee, and every
+`Ticket`/`AuditLog` row must survive an erasure for report aggregates and
+the erasure's own audit trail to still mean anything. `apps.customers.
+erasure.erase_customer` blanks `Customer.name`/`.email`/`.phone`/
+`.company`, deletes every `ContactDetail`/`Note`/`Attachment` (row and
+file), and blanks `Message.body`/`Ticket.subject`/`.description`/
+`Feedback.comment` — the row, its status/priority/category/dates, and
+every audit trail entry all survive untouched.
+
+**`AuditLog` gained a third nullable target FK, `target_customer`** —
+the exact `target_user`/`target_role` two-FK shape (§22, this model's own
+docstring) extended by one, not replaced with a `GenericForeignKey`
+(consistent with `apps/notifications/models.py`'s own established rule).
+
+**`Ticket.closed_at` exists because `updated_at` is not a safe retention
+clock for a terminal status.** `closed` has no outbound transition
+(`apps/tickets/status.py::VALID_TRANSITIONS`), but a later edit to an
+already-closed ticket still bumps `updated_at` — `closed_at` is set exactly
+once, only inside `apply_status_change`, the same "set once, on one
+specific transition" shape `escalated_at` already has.
+
+**`Customer.legal_hold` is Django-admin-only, deliberately.** No
+self-service UI in this story — the same scope boundary `external_id`
+(a real serializer field, absent from the frontend form) already
+establishes for an admin-only escape hatch on this same model.
+
+**No shared Celery locking/idempotency primitive exists in this codebase
+— a new scheduled task must invent its own via its own filter shape.**
+`apps.compliance.retention`'s four functions are each idempotent because
+they only ever re-select rows still past the cutoff and not yet in the
+target end state; there is no `select_for_update`/distributed lock
+anywhere in `config/celery.py`/`settings/base.py` to reuse, and none is
+added by this story either.

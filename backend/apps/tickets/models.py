@@ -150,6 +150,15 @@ class Ticket(TimeStampedModel):
         related_name="merged_tickets",
         verbose_name=_("merged into"),
     )
+    # SEC-10. Set exactly once, only inside `apps.tickets.status.
+    # apply_status_change` when the new status is `CLOSED` — never touched
+    # anywhere else. `updated_at` is not safe to key retention off: `closed`
+    # is terminal (this app's own `status.py::VALID_TRANSITIONS` maps it to
+    # an empty set), but a later edit to a closed ticket (recategorizing,
+    # TKT-9's merge) still bumps `updated_at`, which would silently reset
+    # this ticket's retention clock. Mirrors `escalated_at`'s exact "set
+    # once, on one specific transition" shape.
+    closed_at = models.DateTimeField(_("closed at"), null=True, blank=True)
 
     class Meta:
         verbose_name = _("ticket")

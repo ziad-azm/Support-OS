@@ -16,7 +16,8 @@
     "targetType": "تصفية حسب نوع الهدف",
     "allTargetTypes": "كل الأهداف",
     "targetTypeUser": "المستخدمون",
-    "targetTypeRole": "الأدوار"
+    "targetTypeRole": "الأدوار",
+    "targetTypeCustomer": "العملاء"
   },
   "actions": {
     "user_created": "تم إنشاء المستخدم",
@@ -28,6 +29,13 @@
     "role_permissions_changed": "تم تغيير صلاحيات الدور",
     "role_deleted": "تم حذف الدور",
     "portal_access_granted": "تم منح الوصول إلى البوابة",
-    "portal_access_revoked": "تم إلغاء الوصول إلى البوابة"
+    "portal_access_revoked": "تم إلغاء الوصول إلى البوابة",
+    "two_factor_enabled": "تم تفعيل المصادقة الثنائية",
+    "two_factor_disabled": "تم تعطيل المصادقة الثنائية",
+    "two_factor_reset": "تمت إعادة تعيين المصادقة الثنائية بواسطة المسؤول",
+    "two_factor_recovery_code_used": "تم استخدام رمز استرداد المصادقة الثنائية",
+    "data_retention_run": "تشغيل مجدول لسياسة الاحتفاظ بالبيانات",
+    "customer_data_exported": "تم تصدير بيانات العميل",
+    "customer_data_erased": "تم محو بيانات العميل"
   }
 }

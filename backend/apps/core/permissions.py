@@ -28,6 +28,8 @@ class Permissions:
     ROLES_MANAGE = "roles.manage"
     CUSTOMERS_VIEW = "customers.view"
     CUSTOMERS_MANAGE = "customers.manage"
+    CUSTOMERS_EXPORT_DATA = "customers.export_data"
+    CUSTOMERS_ERASE_DATA = "customers.erase_data"
     TICKETS_VIEW = "tickets.view"
     TICKETS_MANAGE = "tickets.manage"
     KNOWLEDGE_BASE_VIEW = "knowledge_base.view"

@@ -7,6 +7,10 @@ export type OrganizationSettings = {
   primary_color: string
   default_response_target_minutes: number | null
   default_resolution_target_minutes: number | null
+  retention_closed_tickets_days: number | null
+  retention_messages_days: number | null
+  retention_attachments_days: number | null
+  retention_audit_log_days: number | null
   created_at: string
   updated_at: string
 }
@@ -18,4 +22,8 @@ export type SettingsInput = {
   primary_color: string
   default_response_target_minutes: number | null
   default_resolution_target_minutes: number | null
+  retention_closed_tickets_days: number | null
+  retention_messages_days: number | null
+  retention_attachments_days: number | null
+  retention_audit_log_days: number | null
 }

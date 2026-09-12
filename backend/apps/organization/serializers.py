@@ -95,6 +95,10 @@ class OrganizationSettingsSerializer(BaseModelSerializer):
             "primary_color",
             "default_response_target_minutes",
             "default_resolution_target_minutes",
+            "retention_closed_tickets_days",
+            "retention_messages_days",
+            "retention_attachments_days",
+            "retention_audit_log_days",
             "created_at",
             "updated_at",
         )

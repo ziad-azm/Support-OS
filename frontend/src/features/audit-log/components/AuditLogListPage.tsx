@@ -46,7 +46,9 @@ export function AuditLogListPage() {
   const query = useAuditLogs({
     ...params,
     ...(actionFilter !== 'all' ? { action: actionFilter as AuditLogAction } : {}),
-    ...(targetTypeFilter !== 'all' ? { target_type: targetTypeFilter as 'user' | 'role' } : {}),
+    ...(targetTypeFilter !== 'all'
+      ? { target_type: targetTypeFilter as 'user' | 'role' | 'customer' }
+      : {}),
   })
 
   const columns: readonly ColumnDef<AuditLog>[] = [
@@ -105,6 +107,7 @@ export function AuditLogListPage() {
             <SelectItem value="all">{t('filters.allTargetTypes')}</SelectItem>
             <SelectItem value="user">{t('filters.targetTypeUser')}</SelectItem>
             <SelectItem value="role">{t('filters.targetTypeRole')}</SelectItem>
+            <SelectItem value="customer">{t('filters.targetTypeCustomer')}</SelectItem>
           </SelectContent>
         </Select>
       </div>

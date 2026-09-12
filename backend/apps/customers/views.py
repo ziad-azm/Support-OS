@@ -16,6 +16,8 @@ from apps.core.permissions import Permissions, permissions_for
 from apps.core.scoping import ScopedQuerysetMixin, ScopeFilter
 from apps.core.views import BaseModelViewSet
 
+from .erasure import erase_customer
+from .export import customer_export_response
 from .models import Attachment, ContactDetail, Customer, Note
 from .serializers import (
     AttachmentSerializer,
@@ -66,6 +68,8 @@ class CustomerViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         # the same "keyed by method name, not verb" rule `timeline` above
         # already established for a single-method action.
         "portal_access": Permissions.CUSTOMERS_MANAGE,
+        "export_data": Permissions.CUSTOMERS_EXPORT_DATA,
+        "erase_data": Permissions.CUSTOMERS_ERASE_DATA,
     }
 
     # `ordering_fields` is what makes `?ordering=` real for these columns —
@@ -114,6 +118,41 @@ class CustomerViewSet(ScopedQuerysetMixin, BaseModelViewSet):
             self._grant_portal_access(customer)
         else:
             self._revoke_portal_access(customer)
+        return Response(CustomerSerializer(customer).data)
+
+    @action(detail=True, methods=["get"], url_path="export-data")
+    def export_data(self, request, pk=None):
+        """SEC-10 task 2, export half. Returns the JSON document directly
+        (bypassing the envelope, see `customer_export_response`'s own
+        docstring) — the frontend downloads it via `shared/lib/download.ts`,
+        the same mechanism `AttachmentViewSet.download` already uses.
+        """
+        customer = self.get_object()
+        response = customer_export_response(customer)
+        AuditLog.objects.create(
+            actor=request.user,
+            action=AuditLog.Action.CUSTOMER_DATA_EXPORTED,
+            target_customer=customer,
+            target_label=customer.name,
+        )
+        return response
+
+    @action(detail=True, methods=["post"], url_path="erase-data")
+    def erase_data(self, request, pk=None):
+        """SEC-10 task 2, erasure half. `customer_label` is captured BEFORE
+        `erase_customer` blanks `customer.name` — the same "snapshot before
+        the row's state changes" pattern `UserViewSet.destroy` already uses
+        for `USER_DELETED`.
+        """
+        customer = self.get_object()
+        customer_label = customer.name
+        erase_customer(customer)
+        AuditLog.objects.create(
+            actor=request.user,
+            action=AuditLog.Action.CUSTOMER_DATA_ERASED,
+            target_customer=customer,
+            target_label=customer_label,
+        )
         return Response(CustomerSerializer(customer).data)
 
     def _grant_portal_access(self, customer: Customer) -> None:

@@ -25,6 +25,10 @@ const schema = z
     primary_color: optionalString(7).transform((value) => value ?? ''),
     default_response_target_minutes: nullablePositiveInt(),
     default_resolution_target_minutes: nullablePositiveInt(),
+    retention_closed_tickets_days: nullablePositiveInt(),
+    retention_messages_days: nullablePositiveInt(),
+    retention_attachments_days: nullablePositiveInt(),
+    retention_audit_log_days: nullablePositiveInt(),
   })
   // `logo_url` had no format check client-side — any string passed
   // validation and round-tripped to the server before failing on the
@@ -66,6 +70,10 @@ function toDefaults(settings: OrganizationSettings): FormValues {
     primary_color: settings.primary_color,
     default_response_target_minutes: settings.default_response_target_minutes,
     default_resolution_target_minutes: settings.default_resolution_target_minutes,
+    retention_closed_tickets_days: settings.retention_closed_tickets_days,
+    retention_messages_days: settings.retention_messages_days,
+    retention_attachments_days: settings.retention_attachments_days,
+    retention_audit_log_days: settings.retention_audit_log_days,
   }
 }
 
@@ -180,6 +188,35 @@ function SettingsForm({ settings }: { settings: OrganizationSettings }) {
                 name="default_resolution_target_minutes"
                 type="number"
                 label={t('settings.fields.defaultResolutionMinutes')}
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex flex-col gap-4">
+              <TextField
+                control={form.control}
+                name="retention_closed_tickets_days"
+                type="number"
+                label={t('settings.fields.retentionClosedTicketsDays')}
+                description={t('settings.retentionHint')}
+              />
+              <TextField
+                control={form.control}
+                name="retention_messages_days"
+                type="number"
+                label={t('settings.fields.retentionMessagesDays')}
+              />
+              <TextField
+                control={form.control}
+                name="retention_attachments_days"
+                type="number"
+                label={t('settings.fields.retentionAttachmentsDays')}
+              />
+              <TextField
+                control={form.control}
+                name="retention_audit_log_days"
+                type="number"
+                label={t('settings.fields.retentionAuditLogDays')}
               />
             </CardContent>
           </Card>

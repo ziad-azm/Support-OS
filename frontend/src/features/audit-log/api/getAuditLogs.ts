@@ -7,7 +7,7 @@ import type { AuditLog, AuditLogAction } from '../types/auditLog'
 export type AuditLogListParams = ServerTableParams & {
   actor?: number
   action?: AuditLogAction
-  target_type?: 'user' | 'role'
+  target_type?: 'user' | 'role' | 'customer'
   date_from?: string
   date_to?: string
 }

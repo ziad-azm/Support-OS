@@ -82,6 +82,7 @@ surface.
 | `reports` | Aggregations, dashboards, exports. |
 | `ai` | AI-assisted features (suggestions, summarisation, classification). |
 | `integrations` | Third-party system connectors and webhooks. |
+| `compliance` | Data retention policy enforcement and the scheduled purge/anonymization job. |
 
 ## Nested app names
 

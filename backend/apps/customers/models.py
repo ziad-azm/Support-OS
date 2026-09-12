@@ -46,6 +46,15 @@ class Customer(TimeStampedModel):
     # This flag is the shortcut for "the PRIMARY phone above is ALSO my
     # WhatsApp number" without adding a second, duplicate contact entry.
     whatsapp_enabled = models.BooleanField(_("phone enabled for WhatsApp"), default=False)
+    # SEC-10. When true, this customer is exempt from every retention
+    # purge/anonymize pass (apps.compliance.retention) and from the
+    # erase-data action (apps.customers.erasure.erase_customer refuses
+    # outright). Admin-only for this story — no self-service UI; set via
+    # Django admin (see CustomerAdmin below). The direct precedent for a
+    # real model field with no frontend form exposure is `external_id`
+    # just below: present in `CustomerSerializer.Meta.fields` for API
+    # visibility, absent from `CustomerFormPage.tsx`'s schema.
+    legal_hold = models.BooleanField(_("legal hold"), default=False)
     company = models.CharField(_("company"), max_length=200, blank=True)
     # The ERP's own id for this customer — INT-2's correlation key, and the
     # only thing that makes an import an upsert rather than a duplicate

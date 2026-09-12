@@ -554,6 +554,7 @@ class AuditLogSerializer(BaseModelSerializer):
             "action_display",
             "target_user",
             "target_role",
+            "target_customer",
             "target_label",
             "from_value",
             "to_value",

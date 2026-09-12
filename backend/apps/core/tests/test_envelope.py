@@ -24,6 +24,7 @@ EXPECTED_LABELS = [
     "reports",
     "ai",
     "integrations",
+    "compliance",
 ]
 
 
