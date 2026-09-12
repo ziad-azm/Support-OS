@@ -41,6 +41,8 @@ export type Ticket = {
   priority: TicketPriority
   escalated: boolean
   escalated_at: string | null
+  merged_into: number | null
+  merged_into_subject: string | null
   created_at: string
   updated_at: string
 }

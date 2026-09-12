@@ -35,6 +35,7 @@ class TicketAdmin(admin.ModelAdmin):
         "status",
         "priority",
         "escalated",
+        "merged_into",
         "created_at",
     )
     list_filter = (

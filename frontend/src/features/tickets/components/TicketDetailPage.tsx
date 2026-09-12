@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 
 import { Can } from '@/shared/auth'
 import { useFormatters } from '@/shared/hooks/useFormatters'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/primitives/alert'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
@@ -19,6 +20,7 @@ import { InternalNotesSection } from './InternalNotesSection'
 import { SuggestedSolutionsPanel } from './SuggestedSolutionsPanel'
 import { TicketAssigneeControl } from './TicketAssigneeControl'
 import { TicketConversation } from './TicketConversation'
+import { TicketDuplicateCandidatesSection } from './TicketDuplicateCandidatesSection'
 import { TicketHistorySection } from './TicketHistorySection'
 import { TicketSlaSection } from './TicketSlaSection'
 import { TicketStatusControl } from './TicketStatusControl'
@@ -104,6 +106,21 @@ export function TicketDetailPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
+                    {ticket.merged_into !== null ? (
+                      <Alert>
+                        <AlertTitle>
+                          {t('merge.mergedBanner', {
+                            id: ticket.merged_into,
+                            subject: ticket.merged_into_subject,
+                          })}
+                        </AlertTitle>
+                        <AlertDescription>
+                          <Link to={`/tickets/${ticket.merged_into}`} className="hover:underline">
+                            {t('merge.viewTarget', { id: ticket.merged_into })}
+                          </Link>
+                        </AlertDescription>
+                      </Alert>
+                    ) : null}
                     <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <dt className="text-sm text-muted-foreground">{t('fields.customer')}</dt>
@@ -210,6 +227,11 @@ export function TicketDetailPage() {
                     </Can>
                   </CardContent>
                 </Card>
+                <Can permission="tickets.manage">
+                  {ticket.merged_into === null ? (
+                    <TicketDuplicateCandidatesSection ticketId={ticket.id} />
+                  ) : null}
+                </Can>
                 <TicketSlaSection ticketId={ticket.id} />
                 <TicketConversation ticketId={ticket.id} />
                 <SuggestedSolutionsPanel ticketId={ticket.id} />

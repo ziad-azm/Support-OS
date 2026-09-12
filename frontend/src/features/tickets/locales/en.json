@@ -153,11 +153,25 @@
     "empty": "No activity yet.",
     "kinds": {
       "status_changed": "Status changed",
-      "assigned": "Assignment changed"
+      "assigned": "Assignment changed",
+      "merged_into": "Merged",
+      "merged_from": "Merged"
     },
     "statusChanged": "Status changed from {{from}} to {{to}}",
     "assigneeChanged": "Assignee changed from {{from}} to {{to}}",
+    "mergedInto": "Merged into {{ref}}",
+    "mergedFrom": "Merged from {{ref}}",
     "by": "by {{actor}}"
+  },
+  "merge": {
+    "sectionTitle": "Possible duplicates",
+    "empty": "No likely duplicates found for this customer.",
+    "action": "Merge",
+    "confirmTitle": "Merge this ticket into #{{id}} — {{subject}}?",
+    "confirmDescription": "This moves {{messageCount}} message(s) and {{noteCount}} internal note(s) onto ticket #{{id}}, and closes this ticket. This cannot be undone from here — the merge stays visible in both tickets' history.",
+    "merged": "Ticket merged.",
+    "mergedBanner": "This ticket was merged into #{{id}} — {{subject}}.",
+    "viewTarget": "View ticket #{{id}}"
   },
   "sla": {
     "title": "SLA Status",

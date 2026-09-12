@@ -153,11 +153,25 @@
     "empty": "لا يوجد نشاط بعد.",
     "kinds": {
       "status_changed": "تغيير الحالة",
-      "assigned": "تغيير التعيين"
+      "assigned": "تغيير التعيين",
+      "merged_into": "دمج",
+      "merged_from": "دمج"
     },
     "statusChanged": "تم تغيير الحالة من {{from}} إلى {{to}}",
     "assigneeChanged": "تم تغيير المسؤول من {{from}} إلى {{to}}",
+    "mergedInto": "تم الدمج في {{ref}}",
+    "mergedFrom": "تم الدمج من {{ref}}",
     "by": "بواسطة {{actor}}"
+  },
+  "merge": {
+    "sectionTitle": "تذاكر مكررة محتملة",
+    "empty": "لم يتم العثور على تذاكر مكررة محتملة لهذا العميل.",
+    "action": "دمج",
+    "confirmTitle": "دمج هذه التذكرة في #{{id}} — {{subject}}؟",
+    "confirmDescription": "سينقل هذا {{messageCount}} رسالة و{{noteCount}} ملاحظة داخلية إلى التذكرة #{{id}}، ويغلق هذه التذكرة. لا يمكن التراجع عن هذا من هنا — يبقى الدمج ظاهرًا في سجل كلا التذكرتين.",
+    "merged": "تم دمج التذكرة.",
+    "mergedBanner": "تم دمج هذه التذكرة في #{{id}} — {{subject}}.",
+    "viewTarget": "عرض التذكرة #{{id}}"
   },
   "sla": {
     "title": "حالة اتفاقية مستوى الخدمة",

@@ -1703,6 +1703,27 @@ portal-customer-only extension point it already was) or through
 because role permissions are data (`Role.permissions`, a `JSONField`
 editable through `SEC-2`'s UI), not code.
 
+**A model that reuses another app's search technology is not the same as
+calling that app's function.** TKT-9 (Story 109) needed KB-3's
+"text-similarity retrieval" for duplicate ticket detection, but
+`apps.knowledge_base.search::search_knowledge_base` is model-locked to
+`FAQ`/`Article` — it cannot be called for `Ticket`. The reusable unit was
+the *mechanism* (Postgres `SearchVector`/`SearchQuery`/`SearchRank`), not
+the function: `apps/tickets/duplicates.py::find_duplicate_candidates` is a
+new, small function following the identical annotate/order-by/slice
+shape, not a fork of a copy-pasted one and not a literal cross-app call.
+When an intake says "reuse X's retrieval/search/pattern," check whether
+X's actual code is a general-purpose function (call it) or a
+domain-specific one built for a different model (reuse its *technique* in
+a new, model-appropriate function, and say so explicitly in the plan).
+**A self-referential pointer field left by an irreversible-in-the-UI-but-
+auditable action is `SET_NULL`, not `PROTECT` or `CASCADE`.**
+`Ticket.merged_into` (TKT-9) never blocks deleting the target it points to
+and never cascades a delete backward onto the source — the same reasoning
+every other "this reference should not force or block a delete" field in
+this app already uses (`Ticket.category`, `Ticket.assigned_agent`),
+applied for the first time to a self-referential FK.
+
 ---
 
 ## 24. Background jobs (Celery, SLA-0)

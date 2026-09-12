@@ -18,8 +18,10 @@ from apps.sla.tasks import auto_assign_ticket
 from .assignment import apply_assignment, assignable_agents
 from .bulk import fetch_tickets, first_error_message, parse_ticket_ids
 from .context import build_ticket_context
+from .duplicates import find_duplicate_candidates
 from .escalation import apply_escalation
 from .history import build_history
+from .merge import apply_merge
 from .models import Category, SavedView, Ticket
 from .reply_suggestions import draft_reply
 from .serializers import CategorySerializer, SavedViewSerializer, TicketSerializer
@@ -176,6 +178,11 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         # through to authenticated-only. See Story 23 `## Migration / Rollback`.
         "set_status": Permissions.TICKETS_MANAGE,
         "escalate": Permissions.TICKETS_MANAGE,
+        # TKT-9: same reasoning as every entry above — keyed by the
+        # @action's own method name, missing means authenticated-only not
+        # denied.
+        "merge": Permissions.TICKETS_MANAGE,
+        "duplicate_candidates": Permissions.TICKETS_VIEW,
         # TKT-7: same reasoning as every entry above — keyed by the
         # @action's own method name, missing means authenticated-only not
         # denied. All three reuse tickets.manage, the same gate the
@@ -373,6 +380,54 @@ class TicketViewSet(ScopedQuerysetMixin, BaseModelViewSet):
         if not apply_escalation(ticket, escalated):
             raise ValidationError({"escalated": [_("Ticket already has this escalation state.")]})
         return Response(self.get_serializer(ticket).data)
+
+    @action(detail=True, methods=["post"], url_path="merge")
+    def merge(self, request, pk=None):
+        """Merge this ticket (the SOURCE) into another (the TARGET) — TKT-9.
+        `target_id` must be present and a valid ticket id. Both AUTHZ and
+        the customer/self/already-merged checks are enforced inside
+        `apply_merge` — see Story 109 `## Product rules`.
+        """
+        if "target_id" not in request.data:
+            raise ValidationError({"target_id": [_("This field is required.")]})
+        try:
+            target_id = int(request.data.get("target_id"))
+        except (TypeError, ValueError):
+            raise ValidationError({"target_id": [_("Must be a valid ticket id.")]}) from None
+
+        source = self.get_object()
+        # SAME queryset `get_object()` itself filters through — not a raw
+        # `Ticket.objects.get(...)` — so the target is fetched under the
+        # identical visibility rule the source already was. See Story 109
+        # `## Product rules` (AUTHZ row).
+        target = self.get_queryset().filter(pk=target_id).first()
+        if target is None:
+            raise ValidationError({"target_id": [_("Ticket not found.")]})
+
+        apply_merge(source, target, actor=request.user)
+        return Response(self.get_serializer(source).data)
+
+    @action(detail=True, methods=["get"], url_path="duplicate-candidates")
+    def duplicate_candidates(self, request, pk=None):
+        """Likely duplicates of this ticket — TKT-9. Suggestion only; never
+        merges anything. Gated `tickets.view` alone, the same reasoning
+        `history`/`context`/`sla` use — a read, no separate permission.
+        """
+        ticket = self.get_object()
+        candidates = find_duplicate_candidates(ticket)
+        return Response(
+            [
+                {
+                    "id": candidate.id,
+                    "subject": candidate.subject,
+                    "status": candidate.status,
+                    "priority": candidate.priority,
+                    "created_at": candidate.created_at,
+                    "rank": candidate.rank,
+                }
+                for candidate in candidates
+            ]
+        )
 
     @action(detail=False, methods=["post"], url_path="bulk-assign")
     def bulk_assign(self, request):

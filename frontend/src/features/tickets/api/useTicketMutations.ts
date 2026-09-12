@@ -7,6 +7,7 @@ import { bulkSetTicketStatus } from './bulkSetTicketStatus'
 import { createTicket } from './createTicket'
 import { deleteTicket } from './deleteTicket'
 import { escalateTicket } from './escalateTicket'
+import { mergeTicket } from './mergeTicket'
 import { setTicketStatus } from './setTicketStatus'
 import { suggestTicketReply } from './suggestTicketReply'
 import { suggestTicketSolutions } from './suggestTicketSolutions'
@@ -65,6 +66,18 @@ export function useEscalateTicket(id: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (escalated: boolean) => escalateTicket(id, escalated),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
+  })
+}
+
+// Prefix-wide invalidation covers BOTH sides of the merge: the source's
+// own detail/history AND the target's — ticketKeys.resource('history',
+// targetId) is a child of the invalidated ticketKeys.all prefix, the same
+// reasoning Story 24 already verified for useAssignTicket. TKT-9.
+export function useMergeTicket(sourceId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (targetId: number) => mergeTicket(sourceId, targetId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ticketKeys.all }),
   })
 }

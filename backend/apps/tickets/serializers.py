@@ -107,6 +107,13 @@ class TicketSerializer(BaseModelSerializer):
     assigned_agent_name = serializers.CharField(
         source="assigned_agent.get_full_name", read_only=True, allow_null=True
     )
+    # Same verified-safe dotted-source + `allow_null=True` pattern as
+    # `category_name`/`department_name`/`branch_name` above. `merged_into`
+    # itself needs no declaration — DRF derives `required=False,
+    # allow_null=True` from the model field's own `null=True, blank=True`.
+    merged_into_subject = serializers.CharField(
+        source="merged_into.subject", read_only=True, allow_null=True
+    )
 
     # `customer` must stay writable on create (staff picks a customer when
     # filing a new ticket) but must never change afterward — a PATCH that
@@ -137,6 +144,8 @@ class TicketSerializer(BaseModelSerializer):
             "priority",
             "escalated",
             "escalated_at",
+            "merged_into",
+            "merged_into_subject",
             "created_at",
             "updated_at",
         )
@@ -144,12 +153,14 @@ class TicketSerializer(BaseModelSerializer):
         # TicketViewSet.set_status/escalate. Read-only here for the same
         # reason assigned_agent is (Story 22): a full-payload PATCH from the
         # edit form must never change them as a side effect. See Story 23
-        # `## Prerequisites`.
+        # `## Prerequisites`. `merged_into` is written ONLY through
+        # `TicketViewSet.merge` (Story 109) — the same rule.
         read_only_fields = BaseModelSerializer.Meta.read_only_fields + (
             "assigned_agent",
             "status",
             "escalated",
             "escalated_at",
+            "merged_into",
         )
 
     def get_sla_status(self, obj) -> str | None:

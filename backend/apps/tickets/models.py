@@ -134,6 +134,22 @@ class Ticket(TimeStampedModel):
     # Set when `escalated` becomes True, cleared to None when it becomes
     # False — written only through `TicketViewSet.escalate`, never directly.
     escalated_at = models.DateTimeField(_("escalated at"), null=True, blank=True)
+    # Self-referential SET_NULL, nullable: a permanent pointer left on the
+    # SOURCE ticket after TKT-9's merge closes it — never cleared, never
+    # followed automatically by any other code path. SET_NULL (not CASCADE
+    # or PROTECT): deleting the TARGET ticket later (TicketViewSet.destroy,
+    # untouched by this story) must not delete or block deleting the
+    # source — the source's own history/messages/notes still exist and
+    # still mean something even if the ticket they were consolidated into
+    # is later removed. See Story 109 `## Story Goal`.
+    merged_into = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="merged_tickets",
+        verbose_name=_("merged into"),
+    )
 
     class Meta:
         verbose_name = _("ticket")
@@ -177,6 +193,14 @@ class TicketActivity(TimeStampedModel):
     class Kind(models.TextChoices):
         STATUS_CHANGED = "status_changed", _("Status changed")
         ASSIGNED = "assigned", _("Assignment changed")
+        # TKT-9: recorded once on EACH side of a merge — the source gets
+        # MERGED_INTO (to_value = a snapshot of the TARGET), the target
+        # gets MERGED_FROM (to_value = a snapshot of the SOURCE). Two kinds,
+        # not one with a direction flag, matching this model's own
+        # "one Kind per semantic event" precedent (STATUS_CHANGED/ASSIGNED
+        # are also two kinds, not one "changed" kind with a field name).
+        MERGED_INTO = "merged_into", _("Merged into another ticket")
+        MERGED_FROM = "merged_from", _("Merged from another ticket")
 
     # CASCADE, not PROTECT: an activity entry has no existence independent
     # of its ticket, the same reasoning `Message.ticket` uses (Story 13).

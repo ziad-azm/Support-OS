@@ -60,6 +60,30 @@ function ActivityRow({ entry }: { entry: TicketHistoryActivityEntry }) {
   const { t } = useTranslation('tickets')
   const { dateTime } = useFormatters()
 
+  // TKT-9: merged_into/merged_from carry no translatable from/to pair —
+  // `to_value` is already a rendered snapshot string ("#45 — Login
+  // issue"), the same "point-in-time snapshot over a live reference"
+  // choice `assigned`'s name snapshot already established (Story 24
+  // `## Prerequisites`). Rendered as one sentence with a single
+  // interpolated `ref`, not the two-value `statusChanged`/
+  // `assigneeChanged` template below.
+  if (entry.activity_kind === 'merged_into' || entry.activity_kind === 'merged_from') {
+    return (
+      <li className="flex flex-col gap-1 rounded-md border p-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <Badge variant="outline">{t(`history.kinds.${entry.activity_kind}`)}</Badge>
+          <span>{dateTime(entry.occurred_at)}</span>
+        </div>
+        <p>
+          {t(entry.activity_kind === 'merged_into' ? 'history.mergedInto' : 'history.mergedFrom', {
+            ref: entry.to_value,
+          })}
+          {entry.actor_name ? ` ${t('history.by', { actor: entry.actor_name })}` : null}
+        </p>
+      </li>
+    )
+  }
+
   // `status_changed` values are `TicketStatus`es, translated the same way
   // every other status display in this app is — the backend guarantees
   // `from_value`/`to_value` are real `Ticket.Status` values for this kind,

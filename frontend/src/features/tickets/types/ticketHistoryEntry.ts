@@ -1,6 +1,6 @@
 import type { MessageChannel, MessageDirection } from './message'
 
-export type TicketActivityKind = 'status_changed' | 'assigned'
+export type TicketActivityKind = 'status_changed' | 'assigned' | 'merged_into' | 'merged_from'
 
 /**
  * Mirrors the `kind: "activity"` entries `apps.tickets.history.build_history`
