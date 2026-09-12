@@ -6,9 +6,13 @@ import * as z from 'zod'
 import { useBranches } from '@/shared/branches'
 import { nullableEmail, optionalString, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
+import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
 import {
   CheckboxField,
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
   FormErrorSummary,
   SelectField,
   SubmitButton,
@@ -21,6 +25,8 @@ import { useToast } from '@/shared/ui/toast/useToast'
 import { useCustomer } from '../api/useCustomer'
 import { useCreateCustomer, useUpdateCustomer } from '../api/useCustomerMutations'
 import type { Customer, CustomerInput } from '../types/customer'
+
+const LIST_PATH = '/customers'
 
 // Radix's `Select.Item` requires a non-empty `value` — this sentinel stands
 // in for "no branch" (ORG-2), the same role `DEPARTMENT_NONE` plays on the
@@ -97,8 +103,10 @@ function toCustomerInput(values: FormValues): CustomerInput {
   }
 }
 
-/** One component for both create and edit, per CONVENTIONS.md §20. */
-export function CustomerFormPage() {
+/** Nested under `CustomerListPage`'s own route (`frontend/src/app/
+ *  router.tsx`) — the list renders `<Outlet />`, this mounts only for
+ *  `new`/`:id/edit`. `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function CustomerFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -157,7 +165,7 @@ function CustomerForm({
     mutation.mutate(toCustomerInput(values), {
       onSuccess: (saved) => {
         toast({ tone: 'success', message: t(mode === 'create' ? 'created' : 'updated') })
-        navigate(`/customers/${saved.id}`)
+        navigate(mode === 'create' ? `/customers/${saved.id}` : LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -170,8 +178,14 @@ function CustomerForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h1 className="text-lg font-semibold">{t(mode === 'create' ? 'new' : 'edit')}</h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'new' : 'edit')}
+      isDirty={form.formState.isDirty}
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <TextField control={form.control} name="name" label={t('fields.name')} />
@@ -200,9 +214,16 @@ function CustomerForm({
             options={branchOptions}
           />
           <FormErrorSummary errors={formErrors} />
-          <SubmitButton pending={mutation.isPending}>{t('actions.save')}</SubmitButton>
+          <FormDialogFooter>
+            <SubmitButton pending={mutation.isPending}>{t('actions.save')}</SubmitButton>
+            <FormDialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </FormDialogClose>
+          </FormDialogFooter>
         </form>
       </Form>
-    </div>
+    </FormDialog>
   )
 }

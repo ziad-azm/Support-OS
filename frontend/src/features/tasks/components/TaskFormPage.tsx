@@ -8,6 +8,9 @@ import { applyServerErrors, isValidationError } from '@/shared/validation/server
 import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
 import {
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
   FormErrorSummary,
   SelectField,
   SubmitButton,
@@ -23,6 +26,8 @@ import { useCreateTask, useUpdateTask } from '../api/useTaskMutations'
 import { useTask } from '../api/useTask'
 import { useTicketOptions } from '../api/useTicketOptions'
 import type { Task, TaskInput } from '../types/task'
+
+const LIST_PATH = '/tasks'
 
 // Radix's `Select.Item` requires a non-empty `value` — this sentinel
 // stands in for "no ticket", the same role `TicketFormPage`'s own
@@ -81,8 +86,10 @@ function toTaskInput(values: FormValues): TaskInput {
   }
 }
 
-/** One component for both create and edit, per CONVENTIONS.md §20. */
-export function TaskFormPage() {
+/** Nested under `TaskListPage`'s own route (`frontend/src/app/router.tsx`)
+ *  — the list renders `<Outlet />`, this mounts only for `new`/`:id/edit`.
+ *  `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function TaskFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -121,7 +128,7 @@ function TaskForm({ mode, id, task }: { mode: 'create' | 'edit'; id?: number; ta
     mutation.mutate(toTaskInput(values), {
       onSuccess: () => {
         toast({ tone: 'success', message: t(mode === 'create' ? 'created' : 'updated') })
-        navigate('/tasks')
+        navigate(LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -138,8 +145,14 @@ function TaskForm({ mode, id, task }: { mode: 'create' | 'edit'; id?: number; ta
     })) ?? []
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h1 className="text-lg font-semibold">{t(mode === 'create' ? 'new' : 'edit')}</h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'new' : 'edit')}
+      isDirty={form.formState.isDirty}
+    >
       {ticketOptionsQuery.isPending ? (
         <Loading />
       ) : (
@@ -164,15 +177,17 @@ function TaskForm({ mode, id, task }: { mode: 'create' | 'edit'; id?: number; ta
               options={[{ value: TICKET_NONE, label: t('fields.noTicket') }, ...ticketOptions]}
             />
             <FormErrorSummary errors={formErrors} />
-            <div className="flex gap-2">
+            <FormDialogFooter>
               <SubmitButton pending={mutation.isPending}>{t('actions.save')}</SubmitButton>
-              <Button type="button" variant="outline" onClick={() => navigate('/tasks')}>
-                {t('actions.cancel', { ns: 'common' })}
-              </Button>
-            </div>
+              <FormDialogClose asChild>
+                <Button type="button" variant="outline">
+                  {t('actions.cancel', { ns: 'common' })}
+                </Button>
+              </FormDialogClose>
+            </FormDialogFooter>
           </form>
         </Form>
       )}
-    </div>
+    </FormDialog>
   )
 }

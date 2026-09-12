@@ -2075,6 +2075,50 @@ component mounted across a param change; a pathname key would break that).
 `frontend/src/shared/ui/Reveal.tsx` as part of this story — a scroll
 reveal is a generic primitive, not a landing-page concern.
 
+### Form presentation: dialog vs. full page (`DSN-15`, Story 112)
+
+**The rule.** A form is a **dialog** — `shared/ui/form/FormDialog.tsx` over
+`shared/ui/primitives/dialog.tsx` — when it is a single entity, has no
+nested navigation of its own (no child sections that only make sense once
+the entity is saved), and its field count fits comfortably in
+`dialog.tsx`'s `sm:max-w-lg` default (or `sm:max-w-2xl` for a bilingual
+pair). Examples: Department, Branch, Category, FAQ, Task, Customer, Landing
+highlight/social link, and (a worked example with no live consumer yet)
+Quick Reply.
+
+A form stays a **full page** when it is multi-section (Ticket, Article,
+Calendar's working-windows/holidays), has a permission grid or
+role/department/branch assignment (Role, User), needs file upload or
+event-type selection (WebhookSubscription), or is deep-linked/shared as its
+own bookmarkable destination — a public form (`WebForm`) or a customer
+portal form reached directly rather than from a list the customer is
+browsing (`PortalTicketForm`, `PortalFeedbackForm`).
+
+**No third ("sheet") tier.** `sheet`/`popover` do not exist as primitives in
+this codebase (`MOTION-0`/Story 97 already noted this) and this story does
+not add one — a boundary nobody can define is worse than two clear ones,
+per this story's own constraint. A future form that feels "too big for a
+dialog, too small for a page" is a full page until a sheet primitive is
+deliberately added as its own decision.
+
+**Mechanism.** A dialog form's route (`new`/`:id/edit`) is nested as a
+**child route** of its list route in `frontend/src/app/router.tsx`, and the
+list page renders `<Outlet />` (Radix portals the dialog to
+`document.body` regardless of where in the tree it mounts, so `Outlet`'s
+position in the list page's JSX does not affect layout). A permission gate
+that already splits view/manage (Department, Branch, Calendar) keeps both
+`RequirePermission` layers, nested the same way; a single-gate group
+(Category, Faq, Landing highlights/social, Customer) nests with no second
+layer; an ungated route (Task) nests with none at all. See Story 112's own
+plan file for the full per-route table.
+
+**Escape/overlay-dismiss vs. Cancel.** `FormDialog`'s Cancel button is a
+`DialogClose asChild` wrapper, not a separate `onClick` handler — Radix
+calls the same `onOpenChange(false)` for Escape, overlay click, the
+built-in close button, and `DialogClose`, so all four dismiss paths run
+through `FormDialog`'s one dirty-check, by construction, not by keeping two
+paths in sync by hand.
+
 ---
 
 ## 26. Customer portal identity & scoping

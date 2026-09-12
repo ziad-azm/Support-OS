@@ -1,6 +1,6 @@
 import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, Outlet } from 'react-router'
 
 import { Can } from '@/shared/auth'
 import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
@@ -110,48 +110,51 @@ export function LandingSocialLinkListPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t('landingSocial.title')}
-        action={
-          <Can permission="settings.manage">
-            <Button asChild>
-              <Link to="/settings/landing/social/new">
-                <PlusIcon />
-                {t('landingSocial.new')}
-              </Link>
-            </Button>
-          </Can>
-        }
-      />
-      <Input
-        value={searchInput}
-        onChange={(event) => setSearchInput(event.target.value)}
-        placeholder={t('landingSocial.searchPlaceholder')}
-        aria-label={t('landingSocial.search')}
-      />
-      <DataTable
-        columns={columns}
-        query={query}
-        rowKey={(row) => String(row.id)}
-        sort={sort}
-        onSortChange={setSort}
-        onPageChange={setPage}
-        caption={t('landingSocial.title')}
-        empty={
-          search ? (
-            <Empty title={t('landingSocial.noSearchResults')} />
-          ) : (
-            // The empty description MUST say no social row renders on the
-            // public page at all — same "explain what empty means" duty
-            // `LandingHighlightListPage`'s empty state carries.
-            <Empty
-              title={t('landingSocial.empty')}
-              description={t('landingSocial.emptyDescription')}
-            />
-          )
-        }
-      />
-    </div>
+    <>
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={t('landingSocial.title')}
+          action={
+            <Can permission="settings.manage">
+              <Button asChild>
+                <Link to="/settings/landing/social/new">
+                  <PlusIcon />
+                  {t('landingSocial.new')}
+                </Link>
+              </Button>
+            </Can>
+          }
+        />
+        <Input
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder={t('landingSocial.searchPlaceholder')}
+          aria-label={t('landingSocial.search')}
+        />
+        <DataTable
+          columns={columns}
+          query={query}
+          rowKey={(row) => String(row.id)}
+          sort={sort}
+          onSortChange={setSort}
+          onPageChange={setPage}
+          caption={t('landingSocial.title')}
+          empty={
+            search ? (
+              <Empty title={t('landingSocial.noSearchResults')} />
+            ) : (
+              // The empty description MUST say no social row renders on the
+              // public page at all — same "explain what empty means" duty
+              // `LandingHighlightListPage`'s empty state carries.
+              <Empty
+                title={t('landingSocial.empty')}
+                description={t('landingSocial.emptyDescription')}
+              />
+            )
+          }
+        />
+      </div>
+      <Outlet />
+    </>
   )
 }

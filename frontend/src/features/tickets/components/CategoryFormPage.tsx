@@ -6,15 +6,24 @@ import * as z from 'zod'
 import { requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
-import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
+  FormErrorSummary,
+  SubmitButton,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useCategory } from '../api/useCategory'
 import { useCreateCategory, useUpdateCategory } from '../api/useCategoryMutations'
 import type { Category, CategoryInput } from '../types/category'
+
+const LIST_PATH = '/categories'
 
 const schema = z.object({
   name: requiredString(100),
@@ -32,9 +41,10 @@ function toCategoryInput(values: FormValues): CategoryInput {
   return { name: values.name }
 }
 
-/** One component for both create and edit, per `RoleFormPage`'s pattern
- * (CONVENTIONS.md §20) — the field set is identical between modes. */
-export function CategoryFormPage() {
+/** Nested under `CategoryListPage`'s own route (`frontend/src/app/
+ *  router.tsx`) — the list renders `<Outlet />`, this mounts only for
+ *  `new`/`:id/edit`. `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function CategoryFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -82,7 +92,7 @@ function CategoryForm({
           tone: 'success',
           message: t(mode === 'create' ? 'categories.created' : 'categories.updated'),
         })
-        navigate('/categories')
+        navigate(LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -93,26 +103,28 @@ function CategoryForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h1 className="text-lg font-semibold">
-        {t(mode === 'create' ? 'categories.new' : 'categories.edit')}
-      </h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'categories.new' : 'categories.edit')}
+      isDirty={form.formState.isDirty}
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <Card>
-            <CardContent className="flex flex-col gap-4">
-              <TextField control={form.control} name="name" label={t('categories.fields.name')} />
-            </CardContent>
-          </Card>
+          <TextField control={form.control} name="name" label={t('categories.fields.name')} />
           <FormErrorSummary errors={formErrors} />
-          <div className="flex gap-2">
+          <FormDialogFooter>
             <SubmitButton pending={mutation.isPending}>{t('categories.actions.save')}</SubmitButton>
-            <Button type="button" variant="outline" onClick={() => navigate('/categories')}>
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-          </div>
+            <FormDialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </FormDialogClose>
+          </FormDialogFooter>
         </form>
       </Form>
-    </div>
+    </FormDialog>
   )
 }

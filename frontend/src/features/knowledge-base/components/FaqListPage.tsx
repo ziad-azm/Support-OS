@@ -1,6 +1,6 @@
 import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, Outlet } from 'react-router'
 
 import { Button } from '@/shared/ui/primitives/button'
 import { Input } from '@/shared/ui/primitives/input'
@@ -67,43 +67,46 @@ export function FaqListPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t('manage.title')}
-        action={
-          <Button asChild>
-            <Link to="/knowledge-base/manage/new">
-              <PlusIcon />
-              {t('manage.new')}
-            </Link>
-          </Button>
-        }
-      />
-      <Input
-        value={searchInput}
-        onChange={(event) => setSearchInput(event.target.value)}
-        placeholder={t('manage.searchPlaceholder')}
-        aria-label={t('manage.search')}
-      />
-      <DataTable
-        columns={columns}
-        query={query}
-        rowKey={(row) => String(row.id)}
-        sort={sort}
-        onSortChange={setSort}
-        onPageChange={setPage}
-        caption={t('manage.title')}
-        empty={
-          search ? (
-            <Empty title={t('manage.noSearchResults')} />
-          ) : (
-            <Empty title={t('manage.empty')} description={t('manage.emptyDescription')} />
-          )
-        }
-      />
-      <Button asChild variant="ghost" size="sm" className="self-start">
-        <Link to="/knowledge-base">{t('faqs.title')}</Link>
-      </Button>
-    </div>
+    <>
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={t('manage.title')}
+          action={
+            <Button asChild>
+              <Link to="/knowledge-base/manage/new">
+                <PlusIcon />
+                {t('manage.new')}
+              </Link>
+            </Button>
+          }
+        />
+        <Input
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder={t('manage.searchPlaceholder')}
+          aria-label={t('manage.search')}
+        />
+        <DataTable
+          columns={columns}
+          query={query}
+          rowKey={(row) => String(row.id)}
+          sort={sort}
+          onSortChange={setSort}
+          onPageChange={setPage}
+          caption={t('manage.title')}
+          empty={
+            search ? (
+              <Empty title={t('manage.noSearchResults')} />
+            ) : (
+              <Empty title={t('manage.empty')} description={t('manage.emptyDescription')} />
+            )
+          }
+        />
+        <Button asChild variant="ghost" size="sm" className="self-start">
+          <Link to="/knowledge-base">{t('faqs.title')}</Link>
+        </Button>
+      </div>
+      <Outlet />
+    </>
   )
 }

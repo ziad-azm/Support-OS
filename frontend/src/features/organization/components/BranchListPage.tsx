@@ -1,6 +1,6 @@
 import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, Outlet } from 'react-router'
 
 import { Can } from '@/shared/auth'
 import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
@@ -85,42 +85,45 @@ export function BranchListPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t('branches.title')}
-        action={
-          <Can permission="branches.manage">
-            <Button asChild>
-              <Link to="/settings/branches/new">
-                <PlusIcon />
-                {t('branches.new')}
-              </Link>
-            </Button>
-          </Can>
-        }
-      />
-      <Input
-        value={searchInput}
-        onChange={(event) => setSearchInput(event.target.value)}
-        placeholder={t('branches.searchPlaceholder')}
-        aria-label={t('branches.search')}
-      />
-      <DataTable
-        columns={columns}
-        query={query}
-        rowKey={(row) => String(row.id)}
-        sort={sort}
-        onSortChange={setSort}
-        onPageChange={setPage}
-        caption={t('branches.title')}
-        empty={
-          search ? (
-            <Empty title={t('branches.noSearchResults')} />
-          ) : (
-            <Empty title={t('branches.empty')} description={t('branches.emptyDescription')} />
-          )
-        }
-      />
-    </div>
+    <>
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={t('branches.title')}
+          action={
+            <Can permission="branches.manage">
+              <Button asChild>
+                <Link to="/settings/branches/new">
+                  <PlusIcon />
+                  {t('branches.new')}
+                </Link>
+              </Button>
+            </Can>
+          }
+        />
+        <Input
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder={t('branches.searchPlaceholder')}
+          aria-label={t('branches.search')}
+        />
+        <DataTable
+          columns={columns}
+          query={query}
+          rowKey={(row) => String(row.id)}
+          sort={sort}
+          onSortChange={setSort}
+          onPageChange={setPage}
+          caption={t('branches.title')}
+          empty={
+            search ? (
+              <Empty title={t('branches.noSearchResults')} />
+            ) : (
+              <Empty title={t('branches.empty')} description={t('branches.emptyDescription')} />
+            )
+          }
+        />
+      </div>
+      <Outlet />
+    </>
   )
 }

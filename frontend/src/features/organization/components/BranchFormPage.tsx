@@ -7,9 +7,11 @@ import { useCalendars } from '@/shared/calendars'
 import { optionalString, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
-import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
 import {
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
   FormErrorSummary,
   SelectField,
   SubmitButton,
@@ -22,6 +24,8 @@ import { useToast } from '@/shared/ui/toast/useToast'
 import { useBranch } from '../api/useBranch'
 import { useCreateBranch, useUpdateBranch } from '../api/useBranchMutations'
 import type { Branch, BranchInput } from '../types/branch'
+
+const LIST_PATH = '/settings/branches'
 
 // Radix's `Select.Item` requires a non-empty `value` — this sentinel
 // stands in for "no calendar", the same `CATEGORY_NONE`/`BRANCH_NONE`
@@ -62,10 +66,10 @@ function toBranchInput(values: FormValues): BranchInput {
   }
 }
 
-/** One component for both create and edit, per `RoleFormPage`'s pattern
- * (CONVENTIONS.md §20) — the field set is identical between modes, the
- * same as `DepartmentFormPage`. */
-export function BranchFormPage() {
+/** Nested under `BranchListPage`'s own route (`frontend/src/app/
+ *  router.tsx`) — the list renders `<Outlet />`, this mounts only for
+ *  `new`/`:id/edit`. `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function BranchFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -114,7 +118,7 @@ function BranchForm({
           tone: 'success',
           message: t(mode === 'create' ? 'branches.created' : 'branches.updated'),
         })
-        navigate('/settings/branches')
+        navigate(LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -125,43 +129,45 @@ function BranchForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h1 className="text-lg font-semibold">
-        {t(mode === 'create' ? 'branches.new' : 'branches.edit')}
-      </h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'branches.new' : 'branches.edit')}
+      isDirty={form.formState.isDirty}
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <Card>
-            <CardContent className="flex flex-col gap-4">
-              <TextField control={form.control} name="name" label={t('branches.fields.name')} />
-              <TextField
-                control={form.control}
-                name="description"
-                label={t('branches.fields.description')}
-              />
-              <SelectField
-                control={form.control}
-                name="calendar"
-                label={t('branches.fields.calendar')}
-                options={[
-                  { value: CALENDAR_NONE, label: t('branches.fields.noCalendar') },
-                  ...(calendarsQuery.data?.items.map((calendar) => ({
-                    value: String(calendar.id),
-                    label: calendar.name,
-                  })) ?? []),
-                ]}
-              />
-            </CardContent>
-          </Card>
+          <TextField control={form.control} name="name" label={t('branches.fields.name')} />
+          <TextField
+            control={form.control}
+            name="description"
+            label={t('branches.fields.description')}
+          />
+          <SelectField
+            control={form.control}
+            name="calendar"
+            label={t('branches.fields.calendar')}
+            options={[
+              { value: CALENDAR_NONE, label: t('branches.fields.noCalendar') },
+              ...(calendarsQuery.data?.items.map((calendar) => ({
+                value: String(calendar.id),
+                label: calendar.name,
+              })) ?? []),
+            ]}
+          />
           <FormErrorSummary errors={formErrors} />
-          <div className="flex gap-2">
+          <FormDialogFooter>
             <SubmitButton pending={mutation.isPending}>{t('branches.actions.save')}</SubmitButton>
-            <Button type="button" variant="outline" onClick={() => navigate('/settings/branches')}>
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-          </div>
+            <FormDialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </FormDialogClose>
+          </FormDialogFooter>
         </form>
       </Form>
-    </div>
+    </FormDialog>
   )
 }

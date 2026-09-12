@@ -6,15 +6,24 @@ import * as z from 'zod'
 import { optionalString, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Button } from '@/shared/ui/primitives/button'
-import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
+  FormErrorSummary,
+  SubmitButton,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useDepartment } from '../api/useDepartment'
 import { useCreateDepartment, useUpdateDepartment } from '../api/useDepartmentMutations'
 import type { Department, DepartmentInput } from '../types/department'
+
+const LIST_PATH = '/settings/departments'
 
 const schema = z.object({
   name: requiredString(100),
@@ -36,10 +45,10 @@ function toDepartmentInput(values: FormValues): DepartmentInput {
   return { name: values.name, description: values.description }
 }
 
-/** One component for both create and edit, per `RoleFormPage`'s pattern
- * (CONVENTIONS.md §20) — the field set is identical between modes, the
- * same as `CategoryFormPage`. */
-export function DepartmentFormPage() {
+/** Nested under `DepartmentListPage`'s own route (`frontend/src/app/
+ *  router.tsx`) — the list renders `<Outlet />`, this mounts only for
+ *  `new`/`:id/edit`. `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function DepartmentFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -87,7 +96,7 @@ function DepartmentForm({
           tone: 'success',
           message: t(mode === 'create' ? 'departments.created' : 'departments.updated'),
         })
-        navigate('/settings/departments')
+        navigate(LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -98,37 +107,35 @@ function DepartmentForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h1 className="text-lg font-semibold">
-        {t(mode === 'create' ? 'departments.new' : 'departments.edit')}
-      </h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'departments.new' : 'departments.edit')}
+      isDirty={form.formState.isDirty}
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <Card>
-            <CardContent className="flex flex-col gap-4">
-              <TextField control={form.control} name="name" label={t('departments.fields.name')} />
-              <TextField
-                control={form.control}
-                name="description"
-                label={t('departments.fields.description')}
-              />
-            </CardContent>
-          </Card>
+          <TextField control={form.control} name="name" label={t('departments.fields.name')} />
+          <TextField
+            control={form.control}
+            name="description"
+            label={t('departments.fields.description')}
+          />
           <FormErrorSummary errors={formErrors} />
-          <div className="flex gap-2">
+          <FormDialogFooter>
             <SubmitButton pending={mutation.isPending}>
               {t('departments.actions.save')}
             </SubmitButton>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/settings/departments')}
-            >
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-          </div>
+            <FormDialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </FormDialogClose>
+          </FormDialogFooter>
         </form>
       </Form>
-    </div>
+    </FormDialog>
   )
 }

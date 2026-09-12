@@ -127,16 +127,27 @@ export const router = createBrowserRouter([
                         await import('@/features/customers/components/CustomerListPage')
                       return { element: <CustomerListPage /> }
                     },
-                  },
-                  {
-                    // Must stay before `customers/:id`, or `:id` matches the
-                    // literal "new" and the profile page fires `/customers/new/`.
-                    path: 'customers/new',
-                    lazy: async () => {
-                      const { CustomerFormPage } =
-                        await import('@/features/customers/components/CustomerFormPage')
-                      return { element: <CustomerFormPage /> }
-                    },
+                    // `new`/`:id/edit` nested under the list route — `DSN-15`
+                    // (Story 112): `CustomerListPage` renders `<Outlet />`
+                    // and these mount as its dialog.
+                    children: [
+                      {
+                        path: 'new',
+                        lazy: async () => {
+                          const { CustomerFormDialog } =
+                            await import('@/features/customers/components/CustomerFormPage')
+                          return { element: <CustomerFormDialog /> }
+                        },
+                      },
+                      {
+                        path: ':id/edit',
+                        lazy: async () => {
+                          const { CustomerFormDialog } =
+                            await import('@/features/customers/components/CustomerFormPage')
+                          return { element: <CustomerFormDialog /> }
+                        },
+                      },
+                    ],
                   },
                   {
                     path: 'customers/:id',
@@ -144,14 +155,6 @@ export const router = createBrowserRouter([
                       const { CustomerProfilePage } =
                         await import('@/features/customers/components/CustomerProfilePage')
                       return { element: <CustomerProfilePage /> }
-                    },
-                  },
-                  {
-                    path: 'customers/:id/edit',
-                    lazy: async () => {
-                      const { CustomerFormPage } =
-                        await import('@/features/customers/components/CustomerFormPage')
-                      return { element: <CustomerFormPage /> }
                     },
                   },
                 ],
@@ -213,22 +216,27 @@ export const router = createBrowserRouter([
                         await import('@/features/knowledge-base/components/FaqListPage')
                       return { element: <FaqListPage /> }
                     },
-                  },
-                  {
-                    path: 'knowledge-base/manage/new',
-                    lazy: async () => {
-                      const { FaqFormPage } =
-                        await import('@/features/knowledge-base/components/FaqFormPage')
-                      return { element: <FaqFormPage /> }
-                    },
-                  },
-                  {
-                    path: 'knowledge-base/manage/:id/edit',
-                    lazy: async () => {
-                      const { FaqFormPage } =
-                        await import('@/features/knowledge-base/components/FaqFormPage')
-                      return { element: <FaqFormPage /> }
-                    },
+                    // `new`/`:id/edit` nested under the list route —
+                    // `DSN-15` (Story 112): `FaqListPage` renders
+                    // `<Outlet />` and these mount as its dialog.
+                    children: [
+                      {
+                        path: 'new',
+                        lazy: async () => {
+                          const { FaqFormDialog } =
+                            await import('@/features/knowledge-base/components/FaqFormPage')
+                          return { element: <FaqFormDialog /> }
+                        },
+                      },
+                      {
+                        path: ':id/edit',
+                        lazy: async () => {
+                          const { FaqFormDialog } =
+                            await import('@/features/knowledge-base/components/FaqFormPage')
+                          return { element: <FaqFormDialog /> }
+                        },
+                      },
+                    ],
                   },
                   {
                     // Must stay before `knowledge-base/articles/:id` (in the
@@ -264,24 +272,27 @@ export const router = createBrowserRouter([
                         await import('@/features/knowledge-base/components/CategoryListPage')
                       return { element: <CategoryListPage /> }
                     },
-                  },
-                  {
-                    // Must stay before `knowledge-base/categories/:id`, same
-                    // reason as `roles/new`.
-                    path: 'knowledge-base/categories/new',
-                    lazy: async () => {
-                      const { CategoryFormPage } =
-                        await import('@/features/knowledge-base/components/CategoryFormPage')
-                      return { element: <CategoryFormPage /> }
-                    },
-                  },
-                  {
-                    path: 'knowledge-base/categories/:id/edit',
-                    lazy: async () => {
-                      const { CategoryFormPage } =
-                        await import('@/features/knowledge-base/components/CategoryFormPage')
-                      return { element: <CategoryFormPage /> }
-                    },
+                    // `new`/`:id/edit` nested under the list route —
+                    // `DSN-15` (Story 112): `CategoryListPage` renders
+                    // `<Outlet />` and these mount as its dialog.
+                    children: [
+                      {
+                        path: 'new',
+                        lazy: async () => {
+                          const { CategoryFormDialog } =
+                            await import('@/features/knowledge-base/components/CategoryFormPage')
+                          return { element: <CategoryFormDialog /> }
+                        },
+                      },
+                      {
+                        path: ':id/edit',
+                        lazy: async () => {
+                          const { CategoryFormDialog } =
+                            await import('@/features/knowledge-base/components/CategoryFormPage')
+                          return { element: <CategoryFormDialog /> }
+                        },
+                      },
+                    ],
                   },
                 ],
               },
@@ -404,23 +415,27 @@ export const router = createBrowserRouter([
                         await import('@/features/tickets/components/CategoryListPage')
                       return { element: <CategoryListPage /> }
                     },
-                  },
-                  {
-                    // Must stay before `categories/:id`, same reason as `roles/new`.
-                    path: 'categories/new',
-                    lazy: async () => {
-                      const { CategoryFormPage } =
-                        await import('@/features/tickets/components/CategoryFormPage')
-                      return { element: <CategoryFormPage /> }
-                    },
-                  },
-                  {
-                    path: 'categories/:id/edit',
-                    lazy: async () => {
-                      const { CategoryFormPage } =
-                        await import('@/features/tickets/components/CategoryFormPage')
-                      return { element: <CategoryFormPage /> }
-                    },
+                    // `new`/`:id/edit` nested under the list route —
+                    // `DSN-15` (Story 112): `CategoryListPage` renders
+                    // `<Outlet />` and these mount as its dialog.
+                    children: [
+                      {
+                        path: 'new',
+                        lazy: async () => {
+                          const { CategoryFormDialog } =
+                            await import('@/features/tickets/components/CategoryFormPage')
+                          return { element: <CategoryFormDialog /> }
+                        },
+                      },
+                      {
+                        path: ':id/edit',
+                        lazy: async () => {
+                          const { CategoryFormDialog } =
+                            await import('@/features/tickets/components/CategoryFormPage')
+                          return { element: <CategoryFormDialog /> }
+                        },
+                      },
+                    ],
                   },
                 ],
               },
@@ -512,25 +527,27 @@ export const router = createBrowserRouter([
                         await import('@/features/organization/components/LandingHighlightListPage')
                       return { element: <LandingHighlightListPage /> }
                     },
-                  },
-                  {
-                    // Must stay before `settings/landing/highlights/:id/edit`,
-                    // the same declaration order `settings/departments/new`
-                    // uses.
-                    path: 'settings/landing/highlights/new',
-                    lazy: async () => {
-                      const { LandingHighlightFormPage } =
-                        await import('@/features/organization/components/LandingHighlightFormPage')
-                      return { element: <LandingHighlightFormPage /> }
-                    },
-                  },
-                  {
-                    path: 'settings/landing/highlights/:id/edit',
-                    lazy: async () => {
-                      const { LandingHighlightFormPage } =
-                        await import('@/features/organization/components/LandingHighlightFormPage')
-                      return { element: <LandingHighlightFormPage /> }
-                    },
+                    // `new`/`:id/edit` nested under the list route —
+                    // `DSN-15` (Story 112): `LandingHighlightListPage`
+                    // renders `<Outlet />` and these mount as its dialog.
+                    children: [
+                      {
+                        path: 'new',
+                        lazy: async () => {
+                          const { LandingHighlightFormDialog } =
+                            await import('@/features/organization/components/LandingHighlightFormPage')
+                          return { element: <LandingHighlightFormDialog /> }
+                        },
+                      },
+                      {
+                        path: ':id/edit',
+                        lazy: async () => {
+                          const { LandingHighlightFormDialog } =
+                            await import('@/features/organization/components/LandingHighlightFormPage')
+                          return { element: <LandingHighlightFormDialog /> }
+                        },
+                      },
+                    ],
                   },
                   {
                     // LAND-3.
@@ -540,25 +557,27 @@ export const router = createBrowserRouter([
                         await import('@/features/organization/components/LandingSocialLinkListPage')
                       return { element: <LandingSocialLinkListPage /> }
                     },
-                  },
-                  {
-                    // Must stay before `settings/landing/social/:id/edit`,
-                    // the same declaration order `settings/landing/highlights/new`
-                    // uses above.
-                    path: 'settings/landing/social/new',
-                    lazy: async () => {
-                      const { LandingSocialLinkFormPage } =
-                        await import('@/features/organization/components/LandingSocialLinkFormPage')
-                      return { element: <LandingSocialLinkFormPage /> }
-                    },
-                  },
-                  {
-                    path: 'settings/landing/social/:id/edit',
-                    lazy: async () => {
-                      const { LandingSocialLinkFormPage } =
-                        await import('@/features/organization/components/LandingSocialLinkFormPage')
-                      return { element: <LandingSocialLinkFormPage /> }
-                    },
+                    // `new`/`:id/edit` nested under the list route —
+                    // `DSN-15` (Story 112): `LandingSocialLinkListPage`
+                    // renders `<Outlet />` and these mount as its dialog.
+                    children: [
+                      {
+                        path: 'new',
+                        lazy: async () => {
+                          const { LandingSocialLinkFormDialog } =
+                            await import('@/features/organization/components/LandingSocialLinkFormPage')
+                          return { element: <LandingSocialLinkFormDialog /> }
+                        },
+                      },
+                      {
+                        path: ':id/edit',
+                        lazy: async () => {
+                          const { LandingSocialLinkFormDialog } =
+                            await import('@/features/organization/components/LandingSocialLinkFormPage')
+                          return { element: <LandingSocialLinkFormDialog /> }
+                        },
+                      },
+                    ],
                   },
                 ],
               },
@@ -629,33 +648,39 @@ export const router = createBrowserRouter([
                         await import('@/features/organization/components/DepartmentListPage')
                       return { element: <DepartmentListPage /> }
                     },
-                  },
-                ],
-              },
-              {
-                // Split from the `departments.view` list route above for the
-                // same reason `users/new` is split from `users`: create/edit
-                // are writes the server gates on `departments.manage`, so a
-                // view-only holder must not be routed to a guaranteed dead end.
-                element: <RequirePermission permission="departments.manage" />,
-                children: [
-                  {
-                    // Must stay before `settings/departments/:id/edit`, the
-                    // same declaration order `roles/new` uses.
-                    path: 'settings/departments/new',
-                    lazy: async () => {
-                      const { DepartmentFormPage } =
-                        await import('@/features/organization/components/DepartmentFormPage')
-                      return { element: <DepartmentFormPage /> }
-                    },
-                  },
-                  {
-                    path: 'settings/departments/:id/edit',
-                    lazy: async () => {
-                      const { DepartmentFormPage } =
-                        await import('@/features/organization/components/DepartmentFormPage')
-                      return { element: <DepartmentFormPage /> }
-                    },
+                    children: [
+                      {
+                        // Split from the list route above for the same
+                        // reason `users/new` is split from `users`:
+                        // create/edit are writes the server gates on
+                        // `departments.manage`, so a view-only holder must
+                        // not be routed to a guaranteed dead end. Nested
+                        // under the list route (not a sibling) since
+                        // `DSN-15` (Story 112) — the list renders
+                        // `<Outlet />` and these mount as its dialog.
+                        element: <RequirePermission permission="departments.manage" />,
+                        children: [
+                          {
+                            // Must stay before `:id/edit`, the same
+                            // declaration order `roles/new` uses.
+                            path: 'new',
+                            lazy: async () => {
+                              const { DepartmentFormDialog } =
+                                await import('@/features/organization/components/DepartmentFormPage')
+                              return { element: <DepartmentFormDialog /> }
+                            },
+                          },
+                          {
+                            path: ':id/edit',
+                            lazy: async () => {
+                              const { DepartmentFormDialog } =
+                                await import('@/features/organization/components/DepartmentFormPage')
+                              return { element: <DepartmentFormDialog /> }
+                            },
+                          },
+                        ],
+                      },
+                    ],
                   },
                 ],
               },
@@ -669,34 +694,34 @@ export const router = createBrowserRouter([
                         await import('@/features/organization/components/BranchListPage')
                       return { element: <BranchListPage /> }
                     },
-                  },
-                ],
-              },
-              {
-                // Split from the `branches.view` list route above for the same
-                // reason the `departments.manage` group is split from its own
-                // list route: create/edit are writes the server gates on
-                // `branches.manage`, so a view-only holder must not be routed
-                // to a guaranteed dead end.
-                element: <RequirePermission permission="branches.manage" />,
-                children: [
-                  {
-                    // Must stay before `settings/branches/:id/edit`, the same
-                    // declaration order `departments/new` uses.
-                    path: 'settings/branches/new',
-                    lazy: async () => {
-                      const { BranchFormPage } =
-                        await import('@/features/organization/components/BranchFormPage')
-                      return { element: <BranchFormPage /> }
-                    },
-                  },
-                  {
-                    path: 'settings/branches/:id/edit',
-                    lazy: async () => {
-                      const { BranchFormPage } =
-                        await import('@/features/organization/components/BranchFormPage')
-                      return { element: <BranchFormPage /> }
-                    },
+                    children: [
+                      {
+                        // Split from the list route above for the same
+                        // reason the `departments.manage` group is split
+                        // from its own list route (`DSN-15`, Story 112).
+                        element: <RequirePermission permission="branches.manage" />,
+                        children: [
+                          {
+                            // Must stay before `:id/edit`, the same
+                            // declaration order `departments/new` uses.
+                            path: 'new',
+                            lazy: async () => {
+                              const { BranchFormDialog } =
+                                await import('@/features/organization/components/BranchFormPage')
+                              return { element: <BranchFormDialog /> }
+                            },
+                          },
+                          {
+                            path: ':id/edit',
+                            lazy: async () => {
+                              const { BranchFormDialog } =
+                                await import('@/features/organization/components/BranchFormPage')
+                              return { element: <BranchFormDialog /> }
+                            },
+                          },
+                        ],
+                      },
+                    ],
                   },
                 ],
               },
@@ -747,22 +772,28 @@ export const router = createBrowserRouter([
                   const { TaskListPage } = await import('@/features/tasks/components/TaskListPage')
                   return { element: <TaskListPage /> }
                 },
-              },
-              {
-                // Must stay before `tasks/:id/edit`, same reason
-                // `tickets/new` is declared before `tickets/:id`.
-                path: 'tasks/new',
-                lazy: async () => {
-                  const { TaskFormPage } = await import('@/features/tasks/components/TaskFormPage')
-                  return { element: <TaskFormPage /> }
-                },
-              },
-              {
-                path: 'tasks/:id/edit',
-                lazy: async () => {
-                  const { TaskFormPage } = await import('@/features/tasks/components/TaskFormPage')
-                  return { element: <TaskFormPage /> }
-                },
+                // `new`/`:id/edit` nested under the list route — `DSN-15`
+                // (Story 112): `TaskListPage` renders `<Outlet />` and
+                // these mount as its dialog. Ungated, same as `tasks`
+                // itself — no `RequirePermission` layer to preserve.
+                children: [
+                  {
+                    path: 'new',
+                    lazy: async () => {
+                      const { TaskFormDialog } =
+                        await import('@/features/tasks/components/TaskFormPage')
+                      return { element: <TaskFormDialog /> }
+                    },
+                  },
+                  {
+                    path: ':id/edit',
+                    lazy: async () => {
+                      const { TaskFormDialog } =
+                        await import('@/features/tasks/components/TaskFormPage')
+                      return { element: <TaskFormDialog /> }
+                    },
+                  },
+                ],
               },
               {
                 path: 'preferences',

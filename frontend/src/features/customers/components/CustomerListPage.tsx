@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, Outlet } from 'react-router'
 
 import { Can } from '@/shared/auth'
 import { useBranches } from '@/shared/branches'
@@ -112,59 +112,62 @@ export function CustomerListPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t('title')}
-        action={
-          <Can permission="customers.manage">
-            <Button asChild>
-              <Link to="/customers/new">
-                <PlusIcon />
-                {t('new')}
-              </Link>
-            </Button>
-          </Can>
-        }
-      />
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder={t('searchPlaceholder')}
-          aria-label={t('search')}
-          className="max-w-xs"
+    <>
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={t('title')}
+          action={
+            <Can permission="customers.manage">
+              <Button asChild>
+                <Link to="/customers/new">
+                  <PlusIcon />
+                  {t('new')}
+                </Link>
+              </Button>
+            </Can>
+          }
         />
-        <Select value={branchFilter} onValueChange={setBranchFilter}>
-          <SelectTrigger aria-label={t('filters.branch')} size="sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('filters.allBranches')}</SelectItem>
-            <SelectItem value="none">{t('fields.noBranch')}</SelectItem>
-            {(branchesQuery.data?.items ?? []).map((branch) => (
-              <SelectItem key={branch.id} value={String(branch.id)}>
-                {branch.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder={t('searchPlaceholder')}
+            aria-label={t('search')}
+            className="max-w-xs"
+          />
+          <Select value={branchFilter} onValueChange={setBranchFilter}>
+            <SelectTrigger aria-label={t('filters.branch')} size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('filters.allBranches')}</SelectItem>
+              <SelectItem value="none">{t('fields.noBranch')}</SelectItem>
+              {(branchesQuery.data?.items ?? []).map((branch) => (
+                <SelectItem key={branch.id} value={String(branch.id)}>
+                  {branch.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DataTable
+          columns={columns}
+          query={query}
+          rowKey={(row) => String(row.id)}
+          sort={sort}
+          onSortChange={setSort}
+          onPageChange={setPage}
+          caption={t('title')}
+          empty={
+            search ? (
+              <Empty title={t('noSearchResults')} />
+            ) : (
+              <Empty title={t('empty')} description={t('emptyDescription')} />
+            )
+          }
+        />
       </div>
-      <DataTable
-        columns={columns}
-        query={query}
-        rowKey={(row) => String(row.id)}
-        sort={sort}
-        onSortChange={setSort}
-        onPageChange={setPage}
-        caption={t('title')}
-        empty={
-          search ? (
-            <Empty title={t('noSearchResults')} />
-          ) : (
-            <Empty title={t('empty')} description={t('emptyDescription')} />
-          )
-        }
-      />
-    </div>
+      <Outlet />
+    </>
   )
 }

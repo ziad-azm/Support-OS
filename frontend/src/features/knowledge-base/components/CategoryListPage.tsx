@@ -1,6 +1,6 @@
 import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, Outlet } from 'react-router'
 
 import { HEX_COLOR_RE } from '@/shared/branding/config'
 import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch'
@@ -79,40 +79,43 @@ export function CategoryListPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t('categories.title')}
-        action={
-          <Button asChild>
-            <Link to="/knowledge-base/categories/new">
-              <PlusIcon />
-              {t('categories.new')}
-            </Link>
-          </Button>
-        }
-      />
-      <Input
-        value={searchInput}
-        onChange={(event) => setSearchInput(event.target.value)}
-        placeholder={t('categories.searchPlaceholder')}
-        aria-label={t('categories.search')}
-      />
-      <DataTable
-        columns={columns}
-        query={query}
-        rowKey={(row) => String(row.id)}
-        sort={sort}
-        onSortChange={setSort}
-        onPageChange={setPage}
-        caption={t('categories.title')}
-        empty={
-          search ? (
-            <Empty title={t('categories.noSearchResults')} />
-          ) : (
-            <Empty title={t('categories.empty')} description={t('categories.emptyDescription')} />
-          )
-        }
-      />
-    </div>
+    <>
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={t('categories.title')}
+          action={
+            <Button asChild>
+              <Link to="/knowledge-base/categories/new">
+                <PlusIcon />
+                {t('categories.new')}
+              </Link>
+            </Button>
+          }
+        />
+        <Input
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder={t('categories.searchPlaceholder')}
+          aria-label={t('categories.search')}
+        />
+        <DataTable
+          columns={columns}
+          query={query}
+          rowKey={(row) => String(row.id)}
+          sort={sort}
+          onSortChange={setSort}
+          onPageChange={setPage}
+          caption={t('categories.title')}
+          empty={
+            search ? (
+              <Empty title={t('categories.noSearchResults')} />
+            ) : (
+              <Empty title={t('categories.empty')} description={t('categories.emptyDescription')} />
+            )
+          }
+        />
+      </div>
+      <Outlet />
+    </>
   )
 }

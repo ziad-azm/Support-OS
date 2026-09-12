@@ -10,6 +10,9 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
 import {
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
   FormErrorSummary,
   SelectField,
   SubmitButton,
@@ -26,6 +29,8 @@ import {
 } from '../api/useLandingSocialLinkMutations'
 import { useLandingSocialLink } from '../api/useLandingSocialLink'
 import type { LandingSocialLinkInput, LandingSocialLinkRow } from '../types/landing'
+
+const LIST_PATH = '/settings/landing/social'
 
 const schema = z.object({
   // A fixed set, mirroring `LandingSocialLink.Platform` — an admin cannot
@@ -64,9 +69,10 @@ function toSocialLinkInput(values: FormValues): LandingSocialLinkInput {
   return { ...values }
 }
 
-/** One component for both create and edit, per `LandingHighlightFormPage`'s
- * pattern (CONVENTIONS.md §20) — the field set is identical between modes. */
-export function LandingSocialLinkFormPage() {
+/** Nested under `LandingSocialLinkListPage`'s own route (`frontend/src/app/
+ *  router.tsx`) — the list renders `<Outlet />`, this mounts only for
+ *  `new`/`:id/edit`. `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function LandingSocialLinkFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -133,7 +139,7 @@ function LandingSocialLinkForm({
           tone: 'success',
           message: t(mode === 'create' ? 'landingSocial.created' : 'landingSocial.updated'),
         })
-        navigate('/settings/landing/social')
+        navigate(LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -144,10 +150,15 @@ function LandingSocialLinkForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
-      <h1 className="text-lg font-semibold">
-        {t(mode === 'create' ? 'landingSocial.new' : 'landingSocial.edit')}
-      </h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'landingSocial.new' : 'landingSocial.edit')}
+      isDirty={form.formState.isDirty}
+      contentClassName="sm:max-w-2xl"
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Card>
@@ -190,20 +201,18 @@ function LandingSocialLinkForm({
             </CardContent>
           </Card>
           <FormErrorSummary errors={formErrors} />
-          <div className="flex gap-2">
+          <FormDialogFooter>
             <SubmitButton pending={mutation.isPending}>
               {t('landingSocial.actions.save')}
             </SubmitButton>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/settings/landing/social')}
-            >
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-          </div>
+            <FormDialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </FormDialogClose>
+          </FormDialogFooter>
         </form>
       </Form>
-    </div>
+    </FormDialog>
   )
 }

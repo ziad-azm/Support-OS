@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import * as z from 'zod'
 
 import { requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
-import { useUnsavedChangesGuard } from '@/shared/hooks/useUnsavedChangesGuard'
+import { Button } from '@/shared/ui/primitives/button'
 import { Form } from '@/shared/ui/primitives/form'
 import {
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
   FormErrorSummary,
   SubmitButton,
   TextField,
@@ -21,6 +23,8 @@ import { useToast } from '@/shared/ui/toast/useToast'
 import { useCreateFaq, useUpdateFaq } from '../api/useFaqMutations'
 import { useFaq } from '../api/useFaq'
 import type { Faq, FaqInput } from '../types/faq'
+
+const LIST_PATH = '/knowledge-base/manage'
 
 const schema = z.object({
   question: requiredString(300),
@@ -43,8 +47,10 @@ function toFaqInput(values: FormValues): FaqInput {
   return { question: values.question, answer: values.answer, order: values.order }
 }
 
-/** One component for both create and edit, per CONVENTIONS.md §20. */
-export function FaqFormPage() {
+/** Nested under `FaqListPage`'s own route (`frontend/src/app/router.tsx`)
+ *  — the list renders `<Outlet />`, this mounts only for `new`/`:id/edit`.
+ *  `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function FaqFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -72,7 +78,6 @@ function FaqForm({ mode, id, faq }: { mode: 'create' | 'edit'; id?: number; faq?
     schema,
     defaultValues: faq ? toDefaults(faq) : EMPTY_DEFAULTS,
   })
-  useUnsavedChangesGuard(form.formState.isDirty)
 
   const createMutation = useCreateFaq()
   const updateMutation = useUpdateFaq(id ?? 0)
@@ -85,14 +90,13 @@ function FaqForm({ mode, id, faq }: { mode: 'create' | 'edit'; id?: number; faq?
           tone: 'success',
           message: t(mode === 'create' ? 'manage.created' : 'manage.updated'),
         })
-        // `flushSync`, not a bare call: `form.reset` schedules a state
-        // update but does not itself commit before this function returns,
-        // so `navigate()` on the next line would run against `useBlocker`'s
-        // still-stale `isDirty=true` closure from before the reset — the
-        // guard would block this very navigation right after a successful
-        // save. Forcing the commit first is what actually clears it in time.
-        flushSync(() => form.reset(values))
-        navigate('/knowledge-base/manage')
+        // `FormDialog`'s own `onOpenChange(false)` is not itself dirty-gated
+        // — only the cancel/Escape/overlay paths are — so `navigate()` here
+        // runs uninterrupted with no `flushSync`/reset workaround needed
+        // (that workaround existed only for the `useUnsavedChangesGuard`
+        // `useBlocker` this component no longer calls; see CONVENTIONS.md's
+        // `DSN-15` entry).
+        navigate(LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -103,10 +107,14 @@ function FaqForm({ mode, id, faq }: { mode: 'create' | 'edit'; id?: number; faq?
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h1 className="text-lg font-semibold">
-        {t(mode === 'create' ? 'manage.new' : 'manage.edit')}
-      </h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'manage.new' : 'manage.edit')}
+      isDirty={form.formState.isDirty}
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <TextField control={form.control} name="question" label={t('manage.fields.question')} />
@@ -118,9 +126,16 @@ function FaqForm({ mode, id, faq }: { mode: 'create' | 'edit'; id?: number; faq?
             label={t('manage.fields.order')}
           />
           <FormErrorSummary errors={formErrors} />
-          <SubmitButton pending={mutation.isPending}>{t('manage.actions.save')}</SubmitButton>
+          <FormDialogFooter>
+            <SubmitButton pending={mutation.isPending}>{t('manage.actions.save')}</SubmitButton>
+            <FormDialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </FormDialogClose>
+          </FormDialogFooter>
         </form>
       </Form>
-    </div>
+    </FormDialog>
   )
 }

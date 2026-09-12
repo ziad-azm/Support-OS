@@ -10,6 +10,9 @@ import { Button } from '@/shared/ui/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
 import {
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
   FormErrorSummary,
   SelectField,
   SubmitButton,
@@ -26,6 +29,8 @@ import {
 } from '../api/useLandingHighlightMutations'
 import { useLandingHighlight } from '../api/useLandingHighlight'
 import type { LandingHighlightInput, LandingHighlightRow } from '../types/landing'
+
+const LIST_PATH = '/settings/landing/highlights'
 
 const schema = z.object({
   title_en: requiredString(120),
@@ -68,9 +73,10 @@ function toHighlightInput(values: FormValues): LandingHighlightInput {
   return { ...values }
 }
 
-/** One component for both create and edit, per `DepartmentFormPage`'s
- * pattern (CONVENTIONS.md §20) — the field set is identical between modes. */
-export function LandingHighlightFormPage() {
+/** Nested under `LandingHighlightListPage`'s own route (`frontend/src/app/
+ *  router.tsx`) — the list renders `<Outlet />`, this mounts only for
+ *  `new`/`:id/edit`. `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function LandingHighlightFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -125,7 +131,7 @@ function LandingHighlightForm({
           tone: 'success',
           message: t(mode === 'create' ? 'landingHighlights.created' : 'landingHighlights.updated'),
         })
-        navigate('/settings/landing/highlights')
+        navigate(LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -136,10 +142,15 @@ function LandingHighlightForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
-      <h1 className="text-lg font-semibold">
-        {t(mode === 'create' ? 'landingHighlights.new' : 'landingHighlights.edit')}
-      </h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'landingHighlights.new' : 'landingHighlights.edit')}
+      isDirty={form.formState.isDirty}
+      contentClassName="sm:max-w-2xl"
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Card>
@@ -207,20 +218,18 @@ function LandingHighlightForm({
             </CardContent>
           </Card>
           <FormErrorSummary errors={formErrors} />
-          <div className="flex gap-2">
+          <FormDialogFooter>
             <SubmitButton pending={mutation.isPending}>
               {t('landingHighlights.actions.save')}
             </SubmitButton>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/settings/landing/highlights')}
-            >
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-          </div>
+            <FormDialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </FormDialogClose>
+          </FormDialogFooter>
         </form>
       </Form>
-    </div>
+    </FormDialog>
   )
 }

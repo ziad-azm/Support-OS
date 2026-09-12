@@ -10,15 +10,24 @@ import { optionalString, requiredString } from '@/shared/validation/schemas'
 import { applyServerErrors, isValidationError } from '@/shared/validation/serverErrors'
 import { Badge } from '@/shared/ui/primitives/badge'
 import { Button } from '@/shared/ui/primitives/button'
-import { Card, CardContent } from '@/shared/ui/primitives/card'
 import { Form } from '@/shared/ui/primitives/form'
-import { FormErrorSummary, SubmitButton, TextField, useAppForm } from '@/shared/ui/form'
+import {
+  FormDialog,
+  FormDialogClose,
+  FormDialogFooter,
+  FormErrorSummary,
+  SubmitButton,
+  TextField,
+  useAppForm,
+} from '@/shared/ui/form'
 import { QueryBoundary } from '@/shared/ui/QueryBoundary'
 import { useToast } from '@/shared/ui/toast/useToast'
 
 import { useCategory } from '../api/useCategory'
 import { useCreateCategory, useUpdateCategory } from '../api/useCategoryMutations'
 import type { Category, CategoryInput } from '../types/category'
+
+const LIST_PATH = '/knowledge-base/categories'
 
 const schema = z
   .object({
@@ -51,9 +60,10 @@ function toCategoryInput(values: FormValues): CategoryInput {
   return { name: values.name, color: values.color }
 }
 
-/** One component for both create and edit, per `ArticleFormPage`'s pattern
- * (CONVENTIONS.md §20) — the field set is identical between modes. */
-export function CategoryFormPage() {
+/** Nested under `CategoryListPage`'s own route (`frontend/src/app/
+ *  router.tsx`) — the list renders `<Outlet />`, this mounts only for
+ *  `new`/`:id/edit`. `DSN-15` (Story 112) — see CONVENTIONS.md's entry. */
+export function CategoryFormDialog() {
   const { id: idParam } = useParams()
   const isEdit = idParam !== undefined
   const id = Number(idParam)
@@ -107,7 +117,7 @@ function CategoryForm({
           tone: 'success',
           message: t(mode === 'create' ? 'categories.created' : 'categories.updated'),
         })
-        navigate('/knowledge-base/categories')
+        navigate(LIST_PATH)
       },
       onError: (error) => {
         if (isValidationError(error)) {
@@ -118,54 +128,52 @@ function CategoryForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h1 className="text-lg font-semibold">
-        {t(mode === 'create' ? 'categories.new' : 'categories.edit')}
-      </h1>
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate(LIST_PATH)
+      }}
+      title={t(mode === 'create' ? 'categories.new' : 'categories.edit')}
+      isDirty={form.formState.isDirty}
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <Card>
-            <CardContent className="flex flex-col gap-4">
-              <TextField control={form.control} name="name" label={t('categories.fields.name')} />
-              <TextField
-                control={form.control}
-                name="color"
-                label={t('categories.fields.color')}
-                description={t('categories.colorHint')}
-              />
-              {HEX_COLOR_RE.test(colorDraft) ? (
-                // F-32 (QA-REPORT-1): `role="group"` is required for
-                // `aria-label` to apply — a bare `<div>` is
-                // `role="generic"`, which ARIA prohibits naming.
-                <div
-                  role="group"
-                  className="flex items-center gap-2"
-                  aria-label={t('categories.colorPreview')}
-                >
-                  <span
-                    className="size-8 shrink-0 rounded border"
-                    style={{ backgroundColor: colorDraft }}
-                  />
-                  <Badge style={{ backgroundColor: colorDraft, color: foregroundFor(colorDraft) }}>
-                    {nameDraft || t('categories.fields.name')}
-                  </Badge>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-          <FormErrorSummary errors={formErrors} />
-          <div className="flex gap-2">
-            <SubmitButton pending={mutation.isPending}>{t('categories.actions.save')}</SubmitButton>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/knowledge-base/categories')}
+          <TextField control={form.control} name="name" label={t('categories.fields.name')} />
+          <TextField
+            control={form.control}
+            name="color"
+            label={t('categories.fields.color')}
+            description={t('categories.colorHint')}
+          />
+          {HEX_COLOR_RE.test(colorDraft) ? (
+            // F-32 (QA-REPORT-1): `role="group"` is required for
+            // `aria-label` to apply — a bare `<div>` is
+            // `role="generic"`, which ARIA prohibits naming.
+            <div
+              role="group"
+              className="flex items-center gap-2"
+              aria-label={t('categories.colorPreview')}
             >
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-          </div>
+              <span
+                className="size-8 shrink-0 rounded border"
+                style={{ backgroundColor: colorDraft }}
+              />
+              <Badge style={{ backgroundColor: colorDraft, color: foregroundFor(colorDraft) }}>
+                {nameDraft || t('categories.fields.name')}
+              </Badge>
+            </div>
+          ) : null}
+          <FormErrorSummary errors={formErrors} />
+          <FormDialogFooter>
+            <SubmitButton pending={mutation.isPending}>{t('categories.actions.save')}</SubmitButton>
+            <FormDialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('actions.cancel', { ns: 'common' })}
+              </Button>
+            </FormDialogClose>
+          </FormDialogFooter>
         </form>
       </Form>
-    </div>
+    </FormDialog>
   )
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PlusIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, Outlet } from 'react-router'
 
 import { useFormatters } from '@/shared/hooks/useFormatters'
 import { Badge } from '@/shared/ui/primitives/badge'
@@ -134,46 +134,49 @@ export function TaskListPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t('title')}
-        action={
-          <Button asChild>
-            <Link to="/tasks/new">
-              <PlusIcon />
-              {t('new')}
-            </Link>
-          </Button>
-        }
-      />
-      <Select
-        value={completedFilter}
-        onValueChange={(value) => setCompletedFilter(value as CompletedFilter)}
-      >
-        <SelectTrigger
-          aria-label={t('filters.completed')}
-          title={completedFilterLabel}
-          size="sm"
-          className="w-40"
+    <>
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={t('title')}
+          action={
+            <Button asChild>
+              <Link to="/tasks/new">
+                <PlusIcon />
+                {t('new')}
+              </Link>
+            </Button>
+          }
+        />
+        <Select
+          value={completedFilter}
+          onValueChange={(value) => setCompletedFilter(value as CompletedFilter)}
         >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="pending">{t('filters.pending')}</SelectItem>
-          <SelectItem value="completed">{t('filters.completedOnly')}</SelectItem>
-          <SelectItem value="all">{t('filters.all')}</SelectItem>
-        </SelectContent>
-      </Select>
-      <DataTable
-        columns={columns}
-        query={query}
-        rowKey={(row) => String(row.id)}
-        sort={sort}
-        onSortChange={setSort}
-        onPageChange={setPage}
-        caption={t('title')}
-        empty={<Empty title={t('empty')} description={t('emptyDescription')} />}
-      />
-    </div>
+          <SelectTrigger
+            aria-label={t('filters.completed')}
+            title={completedFilterLabel}
+            size="sm"
+            className="w-40"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">{t('filters.pending')}</SelectItem>
+            <SelectItem value="completed">{t('filters.completedOnly')}</SelectItem>
+            <SelectItem value="all">{t('filters.all')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <DataTable
+          columns={columns}
+          query={query}
+          rowKey={(row) => String(row.id)}
+          sort={sort}
+          onSortChange={setSort}
+          onPageChange={setPage}
+          caption={t('title')}
+          empty={<Empty title={t('empty')} description={t('emptyDescription')} />}
+        />
+      </div>
+      <Outlet />
+    </>
   )
 }
